@@ -1,0 +1,341 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_filtered.info - backend/optimizer/geqo/geqo_pool.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">backend/optimizer/geqo</a> - geqo_pool.c<span style="font-size: 80%;"> (source / <a href="geqo_pool.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_filtered.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">79</td>
+            <td class="headerCovTableEntryLo">0.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2026-06-09 14:40:53</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntryLo">0.0 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*------------------------------------------------------------------------</a>
+<a name="2"><span class="lineNum">       2 </span>            :  *</a>
+<a name="3"><span class="lineNum">       3 </span>            :  * geqo_pool.c</a>
+<a name="4"><span class="lineNum">       4 </span>            :  *        Genetic Algorithm (GA) pool stuff</a>
+<a name="5"><span class="lineNum">       5 </span>            :  *</a>
+<a name="6"><span class="lineNum">       6 </span>            :  * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group</a>
+<a name="7"><span class="lineNum">       7 </span>            :  * Portions Copyright (c) 1994, Regents of the University of California</a>
+<a name="8"><span class="lineNum">       8 </span>            :  *</a>
+<a name="9"><span class="lineNum">       9 </span>            :  * src/backend/optimizer/geqo/geqo_pool.c</a>
+<a name="10"><span class="lineNum">      10 </span>            :  *</a>
+<a name="11"><span class="lineNum">      11 </span>            :  *-------------------------------------------------------------------------</a>
+<a name="12"><span class="lineNum">      12 </span>            :  */</a>
+<a name="13"><span class="lineNum">      13 </span>            : </a>
+<a name="14"><span class="lineNum">      14 </span>            : /* contributed by:</a>
+<a name="15"><span class="lineNum">      15 </span>            :    =*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=</a>
+<a name="16"><span class="lineNum">      16 </span>            :    *  Martin Utesch                              * Institute of Automatic Control          *</a>
+<a name="17"><span class="lineNum">      17 </span>            :    =                                                     = University of Mining and Technology =</a>
+<a name="18"><span class="lineNum">      18 </span>            :    *  utesch@aut.tu-freiberg.de  * Freiberg, Germany                               *</a>
+<a name="19"><span class="lineNum">      19 </span>            :    =*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=*=</a>
+<a name="20"><span class="lineNum">      20 </span>            :  */</a>
+<a name="21"><span class="lineNum">      21 </span>            : </a>
+<a name="22"><span class="lineNum">      22 </span>            : /* -- parts of this are adapted from D. Whitley's Genitor algorithm -- */</a>
+<a name="23"><span class="lineNum">      23 </span>            : </a>
+<a name="24"><span class="lineNum">      24 </span>            : #include &quot;postgres.h&quot;</a>
+<a name="25"><span class="lineNum">      25 </span>            : </a>
+<a name="26"><span class="lineNum">      26 </span>            : #include &lt;float.h&gt;</a>
+<a name="27"><span class="lineNum">      27 </span>            : #include &lt;limits.h&gt;</a>
+<a name="28"><span class="lineNum">      28 </span>            : #include &lt;math.h&gt;</a>
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<a name="30"><span class="lineNum">      30 </span>            : #include &quot;optimizer/geqo_copy.h&quot;</a>
+<a name="31"><span class="lineNum">      31 </span>            : #include &quot;optimizer/geqo_pool.h&quot;</a>
+<a name="32"><span class="lineNum">      32 </span>            : #include &quot;optimizer/geqo_recombination.h&quot;</a>
+<a name="33"><span class="lineNum">      33 </span>            : </a>
+<a name="34"><span class="lineNum">      34 </span>            : </a>
+<a name="35"><span class="lineNum">      35 </span>            : static int      compare(const void *arg1, const void *arg2);</a>
+<a name="36"><span class="lineNum">      36 </span>            : </a>
+<a name="37"><span class="lineNum">      37 </span>            : /*</a>
+<a name="38"><span class="lineNum">      38 </span>            :  * alloc_pool</a>
+<a name="39"><span class="lineNum">      39 </span>            :  *              allocates memory for GA pool</a>
+<a name="40"><span class="lineNum">      40 </span>            :  */</a>
+<a name="41"><span class="lineNum">      41 </span>            : Pool *</a>
+<a name="42"><span class="lineNum">      42 </span><span class="lineNoCov">          0 : alloc_pool(PlannerInfo *root, int pool_size, int string_length)</span></a>
+<a name="43"><span class="lineNum">      43 </span>            : {</a>
+<a name="44"><span class="lineNum">      44 </span>            :         Pool       *new_pool;</a>
+<a name="45"><span class="lineNum">      45 </span>            :         Chromosome *chromo;</a>
+<a name="46"><span class="lineNum">      46 </span>            :         int                     i;</a>
+<a name="47"><span class="lineNum">      47 </span>            : </a>
+<a name="48"><span class="lineNum">      48 </span>            :         /* pool */</a>
+<a name="49"><span class="lineNum">      49 </span><span class="lineNoCov">          0 :         new_pool = (Pool *) palloc(sizeof(Pool));</span></a>
+<a name="50"><span class="lineNum">      50 </span><span class="lineNoCov">          0 :         new_pool-&gt;size = (int) pool_size;</span></a>
+<a name="51"><span class="lineNum">      51 </span><span class="lineNoCov">          0 :         new_pool-&gt;string_length = (int) string_length;</span></a>
+<a name="52"><span class="lineNum">      52 </span>            : </a>
+<a name="53"><span class="lineNum">      53 </span>            :         /* all chromosome */</a>
+<a name="54"><span class="lineNum">      54 </span><span class="lineNoCov">          0 :         new_pool-&gt;data = (Chromosome *) palloc(pool_size * sizeof(Chromosome));</span></a>
+<a name="55"><span class="lineNum">      55 </span>            : </a>
+<a name="56"><span class="lineNum">      56 </span>            :         /* all gene */</a>
+<a name="57"><span class="lineNum">      57 </span><span class="lineNoCov">          0 :         chromo = (Chromosome *) new_pool-&gt;data; /* vector of all chromos */</span></a>
+<a name="58"><span class="lineNum">      58 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; pool_size; i++)</span></a>
+<a name="59"><span class="lineNum">      59 </span><span class="lineNoCov">          0 :                 chromo[i].string = palloc((string_length + 1) * sizeof(Gene));</span></a>
+<a name="60"><span class="lineNum">      60 </span>            : </a>
+<a name="61"><span class="lineNum">      61 </span><span class="lineNoCov">          0 :         return new_pool;</span></a>
+<a name="62"><span class="lineNum">      62 </span>            : }</a>
+<a name="63"><span class="lineNum">      63 </span>            : </a>
+<a name="64"><span class="lineNum">      64 </span>            : /*</a>
+<a name="65"><span class="lineNum">      65 </span>            :  * free_pool</a>
+<a name="66"><span class="lineNum">      66 </span>            :  *              deallocates memory for GA pool</a>
+<a name="67"><span class="lineNum">      67 </span>            :  */</a>
+<a name="68"><span class="lineNum">      68 </span>            : void</a>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 : free_pool(PlannerInfo *root, Pool *pool)</span></a>
+<a name="70"><span class="lineNum">      70 </span>            : {</a>
+<a name="71"><span class="lineNum">      71 </span>            :         Chromosome *chromo;</a>
+<a name="72"><span class="lineNum">      72 </span>            :         int                     i;</a>
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<a name="74"><span class="lineNum">      74 </span>            :         /* all gene */</a>
+<a name="75"><span class="lineNum">      75 </span><span class="lineNoCov">          0 :         chromo = (Chromosome *) pool-&gt;data; /* vector of all chromos */</span></a>
+<a name="76"><span class="lineNum">      76 </span><span class="lineNoCov">          0 :         for (i = 0; i &lt; pool-&gt;size; i++)</span></a>
+<a name="77"><span class="lineNum">      77 </span><span class="lineNoCov">          0 :                 pfree(chromo[i].string);</span></a>
+<a name="78"><span class="lineNum">      78 </span>            : </a>
+<a name="79"><span class="lineNum">      79 </span>            :         /* all chromosome */</a>
+<a name="80"><span class="lineNum">      80 </span><span class="lineNoCov">          0 :         pfree(pool-&gt;data);</span></a>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<a name="82"><span class="lineNum">      82 </span>            :         /* pool */</a>
+<a name="83"><span class="lineNum">      83 </span><span class="lineNoCov">          0 :         pfree(pool);</span></a>
+<a name="84"><span class="lineNum">      84 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="85"><span class="lineNum">      85 </span>            : </a>
+<a name="86"><span class="lineNum">      86 </span>            : /*</a>
+<a name="87"><span class="lineNum">      87 </span>            :  * random_init_pool</a>
+<a name="88"><span class="lineNum">      88 </span>            :  *              initialize genetic pool</a>
+<a name="89"><span class="lineNum">      89 </span>            :  */</a>
+<a name="90"><span class="lineNum">      90 </span>            : void</a>
+<a name="91"><span class="lineNum">      91 </span><span class="lineNoCov">          0 : random_init_pool(PlannerInfo *root, Pool *pool)</span></a>
+<a name="92"><span class="lineNum">      92 </span>            : {</a>
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :         Chromosome *chromo = (Chromosome *) pool-&gt;data;</span></a>
+<a name="94"><span class="lineNum">      94 </span>            :         int                     i;</a>
+<a name="95"><span class="lineNum">      95 </span><span class="lineNoCov">          0 :         int                     bad = 0;</span></a>
+<a name="96"><span class="lineNum">      96 </span>            : </a>
+<a name="97"><span class="lineNum">      97 </span>            :         /*</a>
+<a name="98"><span class="lineNum">      98 </span>            :          * We immediately discard any invalid individuals (those that geqo_eval</a>
+<a name="99"><span class="lineNum">      99 </span>            :          * returns DBL_MAX for), thereby not wasting pool space on them.</a>
+<a name="100"><span class="lineNum">     100 </span>            :          *</a>
+<a name="101"><span class="lineNum">     101 </span>            :          * If we fail to make any valid individuals after 10000 tries, give up;</a>
+<a name="102"><span class="lineNum">     102 </span>            :          * this probably means something is broken, and we shouldn't just let</a>
+<a name="103"><span class="lineNum">     103 </span>            :          * ourselves get stuck in an infinite loop.</a>
+<a name="104"><span class="lineNum">     104 </span>            :          */</a>
+<a name="105"><span class="lineNum">     105 </span><span class="lineNoCov">          0 :         i = 0;</span></a>
+<a name="106"><span class="lineNum">     106 </span><span class="lineNoCov">          0 :         while (i &lt; pool-&gt;size)</span></a>
+<a name="107"><span class="lineNum">     107 </span>            :         {</a>
+<a name="108"><span class="lineNum">     108 </span><span class="lineNoCov">          0 :                 init_tour(root, chromo[i].string, pool-&gt;string_length);</span></a>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 pool-&gt;data[i].worth = geqo_eval(root, chromo[i].string,</span></a>
+<a name="110"><span class="lineNum">     110 </span>            :                                                                                 pool-&gt;string_length);</a>
+<a name="111"><span class="lineNum">     111 </span><span class="lineNoCov">          0 :                 if (pool-&gt;data[i].worth &lt; DBL_MAX)</span></a>
+<a name="112"><span class="lineNum">     112 </span><span class="lineNoCov">          0 :                         i++;</span></a>
+<a name="113"><span class="lineNum">     113 </span>            :                 else</a>
+<a name="114"><span class="lineNum">     114 </span>            :                 {</a>
+<a name="115"><span class="lineNum">     115 </span><span class="lineNoCov">          0 :                         bad++;</span></a>
+<a name="116"><span class="lineNum">     116 </span><span class="lineNoCov">          0 :                         if (i == 0 &amp;&amp; bad &gt;= 10000)</span></a>
+<a name="117"><span class="lineNum">     117 </span><span class="lineNoCov">          0 :                                 elog(ERROR, &quot;geqo failed to make a valid plan&quot;);</span></a>
+<a name="118"><span class="lineNum">     118 </span>            :                 }</a>
+<a name="119"><span class="lineNum">     119 </span>            :         }</a>
+<a name="120"><span class="lineNum">     120 </span>            : </a>
+<a name="121"><span class="lineNum">     121 </span>            : #ifdef GEQO_DEBUG</a>
+<a name="122"><span class="lineNum">     122 </span>            :         if (bad &gt; 0)</a>
+<a name="123"><span class="lineNum">     123 </span>            :                 elog(DEBUG1, &quot;%d invalid tours found while selecting %d pool entries&quot;,</a>
+<a name="124"><span class="lineNum">     124 </span>            :                          bad, pool-&gt;size);</a>
+<a name="125"><span class="lineNum">     125 </span>            : #endif</a>
+<a name="126"><span class="lineNum">     126 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="127"><span class="lineNum">     127 </span>            : </a>
+<a name="128"><span class="lineNum">     128 </span>            : /*</a>
+<a name="129"><span class="lineNum">     129 </span>            :  * sort_pool</a>
+<a name="130"><span class="lineNum">     130 </span>            :  *       sorts input pool according to worth, from smallest to largest</a>
+<a name="131"><span class="lineNum">     131 </span>            :  *</a>
+<a name="132"><span class="lineNum">     132 </span>            :  *       maybe you have to change compare() for different ordering ...</a>
+<a name="133"><span class="lineNum">     133 </span>            :  */</a>
+<a name="134"><span class="lineNum">     134 </span>            : void</a>
+<a name="135"><span class="lineNum">     135 </span><span class="lineNoCov">          0 : sort_pool(PlannerInfo *root, Pool *pool)</span></a>
+<a name="136"><span class="lineNum">     136 </span>            : {</a>
+<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 :         qsort(pool-&gt;data, pool-&gt;size, sizeof(Chromosome), compare);</span></a>
+<a name="138"><span class="lineNum">     138 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="139"><span class="lineNum">     139 </span>            : </a>
+<a name="140"><span class="lineNum">     140 </span>            : /*</a>
+<a name="141"><span class="lineNum">     141 </span>            :  * compare</a>
+<a name="142"><span class="lineNum">     142 </span>            :  *       qsort comparison function for sort_pool</a>
+<a name="143"><span class="lineNum">     143 </span>            :  */</a>
+<a name="144"><span class="lineNum">     144 </span>            : static int</a>
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 : compare(const void *arg1, const void *arg2)</span></a>
+<a name="146"><span class="lineNum">     146 </span>            : {</a>
+<a name="147"><span class="lineNum">     147 </span><span class="lineNoCov">          0 :         const Chromosome *chromo1 = (const Chromosome *) arg1;</span></a>
+<a name="148"><span class="lineNum">     148 </span><span class="lineNoCov">          0 :         const Chromosome *chromo2 = (const Chromosome *) arg2;</span></a>
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<a name="150"><span class="lineNum">     150 </span><span class="lineNoCov">          0 :         if (chromo1-&gt;worth == chromo2-&gt;worth)</span></a>
+<a name="151"><span class="lineNum">     151 </span><span class="lineNoCov">          0 :                 return 0;</span></a>
+<a name="152"><span class="lineNum">     152 </span><span class="lineNoCov">          0 :         else if (chromo1-&gt;worth &gt; chromo2-&gt;worth)</span></a>
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">          0 :                 return 1;</span></a>
+<a name="154"><span class="lineNum">     154 </span>            :         else</a>
+<a name="155"><span class="lineNum">     155 </span><span class="lineNoCov">          0 :                 return -1;</span></a>
+<a name="156"><span class="lineNum">     156 </span>            : }</a>
+<a name="157"><span class="lineNum">     157 </span>            : </a>
+<a name="158"><span class="lineNum">     158 </span>            : /* alloc_chromo</a>
+<a name="159"><span class="lineNum">     159 </span>            :  *        allocates a chromosome and string space</a>
+<a name="160"><span class="lineNum">     160 </span>            :  */</a>
+<a name="161"><span class="lineNum">     161 </span>            : Chromosome *</a>
+<a name="162"><span class="lineNum">     162 </span><span class="lineNoCov">          0 : alloc_chromo(PlannerInfo *root, int string_length)</span></a>
+<a name="163"><span class="lineNum">     163 </span>            : {</a>
+<a name="164"><span class="lineNum">     164 </span>            :         Chromosome *chromo;</a>
+<a name="165"><span class="lineNum">     165 </span>            : </a>
+<a name="166"><span class="lineNum">     166 </span><span class="lineNoCov">          0 :         chromo = (Chromosome *) palloc(sizeof(Chromosome));</span></a>
+<a name="167"><span class="lineNum">     167 </span><span class="lineNoCov">          0 :         chromo-&gt;string = (Gene *) palloc((string_length + 1) * sizeof(Gene));</span></a>
+<a name="168"><span class="lineNum">     168 </span>            : </a>
+<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 :         return chromo;</span></a>
+<a name="170"><span class="lineNum">     170 </span>            : }</a>
+<a name="171"><span class="lineNum">     171 </span>            : </a>
+<a name="172"><span class="lineNum">     172 </span>            : /* free_chromo</a>
+<a name="173"><span class="lineNum">     173 </span>            :  *        deallocates a chromosome and string space</a>
+<a name="174"><span class="lineNum">     174 </span>            :  */</a>
+<a name="175"><span class="lineNum">     175 </span>            : void</a>
+<a name="176"><span class="lineNum">     176 </span><span class="lineNoCov">          0 : free_chromo(PlannerInfo *root, Chromosome *chromo)</span></a>
+<a name="177"><span class="lineNum">     177 </span>            : {</a>
+<a name="178"><span class="lineNum">     178 </span><span class="lineNoCov">          0 :         pfree(chromo-&gt;string);</span></a>
+<a name="179"><span class="lineNum">     179 </span><span class="lineNoCov">          0 :         pfree(chromo);</span></a>
+<a name="180"><span class="lineNum">     180 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<a name="182"><span class="lineNum">     182 </span>            : /* spread_chromo</a>
+<a name="183"><span class="lineNum">     183 </span>            :  *       inserts a new chromosome into the pool, displacing worst gene in pool</a>
+<a name="184"><span class="lineNum">     184 </span>            :  *       assumes best-&gt;worst = smallest-&gt;largest</a>
+<a name="185"><span class="lineNum">     185 </span>            :  */</a>
+<a name="186"><span class="lineNum">     186 </span>            : void</a>
+<a name="187"><span class="lineNum">     187 </span><span class="lineNoCov">          0 : spread_chromo(PlannerInfo *root, Chromosome *chromo, Pool *pool)</span></a>
+<a name="188"><span class="lineNum">     188 </span>            : {</a>
+<a name="189"><span class="lineNum">     189 </span>            :         int                     top,</a>
+<a name="190"><span class="lineNum">     190 </span>            :                                 mid,</a>
+<a name="191"><span class="lineNum">     191 </span>            :                                 bot;</a>
+<a name="192"><span class="lineNum">     192 </span>            :         int                     i,</a>
+<a name="193"><span class="lineNum">     193 </span>            :                                 index;</a>
+<a name="194"><span class="lineNum">     194 </span>            :         Chromosome      swap_chromo,</a>
+<a name="195"><span class="lineNum">     195 </span>            :                                 tmp_chromo;</a>
+<a name="196"><span class="lineNum">     196 </span>            : </a>
+<a name="197"><span class="lineNum">     197 </span>            :         /* new chromo is so bad we can't use it */</a>
+<a name="198"><span class="lineNum">     198 </span><span class="lineNoCov">          0 :         if (chromo-&gt;worth &gt; pool-&gt;data[pool-&gt;size - 1].worth)</span></a>
+<a name="199"><span class="lineNum">     199 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<a name="200"><span class="lineNum">     200 </span>            : </a>
+<a name="201"><span class="lineNum">     201 </span>            :         /* do a binary search to find the index of the new chromo */</a>
+<a name="202"><span class="lineNum">     202 </span>            : </a>
+<a name="203"><span class="lineNum">     203 </span><span class="lineNoCov">          0 :         top = 0;</span></a>
+<a name="204"><span class="lineNum">     204 </span><span class="lineNoCov">          0 :         mid = pool-&gt;size / 2;</span></a>
+<a name="205"><span class="lineNum">     205 </span><span class="lineNoCov">          0 :         bot = pool-&gt;size - 1;</span></a>
+<a name="206"><span class="lineNum">     206 </span><span class="lineNoCov">          0 :         index = -1;</span></a>
+<a name="207"><span class="lineNum">     207 </span>            : </a>
+<a name="208"><span class="lineNum">     208 </span><span class="lineNoCov">          0 :         while (index == -1)</span></a>
+<a name="209"><span class="lineNum">     209 </span>            :         {</a>
+<a name="210"><span class="lineNum">     210 </span>            :                 /* these 4 cases find a new location */</a>
+<a name="211"><span class="lineNum">     211 </span>            : </a>
+<a name="212"><span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 if (chromo-&gt;worth &lt;= pool-&gt;data[top].worth)</span></a>
+<a name="213"><span class="lineNum">     213 </span><span class="lineNoCov">          0 :                         index = top;</span></a>
+<a name="214"><span class="lineNum">     214 </span><span class="lineNoCov">          0 :                 else if (chromo-&gt;worth == pool-&gt;data[mid].worth)</span></a>
+<a name="215"><span class="lineNum">     215 </span><span class="lineNoCov">          0 :                         index = mid;</span></a>
+<a name="216"><span class="lineNum">     216 </span><span class="lineNoCov">          0 :                 else if (chromo-&gt;worth == pool-&gt;data[bot].worth)</span></a>
+<a name="217"><span class="lineNum">     217 </span><span class="lineNoCov">          0 :                         index = bot;</span></a>
+<a name="218"><span class="lineNum">     218 </span><span class="lineNoCov">          0 :                 else if (bot - top &lt;= 1)</span></a>
+<a name="219"><span class="lineNum">     219 </span><span class="lineNoCov">          0 :                         index = bot;</span></a>
+<a name="220"><span class="lineNum">     220 </span>            : </a>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<a name="222"><span class="lineNum">     222 </span>            :                 /*</a>
+<a name="223"><span class="lineNum">     223 </span>            :                  * these 2 cases move the search indices since a new location has not</a>
+<a name="224"><span class="lineNum">     224 </span>            :                  * yet been found.</a>
+<a name="225"><span class="lineNum">     225 </span>            :                  */</a>
+<a name="226"><span class="lineNum">     226 </span>            : </a>
+<a name="227"><span class="lineNum">     227 </span><span class="lineNoCov">          0 :                 else if (chromo-&gt;worth &lt; pool-&gt;data[mid].worth)</span></a>
+<a name="228"><span class="lineNum">     228 </span>            :                 {</a>
+<a name="229"><span class="lineNum">     229 </span><span class="lineNoCov">          0 :                         bot = mid;</span></a>
+<a name="230"><span class="lineNum">     230 </span><span class="lineNoCov">          0 :                         mid = top + ((bot - top) / 2);</span></a>
+<a name="231"><span class="lineNum">     231 </span>            :                 }</a>
+<a name="232"><span class="lineNum">     232 </span>            :                 else</a>
+<a name="233"><span class="lineNum">     233 </span>            :                 {                                               /* (chromo-&gt;worth &gt; pool-&gt;data[mid].worth) */</a>
+<a name="234"><span class="lineNum">     234 </span><span class="lineNoCov">          0 :                         top = mid;</span></a>
+<a name="235"><span class="lineNum">     235 </span><span class="lineNoCov">          0 :                         mid = top + ((bot - top) / 2);</span></a>
+<a name="236"><span class="lineNum">     236 </span>            :                 }</a>
+<a name="237"><span class="lineNum">     237 </span>            :         }                                                       /* ... while */</a>
+<a name="238"><span class="lineNum">     238 </span>            : </a>
+<a name="239"><span class="lineNum">     239 </span>            :         /* now we have index for chromo */</a>
+<a name="240"><span class="lineNum">     240 </span>            : </a>
+<a name="241"><span class="lineNum">     241 </span>            :         /*</a>
+<a name="242"><span class="lineNum">     242 </span>            :          * move every gene from index on down one position to make room for chromo</a>
+<a name="243"><span class="lineNum">     243 </span>            :          */</a>
+<a name="244"><span class="lineNum">     244 </span>            : </a>
+<a name="245"><span class="lineNum">     245 </span>            :         /*</a>
+<a name="246"><span class="lineNum">     246 </span>            :          * copy new gene into pool storage; always replace worst gene in pool</a>
+<a name="247"><span class="lineNum">     247 </span>            :          */</a>
+<a name="248"><span class="lineNum">     248 </span>            : </a>
+<a name="249"><span class="lineNum">     249 </span><span class="lineNoCov">          0 :         geqo_copy(root, &amp;pool-&gt;data[pool-&gt;size - 1], chromo, pool-&gt;string_length);</span></a>
+<a name="250"><span class="lineNum">     250 </span>            : </a>
+<a name="251"><span class="lineNum">     251 </span><span class="lineNoCov">          0 :         swap_chromo.string = pool-&gt;data[pool-&gt;size - 1].string;</span></a>
+<a name="252"><span class="lineNum">     252 </span><span class="lineNoCov">          0 :         swap_chromo.worth = pool-&gt;data[pool-&gt;size - 1].worth;</span></a>
+<a name="253"><span class="lineNum">     253 </span>            : </a>
+<a name="254"><span class="lineNum">     254 </span><span class="lineNoCov">          0 :         for (i = index; i &lt; pool-&gt;size; i++)</span></a>
+<a name="255"><span class="lineNum">     255 </span>            :         {</a>
+<a name="256"><span class="lineNum">     256 </span><span class="lineNoCov">          0 :                 tmp_chromo.string = pool-&gt;data[i].string;</span></a>
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 tmp_chromo.worth = pool-&gt;data[i].worth;</span></a>
+<a name="258"><span class="lineNum">     258 </span>            : </a>
+<a name="259"><span class="lineNum">     259 </span><span class="lineNoCov">          0 :                 pool-&gt;data[i].string = swap_chromo.string;</span></a>
+<a name="260"><span class="lineNum">     260 </span><span class="lineNoCov">          0 :                 pool-&gt;data[i].worth = swap_chromo.worth;</span></a>
+<a name="261"><span class="lineNum">     261 </span>            : </a>
+<a name="262"><span class="lineNum">     262 </span><span class="lineNoCov">          0 :                 swap_chromo.string = tmp_chromo.string;</span></a>
+<a name="263"><span class="lineNum">     263 </span><span class="lineNoCov">          0 :                 swap_chromo.worth = tmp_chromo.worth;</span></a>
+<a name="264"><span class="lineNum">     264 </span>            :         }</a>
+<a name="265"><span class="lineNum">     265 </span>            : }</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 1.16</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

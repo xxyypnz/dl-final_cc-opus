@@ -1,0 +1,1 @@
+genhtml outputs/local_eval/baseline/coverage_workspace/coverage_filtered.info --output-directory outputs/local_eval/baseline/coverage_workspace/report --ignore-errors unmapped,inconsistent,corrupt,category,empty,source --keep-going

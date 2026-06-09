@@ -39,7 +39,7 @@ EVAL_RESULT_PATH="${EVAL_RESULT_PATH:-${TOOLKIT_DIR}/outputs/eval_result.json}"
 EVAL_SCRIPT="${EVAL_SCRIPT:-${SCRIPT_DIR}/evaluate.py}"
 # ---- v5: Branch Coverage ----
 ENABLE_BRANCH_COVERAGE="${ENABLE_BRANCH_COVERAGE:-1}"
-LCOV_IGNORE_ERRORS="${LCOV_IGNORE_ERRORS:-gcov,unsupported,inconsistent,range}"
+LCOV_IGNORE_ERRORS="${LCOV_IGNORE_ERRORS:-gcov,unsupported,inconsistent}"
 
 usage() {
     cat <<EOF
@@ -337,29 +337,48 @@ if [ "$ENABLE_BRANCH_COVERAGE" = "1" ]; then
     log "分支覆盖率已启用"
 fi
 
-lcov --capture $LCOV_OPTS \
-    --ignore-errors "$LCOV_IGNORE_ERRORS" \
+# 允许通过 LCOV_BIN/GENHTML_BIN 指定 lcov 版本(平台用 1.16)。
+LCOV_BIN="${LCOV_BIN:-lcov}"
+GENHTML_BIN="${GENHTML_BIN:-genhtml}"
+LCOV_MAJOR="$("$LCOV_BIN" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+' | head -1 | cut -d. -f1)"
+if [ "${LCOV_MAJOR:-1}" -ge 2 ]; then
+    LCOV_CAP_IGNORE="${LCOV_IGNORE_ERRORS}"
+    GENHTML_IGNORE="${GENHTML_IGNORE:-unmapped,inconsistent,corrupt,category,empty,source}"
+    GENHTML_EXTRA="--keep-going"
+else
+    # lcov/genhtml 1.16 接受的类别集合
+    LCOV_CAP_IGNORE="${LCOV_IGNORE_ERRORS_116:-gcov,source,graph}"
+    GENHTML_IGNORE="${GENHTML_IGNORE:-source}"
+    GENHTML_EXTRA=""
+fi
+log "使用 lcov: $("$LCOV_BIN" --version 2>&1 | head -1) (major=${LCOV_MAJOR})"
+
+"$LCOV_BIN" --capture $LCOV_OPTS \
+    --ignore-errors "$LCOV_CAP_IGNORE" \
     --directory "$PG_SOURCE_DIR" \
     --output-file "$WORKSPACE_DIR/coverage.info"
 
-lcov $LCOV_OPTS \
-    --ignore-errors "$LCOV_IGNORE_ERRORS" \
+"$LCOV_BIN" $LCOV_OPTS \
+    --ignore-errors "$LCOV_CAP_IGNORE" \
     --remove "$WORKSPACE_DIR/coverage.info" '/usr/*' \
     --output-file "$WORKSPACE_DIR/coverage_filtered.info"
 
-genhtml $GENHTML_OPTS \
-    --ignore-errors "$LCOV_IGNORE_ERRORS" \
-    "$WORKSPACE_DIR/coverage_filtered.info" \
-    --output-directory "$REPORT_DIR"
+genhtml_run() {
+    "$GENHTML_BIN" $GENHTML_OPTS \
+        --ignore-errors "$GENHTML_IGNORE" $GENHTML_EXTRA \
+        "$WORKSPACE_DIR/coverage_filtered.info" \
+        --output-directory "$REPORT_DIR"
+}
+genhtml_run
 
 # ================= 覆盖率摘要 =================
 log "=== 覆盖率摘要 ==="
 
-LINE_COVERAGE=$(lcov --summary "$WORKSPACE_DIR/coverage_filtered.info" 2>&1 | grep "lines......" | awk '{print $2}' | tr -d '%')
-FUNC_COVERAGE=$(lcov --summary "$WORKSPACE_DIR/coverage_filtered.info" 2>&1 | grep "functions." | awk '{print $2}' | tr -d '%')
+LINE_COVERAGE=$("$LCOV_BIN" --summary "$WORKSPACE_DIR/coverage_filtered.info" 2>&1 | grep "lines......" | awk '{print $2}' | tr -d '%')
+FUNC_COVERAGE=$("$LCOV_BIN" --summary "$WORKSPACE_DIR/coverage_filtered.info" 2>&1 | grep "functions." | awk '{print $2}' | tr -d '%')
 
 if [ "$ENABLE_BRANCH_COVERAGE" = "1" ]; then
-    BRANCH_COVERAGE=$(lcov --summary "$WORKSPACE_DIR/coverage_filtered.info" 2>&1 | grep "branches." | awk '{print $2}' | tr -d '%')
+    BRANCH_COVERAGE=$("$LCOV_BIN" --summary "$WORKSPACE_DIR/coverage_filtered.info" 2>&1 | grep "branches." | awk '{print $2}' | tr -d '%')
     log "行覆盖率: ${LINE_COVERAGE}%"
     log "函数覆盖率: ${FUNC_COVERAGE}%"
     log "分支覆盖率: ${BRANCH_COVERAGE}%"

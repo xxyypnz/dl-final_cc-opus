@@ -1,0 +1,1564 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_filtered.info - include/pgstat.h</title>
+  <link rel="stylesheet" type="text/css" href="../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../index.html">top level</a> - <a href="index.html">include</a> - pgstat.h<span style="font-size: 80%;"> (source / <a href="pgstat.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_filtered.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2026-06-09 14:00:29</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr><td><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* ----------</a>
+<a name="2"><span class="lineNum">       2 </span>            :  *      pgstat.h</a>
+<a name="3"><span class="lineNum">       3 </span>            :  *</a>
+<a name="4"><span class="lineNum">       4 </span>            :  *      Definitions for the PostgreSQL statistics collector daemon.</a>
+<a name="5"><span class="lineNum">       5 </span>            :  *</a>
+<a name="6"><span class="lineNum">       6 </span>            :  *      Copyright (c) 2001-2020, PostgreSQL Global Development Group</a>
+<a name="7"><span class="lineNum">       7 </span>            :  *</a>
+<a name="8"><span class="lineNum">       8 </span>            :  *      src/include/pgstat.h</a>
+<a name="9"><span class="lineNum">       9 </span>            :  * ----------</a>
+<a name="10"><span class="lineNum">      10 </span>            :  */</a>
+<a name="11"><span class="lineNum">      11 </span>            : #ifndef PGSTAT_H</a>
+<a name="12"><span class="lineNum">      12 </span>            : #define PGSTAT_H</a>
+<a name="13"><span class="lineNum">      13 </span>            : </a>
+<a name="14"><span class="lineNum">      14 </span>            : #include &quot;datatype/timestamp.h&quot;</a>
+<a name="15"><span class="lineNum">      15 </span>            : #include &quot;libpq/pqcomm.h&quot;</a>
+<a name="16"><span class="lineNum">      16 </span>            : #include &quot;miscadmin.h&quot;</a>
+<a name="17"><span class="lineNum">      17 </span>            : #include &quot;port/atomics.h&quot;</a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &quot;portability/instr_time.h&quot;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &quot;postmaster/pgarch.h&quot;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &quot;storage/proc.h&quot;</a>
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;utils/hsearch.h&quot;</a>
+<a name="22"><span class="lineNum">      22 </span>            : #include &quot;utils/relcache.h&quot;</a>
+<a name="23"><span class="lineNum">      23 </span>            : </a>
+<a name="24"><span class="lineNum">      24 </span>            : </a>
+<a name="25"><span class="lineNum">      25 </span>            : /* ----------</a>
+<a name="26"><span class="lineNum">      26 </span>            :  * Paths for the statistics files (relative to installation's $PGDATA).</a>
+<a name="27"><span class="lineNum">      27 </span>            :  * ----------</a>
+<a name="28"><span class="lineNum">      28 </span>            :  */</a>
+<a name="29"><span class="lineNum">      29 </span>            : #define PGSTAT_STAT_PERMANENT_DIRECTORY         &quot;pg_stat&quot;</a>
+<a name="30"><span class="lineNum">      30 </span>            : #define PGSTAT_STAT_PERMANENT_FILENAME          &quot;pg_stat/global.stat&quot;</a>
+<a name="31"><span class="lineNum">      31 </span>            : #define PGSTAT_STAT_PERMANENT_TMPFILE           &quot;pg_stat/global.tmp&quot;</a>
+<a name="32"><span class="lineNum">      32 </span>            : </a>
+<a name="33"><span class="lineNum">      33 </span>            : /* Default directory to store temporary statistics data in */</a>
+<a name="34"><span class="lineNum">      34 </span>            : #define PG_STAT_TMP_DIR         &quot;pg_stat_tmp&quot;</a>
+<a name="35"><span class="lineNum">      35 </span>            : </a>
+<a name="36"><span class="lineNum">      36 </span>            : /* Values for track_functions GUC variable --- order is significant! */</a>
+<a name="37"><span class="lineNum">      37 </span>            : typedef enum TrackFunctionsLevel</a>
+<a name="38"><span class="lineNum">      38 </span>            : {</a>
+<a name="39"><span class="lineNum">      39 </span>            :         TRACK_FUNC_OFF,</a>
+<a name="40"><span class="lineNum">      40 </span>            :         TRACK_FUNC_PL,</a>
+<a name="41"><span class="lineNum">      41 </span>            :         TRACK_FUNC_ALL</a>
+<a name="42"><span class="lineNum">      42 </span>            : }                       TrackFunctionsLevel;</a>
+<a name="43"><span class="lineNum">      43 </span>            : </a>
+<a name="44"><span class="lineNum">      44 </span>            : /* ----------</a>
+<a name="45"><span class="lineNum">      45 </span>            :  * The types of backend -&gt; collector messages</a>
+<a name="46"><span class="lineNum">      46 </span>            :  * ----------</a>
+<a name="47"><span class="lineNum">      47 </span>            :  */</a>
+<a name="48"><span class="lineNum">      48 </span>            : typedef enum StatMsgType</a>
+<a name="49"><span class="lineNum">      49 </span>            : {</a>
+<a name="50"><span class="lineNum">      50 </span>            :         PGSTAT_MTYPE_DUMMY,</a>
+<a name="51"><span class="lineNum">      51 </span>            :         PGSTAT_MTYPE_INQUIRY,</a>
+<a name="52"><span class="lineNum">      52 </span>            :         PGSTAT_MTYPE_TABSTAT,</a>
+<a name="53"><span class="lineNum">      53 </span>            :         PGSTAT_MTYPE_TABPURGE,</a>
+<a name="54"><span class="lineNum">      54 </span>            :         PGSTAT_MTYPE_DROPDB,</a>
+<a name="55"><span class="lineNum">      55 </span>            :         PGSTAT_MTYPE_RESETCOUNTER,</a>
+<a name="56"><span class="lineNum">      56 </span>            :         PGSTAT_MTYPE_RESETSHAREDCOUNTER,</a>
+<a name="57"><span class="lineNum">      57 </span>            :         PGSTAT_MTYPE_RESETSINGLECOUNTER,</a>
+<a name="58"><span class="lineNum">      58 </span>            :         PGSTAT_MTYPE_RESETSLRUCOUNTER,</a>
+<a name="59"><span class="lineNum">      59 </span>            :         PGSTAT_MTYPE_AUTOVAC_START,</a>
+<a name="60"><span class="lineNum">      60 </span>            :         PGSTAT_MTYPE_VACUUM,</a>
+<a name="61"><span class="lineNum">      61 </span>            :         PGSTAT_MTYPE_ANALYZE,</a>
+<a name="62"><span class="lineNum">      62 </span>            :         PGSTAT_MTYPE_ARCHIVER,</a>
+<a name="63"><span class="lineNum">      63 </span>            :         PGSTAT_MTYPE_BGWRITER,</a>
+<a name="64"><span class="lineNum">      64 </span>            :         PGSTAT_MTYPE_SLRU,</a>
+<a name="65"><span class="lineNum">      65 </span>            :         PGSTAT_MTYPE_FUNCSTAT,</a>
+<a name="66"><span class="lineNum">      66 </span>            :         PGSTAT_MTYPE_FUNCPURGE,</a>
+<a name="67"><span class="lineNum">      67 </span>            :         PGSTAT_MTYPE_RECOVERYCONFLICT,</a>
+<a name="68"><span class="lineNum">      68 </span>            :         PGSTAT_MTYPE_TEMPFILE,</a>
+<a name="69"><span class="lineNum">      69 </span>            :         PGSTAT_MTYPE_DEADLOCK,</a>
+<a name="70"><span class="lineNum">      70 </span>            :         PGSTAT_MTYPE_CHECKSUMFAILURE</a>
+<a name="71"><span class="lineNum">      71 </span>            : } StatMsgType;</a>
+<a name="72"><span class="lineNum">      72 </span>            : </a>
+<a name="73"><span class="lineNum">      73 </span>            : /* ----------</a>
+<a name="74"><span class="lineNum">      74 </span>            :  * The data type used for counters.</a>
+<a name="75"><span class="lineNum">      75 </span>            :  * ----------</a>
+<a name="76"><span class="lineNum">      76 </span>            :  */</a>
+<a name="77"><span class="lineNum">      77 </span>            : typedef int64 PgStat_Counter;</a>
+<a name="78"><span class="lineNum">      78 </span>            : </a>
+<a name="79"><span class="lineNum">      79 </span>            : /* ----------</a>
+<a name="80"><span class="lineNum">      80 </span>            :  * PgStat_TableCounts                   The actual per-table counts kept by a backend</a>
+<a name="81"><span class="lineNum">      81 </span>            :  *</a>
+<a name="82"><span class="lineNum">      82 </span>            :  * This struct should contain only actual event counters, because we memcmp</a>
+<a name="83"><span class="lineNum">      83 </span>            :  * it against zeroes to detect whether there are any counts to transmit.</a>
+<a name="84"><span class="lineNum">      84 </span>            :  * It is a component of PgStat_TableStatus (within-backend state) and</a>
+<a name="85"><span class="lineNum">      85 </span>            :  * PgStat_TableEntry (the transmitted message format).</a>
+<a name="86"><span class="lineNum">      86 </span>            :  *</a>
+<a name="87"><span class="lineNum">      87 </span>            :  * Note: for a table, tuples_returned is the number of tuples successfully</a>
+<a name="88"><span class="lineNum">      88 </span>            :  * fetched by heap_getnext, while tuples_fetched is the number of tuples</a>
+<a name="89"><span class="lineNum">      89 </span>            :  * successfully fetched by heap_fetch under the control of bitmap indexscans.</a>
+<a name="90"><span class="lineNum">      90 </span>            :  * For an index, tuples_returned is the number of index entries returned by</a>
+<a name="91"><span class="lineNum">      91 </span>            :  * the index AM, while tuples_fetched is the number of tuples successfully</a>
+<a name="92"><span class="lineNum">      92 </span>            :  * fetched by heap_fetch under the control of simple indexscans for this index.</a>
+<a name="93"><span class="lineNum">      93 </span>            :  *</a>
+<a name="94"><span class="lineNum">      94 </span>            :  * tuples_inserted/updated/deleted/hot_updated count attempted actions,</a>
+<a name="95"><span class="lineNum">      95 </span>            :  * regardless of whether the transaction committed.  delta_live_tuples,</a>
+<a name="96"><span class="lineNum">      96 </span>            :  * delta_dead_tuples, and changed_tuples are set depending on commit or abort.</a>
+<a name="97"><span class="lineNum">      97 </span>            :  * Note that delta_live_tuples and delta_dead_tuples can be negative!</a>
+<a name="98"><span class="lineNum">      98 </span>            :  * ----------</a>
+<a name="99"><span class="lineNum">      99 </span>            :  */</a>
+<a name="100"><span class="lineNum">     100 </span>            : typedef struct PgStat_TableCounts</a>
+<a name="101"><span class="lineNum">     101 </span>            : {</a>
+<a name="102"><span class="lineNum">     102 </span>            :         PgStat_Counter t_numscans;</a>
+<a name="103"><span class="lineNum">     103 </span>            : </a>
+<a name="104"><span class="lineNum">     104 </span>            :         PgStat_Counter t_tuples_returned;</a>
+<a name="105"><span class="lineNum">     105 </span>            :         PgStat_Counter t_tuples_fetched;</a>
+<a name="106"><span class="lineNum">     106 </span>            : </a>
+<a name="107"><span class="lineNum">     107 </span>            :         PgStat_Counter t_tuples_inserted;</a>
+<a name="108"><span class="lineNum">     108 </span>            :         PgStat_Counter t_tuples_updated;</a>
+<a name="109"><span class="lineNum">     109 </span>            :         PgStat_Counter t_tuples_deleted;</a>
+<a name="110"><span class="lineNum">     110 </span>            :         PgStat_Counter t_tuples_hot_updated;</a>
+<a name="111"><span class="lineNum">     111 </span>            :         bool            t_truncated;</a>
+<a name="112"><span class="lineNum">     112 </span>            : </a>
+<a name="113"><span class="lineNum">     113 </span>            :         PgStat_Counter t_delta_live_tuples;</a>
+<a name="114"><span class="lineNum">     114 </span>            :         PgStat_Counter t_delta_dead_tuples;</a>
+<a name="115"><span class="lineNum">     115 </span>            :         PgStat_Counter t_changed_tuples;</a>
+<a name="116"><span class="lineNum">     116 </span>            : </a>
+<a name="117"><span class="lineNum">     117 </span>            :         PgStat_Counter t_blocks_fetched;</a>
+<a name="118"><span class="lineNum">     118 </span>            :         PgStat_Counter t_blocks_hit;</a>
+<a name="119"><span class="lineNum">     119 </span>            : } PgStat_TableCounts;</a>
+<a name="120"><span class="lineNum">     120 </span>            : </a>
+<a name="121"><span class="lineNum">     121 </span>            : /* Possible targets for resetting cluster-wide shared values */</a>
+<a name="122"><span class="lineNum">     122 </span>            : typedef enum PgStat_Shared_Reset_Target</a>
+<a name="123"><span class="lineNum">     123 </span>            : {</a>
+<a name="124"><span class="lineNum">     124 </span>            :         RESET_ARCHIVER,</a>
+<a name="125"><span class="lineNum">     125 </span>            :         RESET_BGWRITER</a>
+<a name="126"><span class="lineNum">     126 </span>            : } PgStat_Shared_Reset_Target;</a>
+<a name="127"><span class="lineNum">     127 </span>            : </a>
+<a name="128"><span class="lineNum">     128 </span>            : /* Possible object types for resetting single counters */</a>
+<a name="129"><span class="lineNum">     129 </span>            : typedef enum PgStat_Single_Reset_Type</a>
+<a name="130"><span class="lineNum">     130 </span>            : {</a>
+<a name="131"><span class="lineNum">     131 </span>            :         RESET_TABLE,</a>
+<a name="132"><span class="lineNum">     132 </span>            :         RESET_FUNCTION</a>
+<a name="133"><span class="lineNum">     133 </span>            : } PgStat_Single_Reset_Type;</a>
+<a name="134"><span class="lineNum">     134 </span>            : </a>
+<a name="135"><span class="lineNum">     135 </span>            : /* ------------------------------------------------------------</a>
+<a name="136"><span class="lineNum">     136 </span>            :  * Structures kept in backend local memory while accumulating counts</a>
+<a name="137"><span class="lineNum">     137 </span>            :  * ------------------------------------------------------------</a>
+<a name="138"><span class="lineNum">     138 </span>            :  */</a>
+<a name="139"><span class="lineNum">     139 </span>            : </a>
+<a name="140"><span class="lineNum">     140 </span>            : </a>
+<a name="141"><span class="lineNum">     141 </span>            : /* ----------</a>
+<a name="142"><span class="lineNum">     142 </span>            :  * PgStat_TableStatus                   Per-table status within a backend</a>
+<a name="143"><span class="lineNum">     143 </span>            :  *</a>
+<a name="144"><span class="lineNum">     144 </span>            :  * Many of the event counters are nontransactional, ie, we count events</a>
+<a name="145"><span class="lineNum">     145 </span>            :  * in committed and aborted transactions alike.  For these, we just count</a>
+<a name="146"><span class="lineNum">     146 </span>            :  * directly in the PgStat_TableStatus.  However, delta_live_tuples,</a>
+<a name="147"><span class="lineNum">     147 </span>            :  * delta_dead_tuples, and changed_tuples must be derived from event counts</a>
+<a name="148"><span class="lineNum">     148 </span>            :  * with awareness of whether the transaction or subtransaction committed or</a>
+<a name="149"><span class="lineNum">     149 </span>            :  * aborted.  Hence, we also keep a stack of per-(sub)transaction status</a>
+<a name="150"><span class="lineNum">     150 </span>            :  * records for every table modified in the current transaction.  At commit</a>
+<a name="151"><span class="lineNum">     151 </span>            :  * or abort, we propagate tuples_inserted/updated/deleted up to the</a>
+<a name="152"><span class="lineNum">     152 </span>            :  * parent subtransaction level, or out to the parent PgStat_TableStatus,</a>
+<a name="153"><span class="lineNum">     153 </span>            :  * as appropriate.</a>
+<a name="154"><span class="lineNum">     154 </span>            :  * ----------</a>
+<a name="155"><span class="lineNum">     155 </span>            :  */</a>
+<a name="156"><span class="lineNum">     156 </span>            : typedef struct PgStat_TableStatus</a>
+<a name="157"><span class="lineNum">     157 </span>            : {</a>
+<a name="158"><span class="lineNum">     158 </span>            :         Oid                     t_id;                   /* table's OID */</a>
+<a name="159"><span class="lineNum">     159 </span>            :         bool            t_shared;               /* is it a shared catalog? */</a>
+<a name="160"><span class="lineNum">     160 </span>            :         struct PgStat_TableXactStatus *trans;   /* lowest subxact's counts */</a>
+<a name="161"><span class="lineNum">     161 </span>            :         PgStat_TableCounts t_counts;    /* event counts to be sent */</a>
+<a name="162"><span class="lineNum">     162 </span>            : } PgStat_TableStatus;</a>
+<a name="163"><span class="lineNum">     163 </span>            : </a>
+<a name="164"><span class="lineNum">     164 </span>            : /* ----------</a>
+<a name="165"><span class="lineNum">     165 </span>            :  * PgStat_TableXactStatus               Per-table, per-subtransaction status</a>
+<a name="166"><span class="lineNum">     166 </span>            :  * ----------</a>
+<a name="167"><span class="lineNum">     167 </span>            :  */</a>
+<a name="168"><span class="lineNum">     168 </span>            : typedef struct PgStat_TableXactStatus</a>
+<a name="169"><span class="lineNum">     169 </span>            : {</a>
+<a name="170"><span class="lineNum">     170 </span>            :         PgStat_Counter tuples_inserted; /* tuples inserted in (sub)xact */</a>
+<a name="171"><span class="lineNum">     171 </span>            :         PgStat_Counter tuples_updated;  /* tuples updated in (sub)xact */</a>
+<a name="172"><span class="lineNum">     172 </span>            :         PgStat_Counter tuples_deleted;  /* tuples deleted in (sub)xact */</a>
+<a name="173"><span class="lineNum">     173 </span>            :         bool            truncated;              /* relation truncated in this (sub)xact */</a>
+<a name="174"><span class="lineNum">     174 </span>            :         PgStat_Counter inserted_pre_trunc;      /* tuples inserted prior to truncate */</a>
+<a name="175"><span class="lineNum">     175 </span>            :         PgStat_Counter updated_pre_trunc;       /* tuples updated prior to truncate */</a>
+<a name="176"><span class="lineNum">     176 </span>            :         PgStat_Counter deleted_pre_trunc;       /* tuples deleted prior to truncate */</a>
+<a name="177"><span class="lineNum">     177 </span>            :         int                     nest_level;             /* subtransaction nest level */</a>
+<a name="178"><span class="lineNum">     178 </span>            :         /* links to other structs for same relation: */</a>
+<a name="179"><span class="lineNum">     179 </span>            :         struct PgStat_TableXactStatus *upper;   /* next higher subxact if any */</a>
+<a name="180"><span class="lineNum">     180 </span>            :         PgStat_TableStatus *parent; /* per-table status */</a>
+<a name="181"><span class="lineNum">     181 </span>            :         /* structs of same subxact level are linked here: */</a>
+<a name="182"><span class="lineNum">     182 </span>            :         struct PgStat_TableXactStatus *next;    /* next of same subxact */</a>
+<a name="183"><span class="lineNum">     183 </span>            : } PgStat_TableXactStatus;</a>
+<a name="184"><span class="lineNum">     184 </span>            : </a>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<a name="186"><span class="lineNum">     186 </span>            : /* ------------------------------------------------------------</a>
+<a name="187"><span class="lineNum">     187 </span>            :  * Message formats follow</a>
+<a name="188"><span class="lineNum">     188 </span>            :  * ------------------------------------------------------------</a>
+<a name="189"><span class="lineNum">     189 </span>            :  */</a>
+<a name="190"><span class="lineNum">     190 </span>            : </a>
+<a name="191"><span class="lineNum">     191 </span>            : </a>
+<a name="192"><span class="lineNum">     192 </span>            : /* ----------</a>
+<a name="193"><span class="lineNum">     193 </span>            :  * PgStat_MsgHdr                                The common message header</a>
+<a name="194"><span class="lineNum">     194 </span>            :  * ----------</a>
+<a name="195"><span class="lineNum">     195 </span>            :  */</a>
+<a name="196"><span class="lineNum">     196 </span>            : typedef struct PgStat_MsgHdr</a>
+<a name="197"><span class="lineNum">     197 </span>            : {</a>
+<a name="198"><span class="lineNum">     198 </span>            :         StatMsgType m_type;</a>
+<a name="199"><span class="lineNum">     199 </span>            :         int                     m_size;</a>
+<a name="200"><span class="lineNum">     200 </span>            : } PgStat_MsgHdr;</a>
+<a name="201"><span class="lineNum">     201 </span>            : </a>
+<a name="202"><span class="lineNum">     202 </span>            : /* ----------</a>
+<a name="203"><span class="lineNum">     203 </span>            :  * Space available in a message.  This will keep the UDP packets below 1K,</a>
+<a name="204"><span class="lineNum">     204 </span>            :  * which should fit unfragmented into the MTU of the loopback interface.</a>
+<a name="205"><span class="lineNum">     205 </span>            :  * (Larger values of PGSTAT_MAX_MSG_SIZE would work for that on most</a>
+<a name="206"><span class="lineNum">     206 </span>            :  * platforms, but we're being conservative here.)</a>
+<a name="207"><span class="lineNum">     207 </span>            :  * ----------</a>
+<a name="208"><span class="lineNum">     208 </span>            :  */</a>
+<a name="209"><span class="lineNum">     209 </span>            : #define PGSTAT_MAX_MSG_SIZE 1000</a>
+<a name="210"><span class="lineNum">     210 </span>            : #define PGSTAT_MSG_PAYLOAD      (PGSTAT_MAX_MSG_SIZE - sizeof(PgStat_MsgHdr))</a>
+<a name="211"><span class="lineNum">     211 </span>            : </a>
+<a name="212"><span class="lineNum">     212 </span>            : </a>
+<a name="213"><span class="lineNum">     213 </span>            : /* ----------</a>
+<a name="214"><span class="lineNum">     214 </span>            :  * PgStat_MsgDummy                              A dummy message, ignored by the collector</a>
+<a name="215"><span class="lineNum">     215 </span>            :  * ----------</a>
+<a name="216"><span class="lineNum">     216 </span>            :  */</a>
+<a name="217"><span class="lineNum">     217 </span>            : typedef struct PgStat_MsgDummy</a>
+<a name="218"><span class="lineNum">     218 </span>            : {</a>
+<a name="219"><span class="lineNum">     219 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="220"><span class="lineNum">     220 </span>            : } PgStat_MsgDummy;</a>
+<a name="221"><span class="lineNum">     221 </span>            : </a>
+<a name="222"><span class="lineNum">     222 </span>            : </a>
+<a name="223"><span class="lineNum">     223 </span>            : /* ----------</a>
+<a name="224"><span class="lineNum">     224 </span>            :  * PgStat_MsgInquiry                    Sent by a backend to ask the collector</a>
+<a name="225"><span class="lineNum">     225 </span>            :  *                                                              to write the stats file(s).</a>
+<a name="226"><span class="lineNum">     226 </span>            :  *</a>
+<a name="227"><span class="lineNum">     227 </span>            :  * Ordinarily, an inquiry message prompts writing of the global stats file,</a>
+<a name="228"><span class="lineNum">     228 </span>            :  * the stats file for shared catalogs, and the stats file for the specified</a>
+<a name="229"><span class="lineNum">     229 </span>            :  * database.  If databaseid is InvalidOid, only the first two are written.</a>
+<a name="230"><span class="lineNum">     230 </span>            :  *</a>
+<a name="231"><span class="lineNum">     231 </span>            :  * New file(s) will be written only if the existing file has a timestamp</a>
+<a name="232"><span class="lineNum">     232 </span>            :  * older than the specified cutoff_time; this prevents duplicated effort</a>
+<a name="233"><span class="lineNum">     233 </span>            :  * when multiple requests arrive at nearly the same time, assuming that</a>
+<a name="234"><span class="lineNum">     234 </span>            :  * backends send requests with cutoff_times a little bit in the past.</a>
+<a name="235"><span class="lineNum">     235 </span>            :  *</a>
+<a name="236"><span class="lineNum">     236 </span>            :  * clock_time should be the requestor's current local time; the collector</a>
+<a name="237"><span class="lineNum">     237 </span>            :  * uses this to check for the system clock going backward, but it has no</a>
+<a name="238"><span class="lineNum">     238 </span>            :  * effect unless that occurs.  We assume clock_time &gt;= cutoff_time, though.</a>
+<a name="239"><span class="lineNum">     239 </span>            :  * ----------</a>
+<a name="240"><span class="lineNum">     240 </span>            :  */</a>
+<a name="241"><span class="lineNum">     241 </span>            : </a>
+<a name="242"><span class="lineNum">     242 </span>            : typedef struct PgStat_MsgInquiry</a>
+<a name="243"><span class="lineNum">     243 </span>            : {</a>
+<a name="244"><span class="lineNum">     244 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="245"><span class="lineNum">     245 </span>            :         TimestampTz clock_time;         /* observed local clock time */</a>
+<a name="246"><span class="lineNum">     246 </span>            :         TimestampTz cutoff_time;        /* minimum acceptable file timestamp */</a>
+<a name="247"><span class="lineNum">     247 </span>            :         Oid                     databaseid;             /* requested DB (InvalidOid =&gt; shared only) */</a>
+<a name="248"><span class="lineNum">     248 </span>            : } PgStat_MsgInquiry;</a>
+<a name="249"><span class="lineNum">     249 </span>            : </a>
+<a name="250"><span class="lineNum">     250 </span>            : </a>
+<a name="251"><span class="lineNum">     251 </span>            : /* ----------</a>
+<a name="252"><span class="lineNum">     252 </span>            :  * PgStat_TableEntry                    Per-table info in a MsgTabstat</a>
+<a name="253"><span class="lineNum">     253 </span>            :  * ----------</a>
+<a name="254"><span class="lineNum">     254 </span>            :  */</a>
+<a name="255"><span class="lineNum">     255 </span>            : typedef struct PgStat_TableEntry</a>
+<a name="256"><span class="lineNum">     256 </span>            : {</a>
+<a name="257"><span class="lineNum">     257 </span>            :         Oid                     t_id;</a>
+<a name="258"><span class="lineNum">     258 </span>            :         PgStat_TableCounts t_counts;</a>
+<a name="259"><span class="lineNum">     259 </span>            : } PgStat_TableEntry;</a>
+<a name="260"><span class="lineNum">     260 </span>            : </a>
+<a name="261"><span class="lineNum">     261 </span>            : /* ----------</a>
+<a name="262"><span class="lineNum">     262 </span>            :  * PgStat_MsgTabstat                    Sent by the backend to report table</a>
+<a name="263"><span class="lineNum">     263 </span>            :  *                                                              and buffer access statistics.</a>
+<a name="264"><span class="lineNum">     264 </span>            :  * ----------</a>
+<a name="265"><span class="lineNum">     265 </span>            :  */</a>
+<a name="266"><span class="lineNum">     266 </span>            : #define PGSTAT_NUM_TABENTRIES  \</a>
+<a name="267"><span class="lineNum">     267 </span>            :         ((PGSTAT_MSG_PAYLOAD - sizeof(Oid) - 3 * sizeof(int) - 2 * sizeof(PgStat_Counter))      \</a>
+<a name="268"><span class="lineNum">     268 </span>            :          / sizeof(PgStat_TableEntry))</a>
+<a name="269"><span class="lineNum">     269 </span>            : </a>
+<a name="270"><span class="lineNum">     270 </span>            : typedef struct PgStat_MsgTabstat</a>
+<a name="271"><span class="lineNum">     271 </span>            : {</a>
+<a name="272"><span class="lineNum">     272 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="273"><span class="lineNum">     273 </span>            :         Oid                     m_databaseid;</a>
+<a name="274"><span class="lineNum">     274 </span>            :         int                     m_nentries;</a>
+<a name="275"><span class="lineNum">     275 </span>            :         int                     m_xact_commit;</a>
+<a name="276"><span class="lineNum">     276 </span>            :         int                     m_xact_rollback;</a>
+<a name="277"><span class="lineNum">     277 </span>            :         PgStat_Counter m_block_read_time;       /* times in microseconds */</a>
+<a name="278"><span class="lineNum">     278 </span>            :         PgStat_Counter m_block_write_time;</a>
+<a name="279"><span class="lineNum">     279 </span>            :         PgStat_TableEntry m_entry[PGSTAT_NUM_TABENTRIES];</a>
+<a name="280"><span class="lineNum">     280 </span>            : } PgStat_MsgTabstat;</a>
+<a name="281"><span class="lineNum">     281 </span>            : </a>
+<a name="282"><span class="lineNum">     282 </span>            : </a>
+<a name="283"><span class="lineNum">     283 </span>            : /* ----------</a>
+<a name="284"><span class="lineNum">     284 </span>            :  * PgStat_MsgTabpurge                   Sent by the backend to tell the collector</a>
+<a name="285"><span class="lineNum">     285 </span>            :  *                                                              about dead tables.</a>
+<a name="286"><span class="lineNum">     286 </span>            :  * ----------</a>
+<a name="287"><span class="lineNum">     287 </span>            :  */</a>
+<a name="288"><span class="lineNum">     288 </span>            : #define PGSTAT_NUM_TABPURGE  \</a>
+<a name="289"><span class="lineNum">     289 </span>            :         ((PGSTAT_MSG_PAYLOAD - sizeof(Oid) - sizeof(int))  \</a>
+<a name="290"><span class="lineNum">     290 </span>            :          / sizeof(Oid))</a>
+<a name="291"><span class="lineNum">     291 </span>            : </a>
+<a name="292"><span class="lineNum">     292 </span>            : typedef struct PgStat_MsgTabpurge</a>
+<a name="293"><span class="lineNum">     293 </span>            : {</a>
+<a name="294"><span class="lineNum">     294 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="295"><span class="lineNum">     295 </span>            :         Oid                     m_databaseid;</a>
+<a name="296"><span class="lineNum">     296 </span>            :         int                     m_nentries;</a>
+<a name="297"><span class="lineNum">     297 </span>            :         Oid                     m_tableid[PGSTAT_NUM_TABPURGE];</a>
+<a name="298"><span class="lineNum">     298 </span>            : } PgStat_MsgTabpurge;</a>
+<a name="299"><span class="lineNum">     299 </span>            : </a>
+<a name="300"><span class="lineNum">     300 </span>            : </a>
+<a name="301"><span class="lineNum">     301 </span>            : /* ----------</a>
+<a name="302"><span class="lineNum">     302 </span>            :  * PgStat_MsgDropdb                             Sent by the backend to tell the collector</a>
+<a name="303"><span class="lineNum">     303 </span>            :  *                                                              about a dropped database</a>
+<a name="304"><span class="lineNum">     304 </span>            :  * ----------</a>
+<a name="305"><span class="lineNum">     305 </span>            :  */</a>
+<a name="306"><span class="lineNum">     306 </span>            : typedef struct PgStat_MsgDropdb</a>
+<a name="307"><span class="lineNum">     307 </span>            : {</a>
+<a name="308"><span class="lineNum">     308 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="309"><span class="lineNum">     309 </span>            :         Oid                     m_databaseid;</a>
+<a name="310"><span class="lineNum">     310 </span>            : } PgStat_MsgDropdb;</a>
+<a name="311"><span class="lineNum">     311 </span>            : </a>
+<a name="312"><span class="lineNum">     312 </span>            : </a>
+<a name="313"><span class="lineNum">     313 </span>            : /* ----------</a>
+<a name="314"><span class="lineNum">     314 </span>            :  * PgStat_MsgResetcounter               Sent by the backend to tell the collector</a>
+<a name="315"><span class="lineNum">     315 </span>            :  *                                                              to reset counters</a>
+<a name="316"><span class="lineNum">     316 </span>            :  * ----------</a>
+<a name="317"><span class="lineNum">     317 </span>            :  */</a>
+<a name="318"><span class="lineNum">     318 </span>            : typedef struct PgStat_MsgResetcounter</a>
+<a name="319"><span class="lineNum">     319 </span>            : {</a>
+<a name="320"><span class="lineNum">     320 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="321"><span class="lineNum">     321 </span>            :         Oid                     m_databaseid;</a>
+<a name="322"><span class="lineNum">     322 </span>            : } PgStat_MsgResetcounter;</a>
+<a name="323"><span class="lineNum">     323 </span>            : </a>
+<a name="324"><span class="lineNum">     324 </span>            : /* ----------</a>
+<a name="325"><span class="lineNum">     325 </span>            :  * PgStat_MsgResetsharedcounter Sent by the backend to tell the collector</a>
+<a name="326"><span class="lineNum">     326 </span>            :  *                                                              to reset a shared counter</a>
+<a name="327"><span class="lineNum">     327 </span>            :  * ----------</a>
+<a name="328"><span class="lineNum">     328 </span>            :  */</a>
+<a name="329"><span class="lineNum">     329 </span>            : typedef struct PgStat_MsgResetsharedcounter</a>
+<a name="330"><span class="lineNum">     330 </span>            : {</a>
+<a name="331"><span class="lineNum">     331 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="332"><span class="lineNum">     332 </span>            :         PgStat_Shared_Reset_Target m_resettarget;</a>
+<a name="333"><span class="lineNum">     333 </span>            : } PgStat_MsgResetsharedcounter;</a>
+<a name="334"><span class="lineNum">     334 </span>            : </a>
+<a name="335"><span class="lineNum">     335 </span>            : /* ----------</a>
+<a name="336"><span class="lineNum">     336 </span>            :  * PgStat_MsgResetsinglecounter Sent by the backend to tell the collector</a>
+<a name="337"><span class="lineNum">     337 </span>            :  *                                                              to reset a single counter</a>
+<a name="338"><span class="lineNum">     338 </span>            :  * ----------</a>
+<a name="339"><span class="lineNum">     339 </span>            :  */</a>
+<a name="340"><span class="lineNum">     340 </span>            : typedef struct PgStat_MsgResetsinglecounter</a>
+<a name="341"><span class="lineNum">     341 </span>            : {</a>
+<a name="342"><span class="lineNum">     342 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="343"><span class="lineNum">     343 </span>            :         Oid                     m_databaseid;</a>
+<a name="344"><span class="lineNum">     344 </span>            :         PgStat_Single_Reset_Type m_resettype;</a>
+<a name="345"><span class="lineNum">     345 </span>            :         Oid                     m_objectid;</a>
+<a name="346"><span class="lineNum">     346 </span>            : } PgStat_MsgResetsinglecounter;</a>
+<a name="347"><span class="lineNum">     347 </span>            : </a>
+<a name="348"><span class="lineNum">     348 </span>            : /* ----------</a>
+<a name="349"><span class="lineNum">     349 </span>            :  * PgStat_MsgResetslrucounter Sent by the backend to tell the collector</a>
+<a name="350"><span class="lineNum">     350 </span>            :  *                                                              to reset a SLRU counter</a>
+<a name="351"><span class="lineNum">     351 </span>            :  * ----------</a>
+<a name="352"><span class="lineNum">     352 </span>            :  */</a>
+<a name="353"><span class="lineNum">     353 </span>            : typedef struct PgStat_MsgResetslrucounter</a>
+<a name="354"><span class="lineNum">     354 </span>            : {</a>
+<a name="355"><span class="lineNum">     355 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="356"><span class="lineNum">     356 </span>            :         int                     m_index;</a>
+<a name="357"><span class="lineNum">     357 </span>            : } PgStat_MsgResetslrucounter;</a>
+<a name="358"><span class="lineNum">     358 </span>            : </a>
+<a name="359"><span class="lineNum">     359 </span>            : /* ----------</a>
+<a name="360"><span class="lineNum">     360 </span>            :  * PgStat_MsgAutovacStart               Sent by the autovacuum daemon to signal</a>
+<a name="361"><span class="lineNum">     361 </span>            :  *                                                              that a database is going to be processed</a>
+<a name="362"><span class="lineNum">     362 </span>            :  * ----------</a>
+<a name="363"><span class="lineNum">     363 </span>            :  */</a>
+<a name="364"><span class="lineNum">     364 </span>            : typedef struct PgStat_MsgAutovacStart</a>
+<a name="365"><span class="lineNum">     365 </span>            : {</a>
+<a name="366"><span class="lineNum">     366 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="367"><span class="lineNum">     367 </span>            :         Oid                     m_databaseid;</a>
+<a name="368"><span class="lineNum">     368 </span>            :         TimestampTz m_start_time;</a>
+<a name="369"><span class="lineNum">     369 </span>            : } PgStat_MsgAutovacStart;</a>
+<a name="370"><span class="lineNum">     370 </span>            : </a>
+<a name="371"><span class="lineNum">     371 </span>            : </a>
+<a name="372"><span class="lineNum">     372 </span>            : /* ----------</a>
+<a name="373"><span class="lineNum">     373 </span>            :  * PgStat_MsgVacuum                             Sent by the backend or autovacuum daemon</a>
+<a name="374"><span class="lineNum">     374 </span>            :  *                                                              after VACUUM</a>
+<a name="375"><span class="lineNum">     375 </span>            :  * ----------</a>
+<a name="376"><span class="lineNum">     376 </span>            :  */</a>
+<a name="377"><span class="lineNum">     377 </span>            : typedef struct PgStat_MsgVacuum</a>
+<a name="378"><span class="lineNum">     378 </span>            : {</a>
+<a name="379"><span class="lineNum">     379 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="380"><span class="lineNum">     380 </span>            :         Oid                     m_databaseid;</a>
+<a name="381"><span class="lineNum">     381 </span>            :         Oid                     m_tableoid;</a>
+<a name="382"><span class="lineNum">     382 </span>            :         bool            m_autovacuum;</a>
+<a name="383"><span class="lineNum">     383 </span>            :         TimestampTz m_vacuumtime;</a>
+<a name="384"><span class="lineNum">     384 </span>            :         PgStat_Counter m_live_tuples;</a>
+<a name="385"><span class="lineNum">     385 </span>            :         PgStat_Counter m_dead_tuples;</a>
+<a name="386"><span class="lineNum">     386 </span>            : } PgStat_MsgVacuum;</a>
+<a name="387"><span class="lineNum">     387 </span>            : </a>
+<a name="388"><span class="lineNum">     388 </span>            : </a>
+<a name="389"><span class="lineNum">     389 </span>            : /* ----------</a>
+<a name="390"><span class="lineNum">     390 </span>            :  * PgStat_MsgAnalyze                    Sent by the backend or autovacuum daemon</a>
+<a name="391"><span class="lineNum">     391 </span>            :  *                                                              after ANALYZE</a>
+<a name="392"><span class="lineNum">     392 </span>            :  * ----------</a>
+<a name="393"><span class="lineNum">     393 </span>            :  */</a>
+<a name="394"><span class="lineNum">     394 </span>            : typedef struct PgStat_MsgAnalyze</a>
+<a name="395"><span class="lineNum">     395 </span>            : {</a>
+<a name="396"><span class="lineNum">     396 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="397"><span class="lineNum">     397 </span>            :         Oid                     m_databaseid;</a>
+<a name="398"><span class="lineNum">     398 </span>            :         Oid                     m_tableoid;</a>
+<a name="399"><span class="lineNum">     399 </span>            :         bool            m_autovacuum;</a>
+<a name="400"><span class="lineNum">     400 </span>            :         bool            m_resetcounter;</a>
+<a name="401"><span class="lineNum">     401 </span>            :         TimestampTz m_analyzetime;</a>
+<a name="402"><span class="lineNum">     402 </span>            :         PgStat_Counter m_live_tuples;</a>
+<a name="403"><span class="lineNum">     403 </span>            :         PgStat_Counter m_dead_tuples;</a>
+<a name="404"><span class="lineNum">     404 </span>            : } PgStat_MsgAnalyze;</a>
+<a name="405"><span class="lineNum">     405 </span>            : </a>
+<a name="406"><span class="lineNum">     406 </span>            : </a>
+<a name="407"><span class="lineNum">     407 </span>            : /* ----------</a>
+<a name="408"><span class="lineNum">     408 </span>            :  * PgStat_MsgArchiver                   Sent by the archiver to update statistics.</a>
+<a name="409"><span class="lineNum">     409 </span>            :  * ----------</a>
+<a name="410"><span class="lineNum">     410 </span>            :  */</a>
+<a name="411"><span class="lineNum">     411 </span>            : typedef struct PgStat_MsgArchiver</a>
+<a name="412"><span class="lineNum">     412 </span>            : {</a>
+<a name="413"><span class="lineNum">     413 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="414"><span class="lineNum">     414 </span>            :         bool            m_failed;               /* Failed attempt */</a>
+<a name="415"><span class="lineNum">     415 </span>            :         char            m_xlog[MAX_XFN_CHARS + 1];</a>
+<a name="416"><span class="lineNum">     416 </span>            :         TimestampTz m_timestamp;</a>
+<a name="417"><span class="lineNum">     417 </span>            : } PgStat_MsgArchiver;</a>
+<a name="418"><span class="lineNum">     418 </span>            : </a>
+<a name="419"><span class="lineNum">     419 </span>            : /* ----------</a>
+<a name="420"><span class="lineNum">     420 </span>            :  * PgStat_MsgBgWriter                   Sent by the bgwriter to update statistics.</a>
+<a name="421"><span class="lineNum">     421 </span>            :  * ----------</a>
+<a name="422"><span class="lineNum">     422 </span>            :  */</a>
+<a name="423"><span class="lineNum">     423 </span>            : typedef struct PgStat_MsgBgWriter</a>
+<a name="424"><span class="lineNum">     424 </span>            : {</a>
+<a name="425"><span class="lineNum">     425 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="426"><span class="lineNum">     426 </span>            : </a>
+<a name="427"><span class="lineNum">     427 </span>            :         PgStat_Counter m_timed_checkpoints;</a>
+<a name="428"><span class="lineNum">     428 </span>            :         PgStat_Counter m_requested_checkpoints;</a>
+<a name="429"><span class="lineNum">     429 </span>            :         PgStat_Counter m_buf_written_checkpoints;</a>
+<a name="430"><span class="lineNum">     430 </span>            :         PgStat_Counter m_buf_written_clean;</a>
+<a name="431"><span class="lineNum">     431 </span>            :         PgStat_Counter m_maxwritten_clean;</a>
+<a name="432"><span class="lineNum">     432 </span>            :         PgStat_Counter m_buf_written_backend;</a>
+<a name="433"><span class="lineNum">     433 </span>            :         PgStat_Counter m_buf_fsync_backend;</a>
+<a name="434"><span class="lineNum">     434 </span>            :         PgStat_Counter m_buf_alloc;</a>
+<a name="435"><span class="lineNum">     435 </span>            :         PgStat_Counter m_checkpoint_write_time; /* times in milliseconds */</a>
+<a name="436"><span class="lineNum">     436 </span>            :         PgStat_Counter m_checkpoint_sync_time;</a>
+<a name="437"><span class="lineNum">     437 </span>            : } PgStat_MsgBgWriter;</a>
+<a name="438"><span class="lineNum">     438 </span>            : </a>
+<a name="439"><span class="lineNum">     439 </span>            : /* ----------</a>
+<a name="440"><span class="lineNum">     440 </span>            :  * PgStat_MsgSLRU                       Sent by a backend to update SLRU statistics.</a>
+<a name="441"><span class="lineNum">     441 </span>            :  * ----------</a>
+<a name="442"><span class="lineNum">     442 </span>            :  */</a>
+<a name="443"><span class="lineNum">     443 </span>            : typedef struct PgStat_MsgSLRU</a>
+<a name="444"><span class="lineNum">     444 </span>            : {</a>
+<a name="445"><span class="lineNum">     445 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="446"><span class="lineNum">     446 </span>            :         PgStat_Counter m_index;</a>
+<a name="447"><span class="lineNum">     447 </span>            :         PgStat_Counter m_blocks_zeroed;</a>
+<a name="448"><span class="lineNum">     448 </span>            :         PgStat_Counter m_blocks_hit;</a>
+<a name="449"><span class="lineNum">     449 </span>            :         PgStat_Counter m_blocks_read;</a>
+<a name="450"><span class="lineNum">     450 </span>            :         PgStat_Counter m_blocks_written;</a>
+<a name="451"><span class="lineNum">     451 </span>            :         PgStat_Counter m_blocks_exists;</a>
+<a name="452"><span class="lineNum">     452 </span>            :         PgStat_Counter m_flush;</a>
+<a name="453"><span class="lineNum">     453 </span>            :         PgStat_Counter m_truncate;</a>
+<a name="454"><span class="lineNum">     454 </span>            : } PgStat_MsgSLRU;</a>
+<a name="455"><span class="lineNum">     455 </span>            : </a>
+<a name="456"><span class="lineNum">     456 </span>            : /* ----------</a>
+<a name="457"><span class="lineNum">     457 </span>            :  * PgStat_MsgRecoveryConflict   Sent by the backend upon recovery conflict</a>
+<a name="458"><span class="lineNum">     458 </span>            :  * ----------</a>
+<a name="459"><span class="lineNum">     459 </span>            :  */</a>
+<a name="460"><span class="lineNum">     460 </span>            : typedef struct PgStat_MsgRecoveryConflict</a>
+<a name="461"><span class="lineNum">     461 </span>            : {</a>
+<a name="462"><span class="lineNum">     462 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="463"><span class="lineNum">     463 </span>            : </a>
+<a name="464"><span class="lineNum">     464 </span>            :         Oid                     m_databaseid;</a>
+<a name="465"><span class="lineNum">     465 </span>            :         int                     m_reason;</a>
+<a name="466"><span class="lineNum">     466 </span>            : } PgStat_MsgRecoveryConflict;</a>
+<a name="467"><span class="lineNum">     467 </span>            : </a>
+<a name="468"><span class="lineNum">     468 </span>            : /* ----------</a>
+<a name="469"><span class="lineNum">     469 </span>            :  * PgStat_MsgTempFile   Sent by the backend upon creating a temp file</a>
+<a name="470"><span class="lineNum">     470 </span>            :  * ----------</a>
+<a name="471"><span class="lineNum">     471 </span>            :  */</a>
+<a name="472"><span class="lineNum">     472 </span>            : typedef struct PgStat_MsgTempFile</a>
+<a name="473"><span class="lineNum">     473 </span>            : {</a>
+<a name="474"><span class="lineNum">     474 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="475"><span class="lineNum">     475 </span>            : </a>
+<a name="476"><span class="lineNum">     476 </span>            :         Oid                     m_databaseid;</a>
+<a name="477"><span class="lineNum">     477 </span>            :         size_t          m_filesize;</a>
+<a name="478"><span class="lineNum">     478 </span>            : } PgStat_MsgTempFile;</a>
+<a name="479"><span class="lineNum">     479 </span>            : </a>
+<a name="480"><span class="lineNum">     480 </span>            : /* ----------</a>
+<a name="481"><span class="lineNum">     481 </span>            :  * PgStat_FunctionCounts        The actual per-function counts kept by a backend</a>
+<a name="482"><span class="lineNum">     482 </span>            :  *</a>
+<a name="483"><span class="lineNum">     483 </span>            :  * This struct should contain only actual event counters, because we memcmp</a>
+<a name="484"><span class="lineNum">     484 </span>            :  * it against zeroes to detect whether there are any counts to transmit.</a>
+<a name="485"><span class="lineNum">     485 </span>            :  *</a>
+<a name="486"><span class="lineNum">     486 </span>            :  * Note that the time counters are in instr_time format here.  We convert to</a>
+<a name="487"><span class="lineNum">     487 </span>            :  * microseconds in PgStat_Counter format when transmitting to the collector.</a>
+<a name="488"><span class="lineNum">     488 </span>            :  * ----------</a>
+<a name="489"><span class="lineNum">     489 </span>            :  */</a>
+<a name="490"><span class="lineNum">     490 </span>            : typedef struct PgStat_FunctionCounts</a>
+<a name="491"><span class="lineNum">     491 </span>            : {</a>
+<a name="492"><span class="lineNum">     492 </span>            :         PgStat_Counter f_numcalls;</a>
+<a name="493"><span class="lineNum">     493 </span>            :         instr_time      f_total_time;</a>
+<a name="494"><span class="lineNum">     494 </span>            :         instr_time      f_self_time;</a>
+<a name="495"><span class="lineNum">     495 </span>            : } PgStat_FunctionCounts;</a>
+<a name="496"><span class="lineNum">     496 </span>            : </a>
+<a name="497"><span class="lineNum">     497 </span>            : /* ----------</a>
+<a name="498"><span class="lineNum">     498 </span>            :  * PgStat_BackendFunctionEntry  Entry in backend's per-function hash table</a>
+<a name="499"><span class="lineNum">     499 </span>            :  * ----------</a>
+<a name="500"><span class="lineNum">     500 </span>            :  */</a>
+<a name="501"><span class="lineNum">     501 </span>            : typedef struct PgStat_BackendFunctionEntry</a>
+<a name="502"><span class="lineNum">     502 </span>            : {</a>
+<a name="503"><span class="lineNum">     503 </span>            :         Oid                     f_id;</a>
+<a name="504"><span class="lineNum">     504 </span>            :         PgStat_FunctionCounts f_counts;</a>
+<a name="505"><span class="lineNum">     505 </span>            : } PgStat_BackendFunctionEntry;</a>
+<a name="506"><span class="lineNum">     506 </span>            : </a>
+<a name="507"><span class="lineNum">     507 </span>            : /* ----------</a>
+<a name="508"><span class="lineNum">     508 </span>            :  * PgStat_FunctionEntry                 Per-function info in a MsgFuncstat</a>
+<a name="509"><span class="lineNum">     509 </span>            :  * ----------</a>
+<a name="510"><span class="lineNum">     510 </span>            :  */</a>
+<a name="511"><span class="lineNum">     511 </span>            : typedef struct PgStat_FunctionEntry</a>
+<a name="512"><span class="lineNum">     512 </span>            : {</a>
+<a name="513"><span class="lineNum">     513 </span>            :         Oid                     f_id;</a>
+<a name="514"><span class="lineNum">     514 </span>            :         PgStat_Counter f_numcalls;</a>
+<a name="515"><span class="lineNum">     515 </span>            :         PgStat_Counter f_total_time;    /* times in microseconds */</a>
+<a name="516"><span class="lineNum">     516 </span>            :         PgStat_Counter f_self_time;</a>
+<a name="517"><span class="lineNum">     517 </span>            : } PgStat_FunctionEntry;</a>
+<a name="518"><span class="lineNum">     518 </span>            : </a>
+<a name="519"><span class="lineNum">     519 </span>            : /* ----------</a>
+<a name="520"><span class="lineNum">     520 </span>            :  * PgStat_MsgFuncstat                   Sent by the backend to report function</a>
+<a name="521"><span class="lineNum">     521 </span>            :  *                                                              usage statistics.</a>
+<a name="522"><span class="lineNum">     522 </span>            :  * ----------</a>
+<a name="523"><span class="lineNum">     523 </span>            :  */</a>
+<a name="524"><span class="lineNum">     524 </span>            : #define PGSTAT_NUM_FUNCENTRIES  \</a>
+<a name="525"><span class="lineNum">     525 </span>            :         ((PGSTAT_MSG_PAYLOAD - sizeof(Oid) - sizeof(int))  \</a>
+<a name="526"><span class="lineNum">     526 </span>            :          / sizeof(PgStat_FunctionEntry))</a>
+<a name="527"><span class="lineNum">     527 </span>            : </a>
+<a name="528"><span class="lineNum">     528 </span>            : typedef struct PgStat_MsgFuncstat</a>
+<a name="529"><span class="lineNum">     529 </span>            : {</a>
+<a name="530"><span class="lineNum">     530 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="531"><span class="lineNum">     531 </span>            :         Oid                     m_databaseid;</a>
+<a name="532"><span class="lineNum">     532 </span>            :         int                     m_nentries;</a>
+<a name="533"><span class="lineNum">     533 </span>            :         PgStat_FunctionEntry m_entry[PGSTAT_NUM_FUNCENTRIES];</a>
+<a name="534"><span class="lineNum">     534 </span>            : } PgStat_MsgFuncstat;</a>
+<a name="535"><span class="lineNum">     535 </span>            : </a>
+<a name="536"><span class="lineNum">     536 </span>            : /* ----------</a>
+<a name="537"><span class="lineNum">     537 </span>            :  * PgStat_MsgFuncpurge                  Sent by the backend to tell the collector</a>
+<a name="538"><span class="lineNum">     538 </span>            :  *                                                              about dead functions.</a>
+<a name="539"><span class="lineNum">     539 </span>            :  * ----------</a>
+<a name="540"><span class="lineNum">     540 </span>            :  */</a>
+<a name="541"><span class="lineNum">     541 </span>            : #define PGSTAT_NUM_FUNCPURGE  \</a>
+<a name="542"><span class="lineNum">     542 </span>            :         ((PGSTAT_MSG_PAYLOAD - sizeof(Oid) - sizeof(int))  \</a>
+<a name="543"><span class="lineNum">     543 </span>            :          / sizeof(Oid))</a>
+<a name="544"><span class="lineNum">     544 </span>            : </a>
+<a name="545"><span class="lineNum">     545 </span>            : typedef struct PgStat_MsgFuncpurge</a>
+<a name="546"><span class="lineNum">     546 </span>            : {</a>
+<a name="547"><span class="lineNum">     547 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="548"><span class="lineNum">     548 </span>            :         Oid                     m_databaseid;</a>
+<a name="549"><span class="lineNum">     549 </span>            :         int                     m_nentries;</a>
+<a name="550"><span class="lineNum">     550 </span>            :         Oid                     m_functionid[PGSTAT_NUM_FUNCPURGE];</a>
+<a name="551"><span class="lineNum">     551 </span>            : } PgStat_MsgFuncpurge;</a>
+<a name="552"><span class="lineNum">     552 </span>            : </a>
+<a name="553"><span class="lineNum">     553 </span>            : /* ----------</a>
+<a name="554"><span class="lineNum">     554 </span>            :  * PgStat_MsgDeadlock                   Sent by the backend to tell the collector</a>
+<a name="555"><span class="lineNum">     555 </span>            :  *                                                              about a deadlock that occurred.</a>
+<a name="556"><span class="lineNum">     556 </span>            :  * ----------</a>
+<a name="557"><span class="lineNum">     557 </span>            :  */</a>
+<a name="558"><span class="lineNum">     558 </span>            : typedef struct PgStat_MsgDeadlock</a>
+<a name="559"><span class="lineNum">     559 </span>            : {</a>
+<a name="560"><span class="lineNum">     560 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="561"><span class="lineNum">     561 </span>            :         Oid                     m_databaseid;</a>
+<a name="562"><span class="lineNum">     562 </span>            : } PgStat_MsgDeadlock;</a>
+<a name="563"><span class="lineNum">     563 </span>            : </a>
+<a name="564"><span class="lineNum">     564 </span>            : /* ----------</a>
+<a name="565"><span class="lineNum">     565 </span>            :  * PgStat_MsgChecksumFailure    Sent by the backend to tell the collector</a>
+<a name="566"><span class="lineNum">     566 </span>            :  *                                                              about checksum failures noticed.</a>
+<a name="567"><span class="lineNum">     567 </span>            :  * ----------</a>
+<a name="568"><span class="lineNum">     568 </span>            :  */</a>
+<a name="569"><span class="lineNum">     569 </span>            : typedef struct PgStat_MsgChecksumFailure</a>
+<a name="570"><span class="lineNum">     570 </span>            : {</a>
+<a name="571"><span class="lineNum">     571 </span>            :         PgStat_MsgHdr m_hdr;</a>
+<a name="572"><span class="lineNum">     572 </span>            :         Oid                     m_databaseid;</a>
+<a name="573"><span class="lineNum">     573 </span>            :         int                     m_failurecount;</a>
+<a name="574"><span class="lineNum">     574 </span>            :         TimestampTz m_failure_time;</a>
+<a name="575"><span class="lineNum">     575 </span>            : } PgStat_MsgChecksumFailure;</a>
+<a name="576"><span class="lineNum">     576 </span>            : </a>
+<a name="577"><span class="lineNum">     577 </span>            : </a>
+<a name="578"><span class="lineNum">     578 </span>            : /* ----------</a>
+<a name="579"><span class="lineNum">     579 </span>            :  * PgStat_Msg                                   Union over all possible messages.</a>
+<a name="580"><span class="lineNum">     580 </span>            :  * ----------</a>
+<a name="581"><span class="lineNum">     581 </span>            :  */</a>
+<a name="582"><span class="lineNum">     582 </span>            : typedef union PgStat_Msg</a>
+<a name="583"><span class="lineNum">     583 </span>            : {</a>
+<a name="584"><span class="lineNum">     584 </span>            :         PgStat_MsgHdr msg_hdr;</a>
+<a name="585"><span class="lineNum">     585 </span>            :         PgStat_MsgDummy msg_dummy;</a>
+<a name="586"><span class="lineNum">     586 </span>            :         PgStat_MsgInquiry msg_inquiry;</a>
+<a name="587"><span class="lineNum">     587 </span>            :         PgStat_MsgTabstat msg_tabstat;</a>
+<a name="588"><span class="lineNum">     588 </span>            :         PgStat_MsgTabpurge msg_tabpurge;</a>
+<a name="589"><span class="lineNum">     589 </span>            :         PgStat_MsgDropdb msg_dropdb;</a>
+<a name="590"><span class="lineNum">     590 </span>            :         PgStat_MsgResetcounter msg_resetcounter;</a>
+<a name="591"><span class="lineNum">     591 </span>            :         PgStat_MsgResetsharedcounter msg_resetsharedcounter;</a>
+<a name="592"><span class="lineNum">     592 </span>            :         PgStat_MsgResetsinglecounter msg_resetsinglecounter;</a>
+<a name="593"><span class="lineNum">     593 </span>            :         PgStat_MsgResetslrucounter msg_resetslrucounter;</a>
+<a name="594"><span class="lineNum">     594 </span>            :         PgStat_MsgAutovacStart msg_autovacuum_start;</a>
+<a name="595"><span class="lineNum">     595 </span>            :         PgStat_MsgVacuum msg_vacuum;</a>
+<a name="596"><span class="lineNum">     596 </span>            :         PgStat_MsgAnalyze msg_analyze;</a>
+<a name="597"><span class="lineNum">     597 </span>            :         PgStat_MsgArchiver msg_archiver;</a>
+<a name="598"><span class="lineNum">     598 </span>            :         PgStat_MsgBgWriter msg_bgwriter;</a>
+<a name="599"><span class="lineNum">     599 </span>            :         PgStat_MsgSLRU msg_slru;</a>
+<a name="600"><span class="lineNum">     600 </span>            :         PgStat_MsgFuncstat msg_funcstat;</a>
+<a name="601"><span class="lineNum">     601 </span>            :         PgStat_MsgFuncpurge msg_funcpurge;</a>
+<a name="602"><span class="lineNum">     602 </span>            :         PgStat_MsgRecoveryConflict msg_recoveryconflict;</a>
+<a name="603"><span class="lineNum">     603 </span>            :         PgStat_MsgDeadlock msg_deadlock;</a>
+<a name="604"><span class="lineNum">     604 </span>            :         PgStat_MsgTempFile msg_tempfile;</a>
+<a name="605"><span class="lineNum">     605 </span>            :         PgStat_MsgChecksumFailure msg_checksumfailure;</a>
+<a name="606"><span class="lineNum">     606 </span>            : } PgStat_Msg;</a>
+<a name="607"><span class="lineNum">     607 </span>            : </a>
+<a name="608"><span class="lineNum">     608 </span>            : </a>
+<a name="609"><span class="lineNum">     609 </span>            : /* ------------------------------------------------------------</a>
+<a name="610"><span class="lineNum">     610 </span>            :  * Statistic collector data structures follow</a>
+<a name="611"><span class="lineNum">     611 </span>            :  *</a>
+<a name="612"><span class="lineNum">     612 </span>            :  * PGSTAT_FILE_FORMAT_ID should be changed whenever any of these</a>
+<a name="613"><span class="lineNum">     613 </span>            :  * data structures change.</a>
+<a name="614"><span class="lineNum">     614 </span>            :  * ------------------------------------------------------------</a>
+<a name="615"><span class="lineNum">     615 </span>            :  */</a>
+<a name="616"><span class="lineNum">     616 </span>            : </a>
+<a name="617"><span class="lineNum">     617 </span>            : #define PGSTAT_FILE_FORMAT_ID   0x01A5BC9D</a>
+<a name="618"><span class="lineNum">     618 </span>            : </a>
+<a name="619"><span class="lineNum">     619 </span>            : /* ----------</a>
+<a name="620"><span class="lineNum">     620 </span>            :  * PgStat_StatDBEntry                   The collector's data per database</a>
+<a name="621"><span class="lineNum">     621 </span>            :  * ----------</a>
+<a name="622"><span class="lineNum">     622 </span>            :  */</a>
+<a name="623"><span class="lineNum">     623 </span>            : typedef struct PgStat_StatDBEntry</a>
+<a name="624"><span class="lineNum">     624 </span>            : {</a>
+<a name="625"><span class="lineNum">     625 </span>            :         Oid                     databaseid;</a>
+<a name="626"><span class="lineNum">     626 </span>            :         PgStat_Counter n_xact_commit;</a>
+<a name="627"><span class="lineNum">     627 </span>            :         PgStat_Counter n_xact_rollback;</a>
+<a name="628"><span class="lineNum">     628 </span>            :         PgStat_Counter n_blocks_fetched;</a>
+<a name="629"><span class="lineNum">     629 </span>            :         PgStat_Counter n_blocks_hit;</a>
+<a name="630"><span class="lineNum">     630 </span>            :         PgStat_Counter n_tuples_returned;</a>
+<a name="631"><span class="lineNum">     631 </span>            :         PgStat_Counter n_tuples_fetched;</a>
+<a name="632"><span class="lineNum">     632 </span>            :         PgStat_Counter n_tuples_inserted;</a>
+<a name="633"><span class="lineNum">     633 </span>            :         PgStat_Counter n_tuples_updated;</a>
+<a name="634"><span class="lineNum">     634 </span>            :         PgStat_Counter n_tuples_deleted;</a>
+<a name="635"><span class="lineNum">     635 </span>            :         TimestampTz last_autovac_time;</a>
+<a name="636"><span class="lineNum">     636 </span>            :         PgStat_Counter n_conflict_tablespace;</a>
+<a name="637"><span class="lineNum">     637 </span>            :         PgStat_Counter n_conflict_lock;</a>
+<a name="638"><span class="lineNum">     638 </span>            :         PgStat_Counter n_conflict_snapshot;</a>
+<a name="639"><span class="lineNum">     639 </span>            :         PgStat_Counter n_conflict_bufferpin;</a>
+<a name="640"><span class="lineNum">     640 </span>            :         PgStat_Counter n_conflict_startup_deadlock;</a>
+<a name="641"><span class="lineNum">     641 </span>            :         PgStat_Counter n_temp_files;</a>
+<a name="642"><span class="lineNum">     642 </span>            :         PgStat_Counter n_temp_bytes;</a>
+<a name="643"><span class="lineNum">     643 </span>            :         PgStat_Counter n_deadlocks;</a>
+<a name="644"><span class="lineNum">     644 </span>            :         PgStat_Counter n_checksum_failures;</a>
+<a name="645"><span class="lineNum">     645 </span>            :         TimestampTz last_checksum_failure;</a>
+<a name="646"><span class="lineNum">     646 </span>            :         PgStat_Counter n_block_read_time;       /* times in microseconds */</a>
+<a name="647"><span class="lineNum">     647 </span>            :         PgStat_Counter n_block_write_time;</a>
+<a name="648"><span class="lineNum">     648 </span>            : </a>
+<a name="649"><span class="lineNum">     649 </span>            :         TimestampTz stat_reset_timestamp;</a>
+<a name="650"><span class="lineNum">     650 </span>            :         TimestampTz stats_timestamp;    /* time of db stats file update */</a>
+<a name="651"><span class="lineNum">     651 </span>            : </a>
+<a name="652"><span class="lineNum">     652 </span>            :         /*</a>
+<a name="653"><span class="lineNum">     653 </span>            :          * tables and functions must be last in the struct, because we don't write</a>
+<a name="654"><span class="lineNum">     654 </span>            :          * the pointers out to the stats file.</a>
+<a name="655"><span class="lineNum">     655 </span>            :          */</a>
+<a name="656"><span class="lineNum">     656 </span>            :         HTAB       *tables;</a>
+<a name="657"><span class="lineNum">     657 </span>            :         HTAB       *functions;</a>
+<a name="658"><span class="lineNum">     658 </span>            : } PgStat_StatDBEntry;</a>
+<a name="659"><span class="lineNum">     659 </span>            : </a>
+<a name="660"><span class="lineNum">     660 </span>            : </a>
+<a name="661"><span class="lineNum">     661 </span>            : /* ----------</a>
+<a name="662"><span class="lineNum">     662 </span>            :  * PgStat_StatTabEntry                  The collector's data per table (or index)</a>
+<a name="663"><span class="lineNum">     663 </span>            :  * ----------</a>
+<a name="664"><span class="lineNum">     664 </span>            :  */</a>
+<a name="665"><span class="lineNum">     665 </span>            : typedef struct PgStat_StatTabEntry</a>
+<a name="666"><span class="lineNum">     666 </span>            : {</a>
+<a name="667"><span class="lineNum">     667 </span>            :         Oid                     tableid;</a>
+<a name="668"><span class="lineNum">     668 </span>            : </a>
+<a name="669"><span class="lineNum">     669 </span>            :         PgStat_Counter numscans;</a>
+<a name="670"><span class="lineNum">     670 </span>            : </a>
+<a name="671"><span class="lineNum">     671 </span>            :         PgStat_Counter tuples_returned;</a>
+<a name="672"><span class="lineNum">     672 </span>            :         PgStat_Counter tuples_fetched;</a>
+<a name="673"><span class="lineNum">     673 </span>            : </a>
+<a name="674"><span class="lineNum">     674 </span>            :         PgStat_Counter tuples_inserted;</a>
+<a name="675"><span class="lineNum">     675 </span>            :         PgStat_Counter tuples_updated;</a>
+<a name="676"><span class="lineNum">     676 </span>            :         PgStat_Counter tuples_deleted;</a>
+<a name="677"><span class="lineNum">     677 </span>            :         PgStat_Counter tuples_hot_updated;</a>
+<a name="678"><span class="lineNum">     678 </span>            : </a>
+<a name="679"><span class="lineNum">     679 </span>            :         PgStat_Counter n_live_tuples;</a>
+<a name="680"><span class="lineNum">     680 </span>            :         PgStat_Counter n_dead_tuples;</a>
+<a name="681"><span class="lineNum">     681 </span>            :         PgStat_Counter changes_since_analyze;</a>
+<a name="682"><span class="lineNum">     682 </span>            :         PgStat_Counter inserts_since_vacuum;</a>
+<a name="683"><span class="lineNum">     683 </span>            : </a>
+<a name="684"><span class="lineNum">     684 </span>            :         PgStat_Counter blocks_fetched;</a>
+<a name="685"><span class="lineNum">     685 </span>            :         PgStat_Counter blocks_hit;</a>
+<a name="686"><span class="lineNum">     686 </span>            : </a>
+<a name="687"><span class="lineNum">     687 </span>            :         TimestampTz vacuum_timestamp;   /* user initiated vacuum */</a>
+<a name="688"><span class="lineNum">     688 </span>            :         PgStat_Counter vacuum_count;</a>
+<a name="689"><span class="lineNum">     689 </span>            :         TimestampTz autovac_vacuum_timestamp;   /* autovacuum initiated */</a>
+<a name="690"><span class="lineNum">     690 </span>            :         PgStat_Counter autovac_vacuum_count;</a>
+<a name="691"><span class="lineNum">     691 </span>            :         TimestampTz analyze_timestamp;  /* user initiated */</a>
+<a name="692"><span class="lineNum">     692 </span>            :         PgStat_Counter analyze_count;</a>
+<a name="693"><span class="lineNum">     693 </span>            :         TimestampTz autovac_analyze_timestamp;  /* autovacuum initiated */</a>
+<a name="694"><span class="lineNum">     694 </span>            :         PgStat_Counter autovac_analyze_count;</a>
+<a name="695"><span class="lineNum">     695 </span>            : } PgStat_StatTabEntry;</a>
+<a name="696"><span class="lineNum">     696 </span>            : </a>
+<a name="697"><span class="lineNum">     697 </span>            : </a>
+<a name="698"><span class="lineNum">     698 </span>            : /* ----------</a>
+<a name="699"><span class="lineNum">     699 </span>            :  * PgStat_StatFuncEntry                 The collector's data per function</a>
+<a name="700"><span class="lineNum">     700 </span>            :  * ----------</a>
+<a name="701"><span class="lineNum">     701 </span>            :  */</a>
+<a name="702"><span class="lineNum">     702 </span>            : typedef struct PgStat_StatFuncEntry</a>
+<a name="703"><span class="lineNum">     703 </span>            : {</a>
+<a name="704"><span class="lineNum">     704 </span>            :         Oid                     functionid;</a>
+<a name="705"><span class="lineNum">     705 </span>            : </a>
+<a name="706"><span class="lineNum">     706 </span>            :         PgStat_Counter f_numcalls;</a>
+<a name="707"><span class="lineNum">     707 </span>            : </a>
+<a name="708"><span class="lineNum">     708 </span>            :         PgStat_Counter f_total_time;    /* times in microseconds */</a>
+<a name="709"><span class="lineNum">     709 </span>            :         PgStat_Counter f_self_time;</a>
+<a name="710"><span class="lineNum">     710 </span>            : } PgStat_StatFuncEntry;</a>
+<a name="711"><span class="lineNum">     711 </span>            : </a>
+<a name="712"><span class="lineNum">     712 </span>            : </a>
+<a name="713"><span class="lineNum">     713 </span>            : /*</a>
+<a name="714"><span class="lineNum">     714 </span>            :  * Archiver statistics kept in the stats collector</a>
+<a name="715"><span class="lineNum">     715 </span>            :  */</a>
+<a name="716"><span class="lineNum">     716 </span>            : typedef struct PgStat_ArchiverStats</a>
+<a name="717"><span class="lineNum">     717 </span>            : {</a>
+<a name="718"><span class="lineNum">     718 </span>            :         PgStat_Counter archived_count;  /* archival successes */</a>
+<a name="719"><span class="lineNum">     719 </span>            :         char            last_archived_wal[MAX_XFN_CHARS + 1];   /* last WAL file</a>
+<a name="720"><span class="lineNum">     720 </span>            :                                                                                                                  * archived */</a>
+<a name="721"><span class="lineNum">     721 </span>            :         TimestampTz last_archived_timestamp;    /* last archival success time */</a>
+<a name="722"><span class="lineNum">     722 </span>            :         PgStat_Counter failed_count;    /* failed archival attempts */</a>
+<a name="723"><span class="lineNum">     723 </span>            :         char            last_failed_wal[MAX_XFN_CHARS + 1]; /* WAL file involved in</a>
+<a name="724"><span class="lineNum">     724 </span>            :                                                                                                          * last failure */</a>
+<a name="725"><span class="lineNum">     725 </span>            :         TimestampTz last_failed_timestamp;      /* last archival failure time */</a>
+<a name="726"><span class="lineNum">     726 </span>            :         TimestampTz stat_reset_timestamp;</a>
+<a name="727"><span class="lineNum">     727 </span>            : } PgStat_ArchiverStats;</a>
+<a name="728"><span class="lineNum">     728 </span>            : </a>
+<a name="729"><span class="lineNum">     729 </span>            : /*</a>
+<a name="730"><span class="lineNum">     730 </span>            :  * Global statistics kept in the stats collector</a>
+<a name="731"><span class="lineNum">     731 </span>            :  */</a>
+<a name="732"><span class="lineNum">     732 </span>            : typedef struct PgStat_GlobalStats</a>
+<a name="733"><span class="lineNum">     733 </span>            : {</a>
+<a name="734"><span class="lineNum">     734 </span>            :         TimestampTz stats_timestamp;    /* time of stats file update */</a>
+<a name="735"><span class="lineNum">     735 </span>            :         PgStat_Counter timed_checkpoints;</a>
+<a name="736"><span class="lineNum">     736 </span>            :         PgStat_Counter requested_checkpoints;</a>
+<a name="737"><span class="lineNum">     737 </span>            :         PgStat_Counter checkpoint_write_time;   /* times in milliseconds */</a>
+<a name="738"><span class="lineNum">     738 </span>            :         PgStat_Counter checkpoint_sync_time;</a>
+<a name="739"><span class="lineNum">     739 </span>            :         PgStat_Counter buf_written_checkpoints;</a>
+<a name="740"><span class="lineNum">     740 </span>            :         PgStat_Counter buf_written_clean;</a>
+<a name="741"><span class="lineNum">     741 </span>            :         PgStat_Counter maxwritten_clean;</a>
+<a name="742"><span class="lineNum">     742 </span>            :         PgStat_Counter buf_written_backend;</a>
+<a name="743"><span class="lineNum">     743 </span>            :         PgStat_Counter buf_fsync_backend;</a>
+<a name="744"><span class="lineNum">     744 </span>            :         PgStat_Counter buf_alloc;</a>
+<a name="745"><span class="lineNum">     745 </span>            :         TimestampTz stat_reset_timestamp;</a>
+<a name="746"><span class="lineNum">     746 </span>            : } PgStat_GlobalStats;</a>
+<a name="747"><span class="lineNum">     747 </span>            : </a>
+<a name="748"><span class="lineNum">     748 </span>            : /*</a>
+<a name="749"><span class="lineNum">     749 </span>            :  * SLRU statistics kept in the stats collector</a>
+<a name="750"><span class="lineNum">     750 </span>            :  */</a>
+<a name="751"><span class="lineNum">     751 </span>            : typedef struct PgStat_SLRUStats</a>
+<a name="752"><span class="lineNum">     752 </span>            : {</a>
+<a name="753"><span class="lineNum">     753 </span>            :         PgStat_Counter blocks_zeroed;</a>
+<a name="754"><span class="lineNum">     754 </span>            :         PgStat_Counter blocks_hit;</a>
+<a name="755"><span class="lineNum">     755 </span>            :         PgStat_Counter blocks_read;</a>
+<a name="756"><span class="lineNum">     756 </span>            :         PgStat_Counter blocks_written;</a>
+<a name="757"><span class="lineNum">     757 </span>            :         PgStat_Counter blocks_exists;</a>
+<a name="758"><span class="lineNum">     758 </span>            :         PgStat_Counter flush;</a>
+<a name="759"><span class="lineNum">     759 </span>            :         PgStat_Counter truncate;</a>
+<a name="760"><span class="lineNum">     760 </span>            :         TimestampTz stat_reset_timestamp;</a>
+<a name="761"><span class="lineNum">     761 </span>            : } PgStat_SLRUStats;</a>
+<a name="762"><span class="lineNum">     762 </span>            : </a>
+<a name="763"><span class="lineNum">     763 </span>            : </a>
+<a name="764"><span class="lineNum">     764 </span>            : /* ----------</a>
+<a name="765"><span class="lineNum">     765 </span>            :  * Backend states</a>
+<a name="766"><span class="lineNum">     766 </span>            :  * ----------</a>
+<a name="767"><span class="lineNum">     767 </span>            :  */</a>
+<a name="768"><span class="lineNum">     768 </span>            : typedef enum BackendState</a>
+<a name="769"><span class="lineNum">     769 </span>            : {</a>
+<a name="770"><span class="lineNum">     770 </span>            :         STATE_UNDEFINED,</a>
+<a name="771"><span class="lineNum">     771 </span>            :         STATE_IDLE,</a>
+<a name="772"><span class="lineNum">     772 </span>            :         STATE_RUNNING,</a>
+<a name="773"><span class="lineNum">     773 </span>            :         STATE_IDLEINTRANSACTION,</a>
+<a name="774"><span class="lineNum">     774 </span>            :         STATE_FASTPATH,</a>
+<a name="775"><span class="lineNum">     775 </span>            :         STATE_IDLEINTRANSACTION_ABORTED,</a>
+<a name="776"><span class="lineNum">     776 </span>            :         STATE_DISABLED</a>
+<a name="777"><span class="lineNum">     777 </span>            : } BackendState;</a>
+<a name="778"><span class="lineNum">     778 </span>            : </a>
+<a name="779"><span class="lineNum">     779 </span>            : </a>
+<a name="780"><span class="lineNum">     780 </span>            : /* ----------</a>
+<a name="781"><span class="lineNum">     781 </span>            :  * Wait Classes</a>
+<a name="782"><span class="lineNum">     782 </span>            :  * ----------</a>
+<a name="783"><span class="lineNum">     783 </span>            :  */</a>
+<a name="784"><span class="lineNum">     784 </span>            : #define PG_WAIT_LWLOCK                          0x01000000U</a>
+<a name="785"><span class="lineNum">     785 </span>            : #define PG_WAIT_LOCK                            0x03000000U</a>
+<a name="786"><span class="lineNum">     786 </span>            : #define PG_WAIT_BUFFER_PIN                      0x04000000U</a>
+<a name="787"><span class="lineNum">     787 </span>            : #define PG_WAIT_ACTIVITY                        0x05000000U</a>
+<a name="788"><span class="lineNum">     788 </span>            : #define PG_WAIT_CLIENT                          0x06000000U</a>
+<a name="789"><span class="lineNum">     789 </span>            : #define PG_WAIT_EXTENSION                       0x07000000U</a>
+<a name="790"><span class="lineNum">     790 </span>            : #define PG_WAIT_IPC                                     0x08000000U</a>
+<a name="791"><span class="lineNum">     791 </span>            : #define PG_WAIT_TIMEOUT                         0x09000000U</a>
+<a name="792"><span class="lineNum">     792 </span>            : #define PG_WAIT_IO                                      0x0A000000U</a>
+<a name="793"><span class="lineNum">     793 </span>            : </a>
+<a name="794"><span class="lineNum">     794 </span>            : /* ----------</a>
+<a name="795"><span class="lineNum">     795 </span>            :  * Wait Events - Activity</a>
+<a name="796"><span class="lineNum">     796 </span>            :  *</a>
+<a name="797"><span class="lineNum">     797 </span>            :  * Use this category when a process is waiting because it has no work to do,</a>
+<a name="798"><span class="lineNum">     798 </span>            :  * unless the &quot;Client&quot; or &quot;Timeout&quot; category describes the situation better.</a>
+<a name="799"><span class="lineNum">     799 </span>            :  * Typically, this should only be used for background processes.</a>
+<a name="800"><span class="lineNum">     800 </span>            :  * ----------</a>
+<a name="801"><span class="lineNum">     801 </span>            :  */</a>
+<a name="802"><span class="lineNum">     802 </span>            : typedef enum</a>
+<a name="803"><span class="lineNum">     803 </span>            : {</a>
+<a name="804"><span class="lineNum">     804 </span>            :         WAIT_EVENT_ARCHIVER_MAIN = PG_WAIT_ACTIVITY,</a>
+<a name="805"><span class="lineNum">     805 </span>            :         WAIT_EVENT_AUTOVACUUM_MAIN,</a>
+<a name="806"><span class="lineNum">     806 </span>            :         WAIT_EVENT_BGWRITER_HIBERNATE,</a>
+<a name="807"><span class="lineNum">     807 </span>            :         WAIT_EVENT_BGWRITER_MAIN,</a>
+<a name="808"><span class="lineNum">     808 </span>            :         WAIT_EVENT_CHECKPOINTER_MAIN,</a>
+<a name="809"><span class="lineNum">     809 </span>            :         WAIT_EVENT_LOGICAL_APPLY_MAIN,</a>
+<a name="810"><span class="lineNum">     810 </span>            :         WAIT_EVENT_LOGICAL_LAUNCHER_MAIN,</a>
+<a name="811"><span class="lineNum">     811 </span>            :         WAIT_EVENT_PGSTAT_MAIN,</a>
+<a name="812"><span class="lineNum">     812 </span>            :         WAIT_EVENT_RECOVERY_WAL_STREAM,</a>
+<a name="813"><span class="lineNum">     813 </span>            :         WAIT_EVENT_SYSLOGGER_MAIN,</a>
+<a name="814"><span class="lineNum">     814 </span>            :         WAIT_EVENT_WAL_RECEIVER_MAIN,</a>
+<a name="815"><span class="lineNum">     815 </span>            :         WAIT_EVENT_WAL_SENDER_MAIN,</a>
+<a name="816"><span class="lineNum">     816 </span>            :         WAIT_EVENT_WAL_WRITER_MAIN</a>
+<a name="817"><span class="lineNum">     817 </span>            : } WaitEventActivity;</a>
+<a name="818"><span class="lineNum">     818 </span>            : </a>
+<a name="819"><span class="lineNum">     819 </span>            : /* ----------</a>
+<a name="820"><span class="lineNum">     820 </span>            :  * Wait Events - Client</a>
+<a name="821"><span class="lineNum">     821 </span>            :  *</a>
+<a name="822"><span class="lineNum">     822 </span>            :  * Use this category when a process is waiting to send data to or receive data</a>
+<a name="823"><span class="lineNum">     823 </span>            :  * from the frontend process to which it is connected.  This is never used for</a>
+<a name="824"><span class="lineNum">     824 </span>            :  * a background process, which has no client connection.</a>
+<a name="825"><span class="lineNum">     825 </span>            :  * ----------</a>
+<a name="826"><span class="lineNum">     826 </span>            :  */</a>
+<a name="827"><span class="lineNum">     827 </span>            : typedef enum</a>
+<a name="828"><span class="lineNum">     828 </span>            : {</a>
+<a name="829"><span class="lineNum">     829 </span>            :         WAIT_EVENT_CLIENT_READ = PG_WAIT_CLIENT,</a>
+<a name="830"><span class="lineNum">     830 </span>            :         WAIT_EVENT_CLIENT_WRITE,</a>
+<a name="831"><span class="lineNum">     831 </span>            :         WAIT_EVENT_GSS_OPEN_SERVER,</a>
+<a name="832"><span class="lineNum">     832 </span>            :         WAIT_EVENT_LIBPQWALRECEIVER_CONNECT,</a>
+<a name="833"><span class="lineNum">     833 </span>            :         WAIT_EVENT_LIBPQWALRECEIVER_RECEIVE,</a>
+<a name="834"><span class="lineNum">     834 </span>            :         WAIT_EVENT_SSL_OPEN_SERVER,</a>
+<a name="835"><span class="lineNum">     835 </span>            :         WAIT_EVENT_WAL_RECEIVER_WAIT_START,</a>
+<a name="836"><span class="lineNum">     836 </span>            :         WAIT_EVENT_WAL_SENDER_WAIT_WAL,</a>
+<a name="837"><span class="lineNum">     837 </span>            :         WAIT_EVENT_WAL_SENDER_WRITE_DATA,</a>
+<a name="838"><span class="lineNum">     838 </span>            : } WaitEventClient;</a>
+<a name="839"><span class="lineNum">     839 </span>            : </a>
+<a name="840"><span class="lineNum">     840 </span>            : /* ----------</a>
+<a name="841"><span class="lineNum">     841 </span>            :  * Wait Events - IPC</a>
+<a name="842"><span class="lineNum">     842 </span>            :  *</a>
+<a name="843"><span class="lineNum">     843 </span>            :  * Use this category when a process cannot complete the work it is doing because</a>
+<a name="844"><span class="lineNum">     844 </span>            :  * it is waiting for a notification from another process.</a>
+<a name="845"><span class="lineNum">     845 </span>            :  * ----------</a>
+<a name="846"><span class="lineNum">     846 </span>            :  */</a>
+<a name="847"><span class="lineNum">     847 </span>            : typedef enum</a>
+<a name="848"><span class="lineNum">     848 </span>            : {</a>
+<a name="849"><span class="lineNum">     849 </span>            :         WAIT_EVENT_BACKUP_WAIT_WAL_ARCHIVE = PG_WAIT_IPC,</a>
+<a name="850"><span class="lineNum">     850 </span>            :         WAIT_EVENT_BGWORKER_SHUTDOWN,</a>
+<a name="851"><span class="lineNum">     851 </span>            :         WAIT_EVENT_BGWORKER_STARTUP,</a>
+<a name="852"><span class="lineNum">     852 </span>            :         WAIT_EVENT_BTREE_PAGE,</a>
+<a name="853"><span class="lineNum">     853 </span>            :         WAIT_EVENT_CHECKPOINT_DONE,</a>
+<a name="854"><span class="lineNum">     854 </span>            :         WAIT_EVENT_CHECKPOINT_START,</a>
+<a name="855"><span class="lineNum">     855 </span>            :         WAIT_EVENT_EXECUTE_GATHER,</a>
+<a name="856"><span class="lineNum">     856 </span>            :         WAIT_EVENT_HASH_BATCH_ALLOCATE,</a>
+<a name="857"><span class="lineNum">     857 </span>            :         WAIT_EVENT_HASH_BATCH_ELECT,</a>
+<a name="858"><span class="lineNum">     858 </span>            :         WAIT_EVENT_HASH_BATCH_LOAD,</a>
+<a name="859"><span class="lineNum">     859 </span>            :         WAIT_EVENT_HASH_BUILD_ALLOCATE,</a>
+<a name="860"><span class="lineNum">     860 </span>            :         WAIT_EVENT_HASH_BUILD_ELECT,</a>
+<a name="861"><span class="lineNum">     861 </span>            :         WAIT_EVENT_HASH_BUILD_HASH_INNER,</a>
+<a name="862"><span class="lineNum">     862 </span>            :         WAIT_EVENT_HASH_BUILD_HASH_OUTER,</a>
+<a name="863"><span class="lineNum">     863 </span>            :         WAIT_EVENT_HASH_GROW_BATCHES_ALLOCATE,</a>
+<a name="864"><span class="lineNum">     864 </span>            :         WAIT_EVENT_HASH_GROW_BATCHES_DECIDE,</a>
+<a name="865"><span class="lineNum">     865 </span>            :         WAIT_EVENT_HASH_GROW_BATCHES_ELECT,</a>
+<a name="866"><span class="lineNum">     866 </span>            :         WAIT_EVENT_HASH_GROW_BATCHES_FINISH,</a>
+<a name="867"><span class="lineNum">     867 </span>            :         WAIT_EVENT_HASH_GROW_BATCHES_REPARTITION,</a>
+<a name="868"><span class="lineNum">     868 </span>            :         WAIT_EVENT_HASH_GROW_BUCKETS_ALLOCATE,</a>
+<a name="869"><span class="lineNum">     869 </span>            :         WAIT_EVENT_HASH_GROW_BUCKETS_ELECT,</a>
+<a name="870"><span class="lineNum">     870 </span>            :         WAIT_EVENT_HASH_GROW_BUCKETS_REINSERT,</a>
+<a name="871"><span class="lineNum">     871 </span>            :         WAIT_EVENT_LOGICAL_SYNC_DATA,</a>
+<a name="872"><span class="lineNum">     872 </span>            :         WAIT_EVENT_LOGICAL_SYNC_STATE_CHANGE,</a>
+<a name="873"><span class="lineNum">     873 </span>            :         WAIT_EVENT_MQ_INTERNAL,</a>
+<a name="874"><span class="lineNum">     874 </span>            :         WAIT_EVENT_MQ_PUT_MESSAGE,</a>
+<a name="875"><span class="lineNum">     875 </span>            :         WAIT_EVENT_MQ_RECEIVE,</a>
+<a name="876"><span class="lineNum">     876 </span>            :         WAIT_EVENT_MQ_SEND,</a>
+<a name="877"><span class="lineNum">     877 </span>            :         WAIT_EVENT_PARALLEL_BITMAP_SCAN,</a>
+<a name="878"><span class="lineNum">     878 </span>            :         WAIT_EVENT_PARALLEL_CREATE_INDEX_SCAN,</a>
+<a name="879"><span class="lineNum">     879 </span>            :         WAIT_EVENT_PARALLEL_FINISH,</a>
+<a name="880"><span class="lineNum">     880 </span>            :         WAIT_EVENT_PROCARRAY_GROUP_UPDATE,</a>
+<a name="881"><span class="lineNum">     881 </span>            :         WAIT_EVENT_PROC_SIGNAL_BARRIER,</a>
+<a name="882"><span class="lineNum">     882 </span>            :         WAIT_EVENT_PROMOTE,</a>
+<a name="883"><span class="lineNum">     883 </span>            :         WAIT_EVENT_RECOVERY_CONFLICT_SNAPSHOT,</a>
+<a name="884"><span class="lineNum">     884 </span>            :         WAIT_EVENT_RECOVERY_CONFLICT_TABLESPACE,</a>
+<a name="885"><span class="lineNum">     885 </span>            :         WAIT_EVENT_RECOVERY_PAUSE,</a>
+<a name="886"><span class="lineNum">     886 </span>            :         WAIT_EVENT_REPLICATION_ORIGIN_DROP,</a>
+<a name="887"><span class="lineNum">     887 </span>            :         WAIT_EVENT_REPLICATION_SLOT_DROP,</a>
+<a name="888"><span class="lineNum">     888 </span>            :         WAIT_EVENT_SAFE_SNAPSHOT,</a>
+<a name="889"><span class="lineNum">     889 </span>            :         WAIT_EVENT_SYNC_REP,</a>
+<a name="890"><span class="lineNum">     890 </span>            :         WAIT_EVENT_XACT_GROUP_UPDATE</a>
+<a name="891"><span class="lineNum">     891 </span>            : } WaitEventIPC;</a>
+<a name="892"><span class="lineNum">     892 </span>            : </a>
+<a name="893"><span class="lineNum">     893 </span>            : /* ----------</a>
+<a name="894"><span class="lineNum">     894 </span>            :  * Wait Events - Timeout</a>
+<a name="895"><span class="lineNum">     895 </span>            :  *</a>
+<a name="896"><span class="lineNum">     896 </span>            :  * Use this category when a process is waiting for a timeout to expire.</a>
+<a name="897"><span class="lineNum">     897 </span>            :  * ----------</a>
+<a name="898"><span class="lineNum">     898 </span>            :  */</a>
+<a name="899"><span class="lineNum">     899 </span>            : typedef enum</a>
+<a name="900"><span class="lineNum">     900 </span>            : {</a>
+<a name="901"><span class="lineNum">     901 </span>            :         WAIT_EVENT_BASE_BACKUP_THROTTLE = PG_WAIT_TIMEOUT,</a>
+<a name="902"><span class="lineNum">     902 </span>            :         WAIT_EVENT_PG_SLEEP,</a>
+<a name="903"><span class="lineNum">     903 </span>            :         WAIT_EVENT_RECOVERY_APPLY_DELAY,</a>
+<a name="904"><span class="lineNum">     904 </span>            :         WAIT_EVENT_RECOVERY_RETRIEVE_RETRY_INTERVAL,</a>
+<a name="905"><span class="lineNum">     905 </span>            :         WAIT_EVENT_VACUUM_DELAY,</a>
+<a name="906"><span class="lineNum">     906 </span>            :         WAIT_EVENT_REGISTER_SYNC_REQUEST</a>
+<a name="907"><span class="lineNum">     907 </span>            : } WaitEventTimeout;</a>
+<a name="908"><span class="lineNum">     908 </span>            : </a>
+<a name="909"><span class="lineNum">     909 </span>            : /* ----------</a>
+<a name="910"><span class="lineNum">     910 </span>            :  * Wait Events - IO</a>
+<a name="911"><span class="lineNum">     911 </span>            :  *</a>
+<a name="912"><span class="lineNum">     912 </span>            :  * Use this category when a process is waiting for a IO.</a>
+<a name="913"><span class="lineNum">     913 </span>            :  * ----------</a>
+<a name="914"><span class="lineNum">     914 </span>            :  */</a>
+<a name="915"><span class="lineNum">     915 </span>            : typedef enum</a>
+<a name="916"><span class="lineNum">     916 </span>            : {</a>
+<a name="917"><span class="lineNum">     917 </span>            :         WAIT_EVENT_BUFFILE_READ = PG_WAIT_IO,</a>
+<a name="918"><span class="lineNum">     918 </span>            :         WAIT_EVENT_BUFFILE_WRITE,</a>
+<a name="919"><span class="lineNum">     919 </span>            :         WAIT_EVENT_CONTROL_FILE_READ,</a>
+<a name="920"><span class="lineNum">     920 </span>            :         WAIT_EVENT_CONTROL_FILE_SYNC,</a>
+<a name="921"><span class="lineNum">     921 </span>            :         WAIT_EVENT_CONTROL_FILE_SYNC_UPDATE,</a>
+<a name="922"><span class="lineNum">     922 </span>            :         WAIT_EVENT_CONTROL_FILE_WRITE,</a>
+<a name="923"><span class="lineNum">     923 </span>            :         WAIT_EVENT_CONTROL_FILE_WRITE_UPDATE,</a>
+<a name="924"><span class="lineNum">     924 </span>            :         WAIT_EVENT_COPY_FILE_READ,</a>
+<a name="925"><span class="lineNum">     925 </span>            :         WAIT_EVENT_COPY_FILE_WRITE,</a>
+<a name="926"><span class="lineNum">     926 </span>            :         WAIT_EVENT_DATA_FILE_EXTEND,</a>
+<a name="927"><span class="lineNum">     927 </span>            :         WAIT_EVENT_DATA_FILE_FLUSH,</a>
+<a name="928"><span class="lineNum">     928 </span>            :         WAIT_EVENT_DATA_FILE_IMMEDIATE_SYNC,</a>
+<a name="929"><span class="lineNum">     929 </span>            :         WAIT_EVENT_DATA_FILE_PREFETCH,</a>
+<a name="930"><span class="lineNum">     930 </span>            :         WAIT_EVENT_DATA_FILE_READ,</a>
+<a name="931"><span class="lineNum">     931 </span>            :         WAIT_EVENT_DATA_FILE_SYNC,</a>
+<a name="932"><span class="lineNum">     932 </span>            :         WAIT_EVENT_DATA_FILE_TRUNCATE,</a>
+<a name="933"><span class="lineNum">     933 </span>            :         WAIT_EVENT_DATA_FILE_WRITE,</a>
+<a name="934"><span class="lineNum">     934 </span>            :         WAIT_EVENT_DSM_FILL_ZERO_WRITE,</a>
+<a name="935"><span class="lineNum">     935 </span>            :         WAIT_EVENT_LOCK_FILE_ADDTODATADIR_READ,</a>
+<a name="936"><span class="lineNum">     936 </span>            :         WAIT_EVENT_LOCK_FILE_ADDTODATADIR_SYNC,</a>
+<a name="937"><span class="lineNum">     937 </span>            :         WAIT_EVENT_LOCK_FILE_ADDTODATADIR_WRITE,</a>
+<a name="938"><span class="lineNum">     938 </span>            :         WAIT_EVENT_LOCK_FILE_CREATE_READ,</a>
+<a name="939"><span class="lineNum">     939 </span>            :         WAIT_EVENT_LOCK_FILE_CREATE_SYNC,</a>
+<a name="940"><span class="lineNum">     940 </span>            :         WAIT_EVENT_LOCK_FILE_CREATE_WRITE,</a>
+<a name="941"><span class="lineNum">     941 </span>            :         WAIT_EVENT_LOCK_FILE_RECHECKDATADIR_READ,</a>
+<a name="942"><span class="lineNum">     942 </span>            :         WAIT_EVENT_LOGICAL_REWRITE_CHECKPOINT_SYNC,</a>
+<a name="943"><span class="lineNum">     943 </span>            :         WAIT_EVENT_LOGICAL_REWRITE_MAPPING_SYNC,</a>
+<a name="944"><span class="lineNum">     944 </span>            :         WAIT_EVENT_LOGICAL_REWRITE_MAPPING_WRITE,</a>
+<a name="945"><span class="lineNum">     945 </span>            :         WAIT_EVENT_LOGICAL_REWRITE_SYNC,</a>
+<a name="946"><span class="lineNum">     946 </span>            :         WAIT_EVENT_LOGICAL_REWRITE_TRUNCATE,</a>
+<a name="947"><span class="lineNum">     947 </span>            :         WAIT_EVENT_LOGICAL_REWRITE_WRITE,</a>
+<a name="948"><span class="lineNum">     948 </span>            :         WAIT_EVENT_RELATION_MAP_READ,</a>
+<a name="949"><span class="lineNum">     949 </span>            :         WAIT_EVENT_RELATION_MAP_SYNC,</a>
+<a name="950"><span class="lineNum">     950 </span>            :         WAIT_EVENT_RELATION_MAP_WRITE,</a>
+<a name="951"><span class="lineNum">     951 </span>            :         WAIT_EVENT_REORDER_BUFFER_READ,</a>
+<a name="952"><span class="lineNum">     952 </span>            :         WAIT_EVENT_REORDER_BUFFER_WRITE,</a>
+<a name="953"><span class="lineNum">     953 </span>            :         WAIT_EVENT_REORDER_LOGICAL_MAPPING_READ,</a>
+<a name="954"><span class="lineNum">     954 </span>            :         WAIT_EVENT_REPLICATION_SLOT_READ,</a>
+<a name="955"><span class="lineNum">     955 </span>            :         WAIT_EVENT_REPLICATION_SLOT_RESTORE_SYNC,</a>
+<a name="956"><span class="lineNum">     956 </span>            :         WAIT_EVENT_REPLICATION_SLOT_SYNC,</a>
+<a name="957"><span class="lineNum">     957 </span>            :         WAIT_EVENT_REPLICATION_SLOT_WRITE,</a>
+<a name="958"><span class="lineNum">     958 </span>            :         WAIT_EVENT_SLRU_FLUSH_SYNC,</a>
+<a name="959"><span class="lineNum">     959 </span>            :         WAIT_EVENT_SLRU_READ,</a>
+<a name="960"><span class="lineNum">     960 </span>            :         WAIT_EVENT_SLRU_SYNC,</a>
+<a name="961"><span class="lineNum">     961 </span>            :         WAIT_EVENT_SLRU_WRITE,</a>
+<a name="962"><span class="lineNum">     962 </span>            :         WAIT_EVENT_SNAPBUILD_READ,</a>
+<a name="963"><span class="lineNum">     963 </span>            :         WAIT_EVENT_SNAPBUILD_SYNC,</a>
+<a name="964"><span class="lineNum">     964 </span>            :         WAIT_EVENT_SNAPBUILD_WRITE,</a>
+<a name="965"><span class="lineNum">     965 </span>            :         WAIT_EVENT_TIMELINE_HISTORY_FILE_SYNC,</a>
+<a name="966"><span class="lineNum">     966 </span>            :         WAIT_EVENT_TIMELINE_HISTORY_FILE_WRITE,</a>
+<a name="967"><span class="lineNum">     967 </span>            :         WAIT_EVENT_TIMELINE_HISTORY_READ,</a>
+<a name="968"><span class="lineNum">     968 </span>            :         WAIT_EVENT_TIMELINE_HISTORY_SYNC,</a>
+<a name="969"><span class="lineNum">     969 </span>            :         WAIT_EVENT_TIMELINE_HISTORY_WRITE,</a>
+<a name="970"><span class="lineNum">     970 </span>            :         WAIT_EVENT_TWOPHASE_FILE_READ,</a>
+<a name="971"><span class="lineNum">     971 </span>            :         WAIT_EVENT_TWOPHASE_FILE_SYNC,</a>
+<a name="972"><span class="lineNum">     972 </span>            :         WAIT_EVENT_TWOPHASE_FILE_WRITE,</a>
+<a name="973"><span class="lineNum">     973 </span>            :         WAIT_EVENT_WALSENDER_TIMELINE_HISTORY_READ,</a>
+<a name="974"><span class="lineNum">     974 </span>            :         WAIT_EVENT_WAL_BOOTSTRAP_SYNC,</a>
+<a name="975"><span class="lineNum">     975 </span>            :         WAIT_EVENT_WAL_BOOTSTRAP_WRITE,</a>
+<a name="976"><span class="lineNum">     976 </span>            :         WAIT_EVENT_WAL_COPY_READ,</a>
+<a name="977"><span class="lineNum">     977 </span>            :         WAIT_EVENT_WAL_COPY_SYNC,</a>
+<a name="978"><span class="lineNum">     978 </span>            :         WAIT_EVENT_WAL_COPY_WRITE,</a>
+<a name="979"><span class="lineNum">     979 </span>            :         WAIT_EVENT_WAL_INIT_SYNC,</a>
+<a name="980"><span class="lineNum">     980 </span>            :         WAIT_EVENT_WAL_INIT_WRITE,</a>
+<a name="981"><span class="lineNum">     981 </span>            :         WAIT_EVENT_WAL_READ,</a>
+<a name="982"><span class="lineNum">     982 </span>            :         WAIT_EVENT_WAL_SYNC,</a>
+<a name="983"><span class="lineNum">     983 </span>            :         WAIT_EVENT_WAL_SYNC_METHOD_ASSIGN,</a>
+<a name="984"><span class="lineNum">     984 </span>            :         WAIT_EVENT_WAL_WRITE</a>
+<a name="985"><span class="lineNum">     985 </span>            : } WaitEventIO;</a>
+<a name="986"><span class="lineNum">     986 </span>            : </a>
+<a name="987"><span class="lineNum">     987 </span>            : /* ----------</a>
+<a name="988"><span class="lineNum">     988 </span>            :  * Command type for progress reporting purposes</a>
+<a name="989"><span class="lineNum">     989 </span>            :  * ----------</a>
+<a name="990"><span class="lineNum">     990 </span>            :  */</a>
+<a name="991"><span class="lineNum">     991 </span>            : typedef enum ProgressCommandType</a>
+<a name="992"><span class="lineNum">     992 </span>            : {</a>
+<a name="993"><span class="lineNum">     993 </span>            :         PROGRESS_COMMAND_INVALID,</a>
+<a name="994"><span class="lineNum">     994 </span>            :         PROGRESS_COMMAND_VACUUM,</a>
+<a name="995"><span class="lineNum">     995 </span>            :         PROGRESS_COMMAND_ANALYZE,</a>
+<a name="996"><span class="lineNum">     996 </span>            :         PROGRESS_COMMAND_CLUSTER,</a>
+<a name="997"><span class="lineNum">     997 </span>            :         PROGRESS_COMMAND_CREATE_INDEX,</a>
+<a name="998"><span class="lineNum">     998 </span>            :         PROGRESS_COMMAND_BASEBACKUP</a>
+<a name="999"><span class="lineNum">     999 </span>            : } ProgressCommandType;</a>
+<a name="1000"><span class="lineNum">    1000 </span>            : </a>
+<a name="1001"><span class="lineNum">    1001 </span>            : #define PGSTAT_NUM_PROGRESS_PARAM       20</a>
+<a name="1002"><span class="lineNum">    1002 </span>            : </a>
+<a name="1003"><span class="lineNum">    1003 </span>            : /* ----------</a>
+<a name="1004"><span class="lineNum">    1004 </span>            :  * Shared-memory data structures</a>
+<a name="1005"><span class="lineNum">    1005 </span>            :  * ----------</a>
+<a name="1006"><span class="lineNum">    1006 </span>            :  */</a>
+<a name="1007"><span class="lineNum">    1007 </span>            : </a>
+<a name="1008"><span class="lineNum">    1008 </span>            : </a>
+<a name="1009"><span class="lineNum">    1009 </span>            : /*</a>
+<a name="1010"><span class="lineNum">    1010 </span>            :  * PgBackendSSLStatus</a>
+<a name="1011"><span class="lineNum">    1011 </span>            :  *</a>
+<a name="1012"><span class="lineNum">    1012 </span>            :  * For each backend, we keep the SSL status in a separate struct, that</a>
+<a name="1013"><span class="lineNum">    1013 </span>            :  * is only filled in if SSL is enabled.</a>
+<a name="1014"><span class="lineNum">    1014 </span>            :  *</a>
+<a name="1015"><span class="lineNum">    1015 </span>            :  * All char arrays must be null-terminated.</a>
+<a name="1016"><span class="lineNum">    1016 </span>            :  */</a>
+<a name="1017"><span class="lineNum">    1017 </span>            : typedef struct PgBackendSSLStatus</a>
+<a name="1018"><span class="lineNum">    1018 </span>            : {</a>
+<a name="1019"><span class="lineNum">    1019 </span>            :         /* Information about SSL connection */</a>
+<a name="1020"><span class="lineNum">    1020 </span>            :         int                     ssl_bits;</a>
+<a name="1021"><span class="lineNum">    1021 </span>            :         bool            ssl_compression;</a>
+<a name="1022"><span class="lineNum">    1022 </span>            :         char            ssl_version[NAMEDATALEN];</a>
+<a name="1023"><span class="lineNum">    1023 </span>            :         char            ssl_cipher[NAMEDATALEN];</a>
+<a name="1024"><span class="lineNum">    1024 </span>            :         char            ssl_client_dn[NAMEDATALEN];</a>
+<a name="1025"><span class="lineNum">    1025 </span>            : </a>
+<a name="1026"><span class="lineNum">    1026 </span>            :         /*</a>
+<a name="1027"><span class="lineNum">    1027 </span>            :          * serial number is max &quot;20 octets&quot; per RFC 5280, so this size should be</a>
+<a name="1028"><span class="lineNum">    1028 </span>            :          * fine</a>
+<a name="1029"><span class="lineNum">    1029 </span>            :          */</a>
+<a name="1030"><span class="lineNum">    1030 </span>            :         char            ssl_client_serial[NAMEDATALEN];</a>
+<a name="1031"><span class="lineNum">    1031 </span>            : </a>
+<a name="1032"><span class="lineNum">    1032 </span>            :         char            ssl_issuer_dn[NAMEDATALEN];</a>
+<a name="1033"><span class="lineNum">    1033 </span>            : } PgBackendSSLStatus;</a>
+<a name="1034"><span class="lineNum">    1034 </span>            : </a>
+<a name="1035"><span class="lineNum">    1035 </span>            : /*</a>
+<a name="1036"><span class="lineNum">    1036 </span>            :  * PgBackendGSSStatus</a>
+<a name="1037"><span class="lineNum">    1037 </span>            :  *</a>
+<a name="1038"><span class="lineNum">    1038 </span>            :  * For each backend, we keep the GSS status in a separate struct, that</a>
+<a name="1039"><span class="lineNum">    1039 </span>            :  * is only filled in if GSS is enabled.</a>
+<a name="1040"><span class="lineNum">    1040 </span>            :  *</a>
+<a name="1041"><span class="lineNum">    1041 </span>            :  * All char arrays must be null-terminated.</a>
+<a name="1042"><span class="lineNum">    1042 </span>            :  */</a>
+<a name="1043"><span class="lineNum">    1043 </span>            : typedef struct PgBackendGSSStatus</a>
+<a name="1044"><span class="lineNum">    1044 </span>            : {</a>
+<a name="1045"><span class="lineNum">    1045 </span>            :         /* Information about GSSAPI connection */</a>
+<a name="1046"><span class="lineNum">    1046 </span>            :         char            gss_princ[NAMEDATALEN]; /* GSSAPI Principal used to auth */</a>
+<a name="1047"><span class="lineNum">    1047 </span>            :         bool            gss_auth;               /* If GSSAPI authentication was used */</a>
+<a name="1048"><span class="lineNum">    1048 </span>            :         bool            gss_enc;                /* If encryption is being used */</a>
+<a name="1049"><span class="lineNum">    1049 </span>            : </a>
+<a name="1050"><span class="lineNum">    1050 </span>            : } PgBackendGSSStatus;</a>
+<a name="1051"><span class="lineNum">    1051 </span>            : </a>
+<a name="1052"><span class="lineNum">    1052 </span>            : </a>
+<a name="1053"><span class="lineNum">    1053 </span>            : /* ----------</a>
+<a name="1054"><span class="lineNum">    1054 </span>            :  * PgBackendStatus</a>
+<a name="1055"><span class="lineNum">    1055 </span>            :  *</a>
+<a name="1056"><span class="lineNum">    1056 </span>            :  * Each live backend maintains a PgBackendStatus struct in shared memory</a>
+<a name="1057"><span class="lineNum">    1057 </span>            :  * showing its current activity.  (The structs are allocated according to</a>
+<a name="1058"><span class="lineNum">    1058 </span>            :  * BackendId, but that is not critical.)  Note that the collector process</a>
+<a name="1059"><span class="lineNum">    1059 </span>            :  * has no involvement in, or even access to, these structs.</a>
+<a name="1060"><span class="lineNum">    1060 </span>            :  *</a>
+<a name="1061"><span class="lineNum">    1061 </span>            :  * Each auxiliary process also maintains a PgBackendStatus struct in shared</a>
+<a name="1062"><span class="lineNum">    1062 </span>            :  * memory.</a>
+<a name="1063"><span class="lineNum">    1063 </span>            :  * ----------</a>
+<a name="1064"><span class="lineNum">    1064 </span>            :  */</a>
+<a name="1065"><span class="lineNum">    1065 </span>            : typedef struct PgBackendStatus</a>
+<a name="1066"><span class="lineNum">    1066 </span>            : {</a>
+<a name="1067"><span class="lineNum">    1067 </span>            :         /*</a>
+<a name="1068"><span class="lineNum">    1068 </span>            :          * To avoid locking overhead, we use the following protocol: a backend</a>
+<a name="1069"><span class="lineNum">    1069 </span>            :          * increments st_changecount before modifying its entry, and again after</a>
+<a name="1070"><span class="lineNum">    1070 </span>            :          * finishing a modification.  A would-be reader should note the value of</a>
+<a name="1071"><span class="lineNum">    1071 </span>            :          * st_changecount, copy the entry into private memory, then check</a>
+<a name="1072"><span class="lineNum">    1072 </span>            :          * st_changecount again.  If the value hasn't changed, and if it's even,</a>
+<a name="1073"><span class="lineNum">    1073 </span>            :          * the copy is valid; otherwise start over.  This makes updates cheap</a>
+<a name="1074"><span class="lineNum">    1074 </span>            :          * while reads are potentially expensive, but that's the tradeoff we want.</a>
+<a name="1075"><span class="lineNum">    1075 </span>            :          *</a>
+<a name="1076"><span class="lineNum">    1076 </span>            :          * The above protocol needs memory barriers to ensure that the apparent</a>
+<a name="1077"><span class="lineNum">    1077 </span>            :          * order of execution is as it desires.  Otherwise, for example, the CPU</a>
+<a name="1078"><span class="lineNum">    1078 </span>            :          * might rearrange the code so that st_changecount is incremented twice</a>
+<a name="1079"><span class="lineNum">    1079 </span>            :          * before the modification on a machine with weak memory ordering.  Hence,</a>
+<a name="1080"><span class="lineNum">    1080 </span>            :          * use the macros defined below for manipulating st_changecount, rather</a>
+<a name="1081"><span class="lineNum">    1081 </span>            :          * than touching it directly.</a>
+<a name="1082"><span class="lineNum">    1082 </span>            :          */</a>
+<a name="1083"><span class="lineNum">    1083 </span>            :         int                     st_changecount;</a>
+<a name="1084"><span class="lineNum">    1084 </span>            : </a>
+<a name="1085"><span class="lineNum">    1085 </span>            :         /* The entry is valid iff st_procpid &gt; 0, unused if st_procpid == 0 */</a>
+<a name="1086"><span class="lineNum">    1086 </span>            :         int                     st_procpid;</a>
+<a name="1087"><span class="lineNum">    1087 </span>            : </a>
+<a name="1088"><span class="lineNum">    1088 </span>            :         /* Type of backends */</a>
+<a name="1089"><span class="lineNum">    1089 </span>            :         BackendType st_backendType;</a>
+<a name="1090"><span class="lineNum">    1090 </span>            : </a>
+<a name="1091"><span class="lineNum">    1091 </span>            :         /* Times when current backend, transaction, and activity started */</a>
+<a name="1092"><span class="lineNum">    1092 </span>            :         TimestampTz st_proc_start_timestamp;</a>
+<a name="1093"><span class="lineNum">    1093 </span>            :         TimestampTz st_xact_start_timestamp;</a>
+<a name="1094"><span class="lineNum">    1094 </span>            :         TimestampTz st_activity_start_timestamp;</a>
+<a name="1095"><span class="lineNum">    1095 </span>            :         TimestampTz st_state_start_timestamp;</a>
+<a name="1096"><span class="lineNum">    1096 </span>            : </a>
+<a name="1097"><span class="lineNum">    1097 </span>            :         /* Database OID, owning user's OID, connection client address */</a>
+<a name="1098"><span class="lineNum">    1098 </span>            :         Oid                     st_databaseid;</a>
+<a name="1099"><span class="lineNum">    1099 </span>            :         Oid                     st_userid;</a>
+<a name="1100"><span class="lineNum">    1100 </span>            :         SockAddr        st_clientaddr;</a>
+<a name="1101"><span class="lineNum">    1101 </span>            :         char       *st_clienthostname;  /* MUST be null-terminated */</a>
+<a name="1102"><span class="lineNum">    1102 </span>            : </a>
+<a name="1103"><span class="lineNum">    1103 </span>            :         /* Information about SSL connection */</a>
+<a name="1104"><span class="lineNum">    1104 </span>            :         bool            st_ssl;</a>
+<a name="1105"><span class="lineNum">    1105 </span>            :         PgBackendSSLStatus *st_sslstatus;</a>
+<a name="1106"><span class="lineNum">    1106 </span>            : </a>
+<a name="1107"><span class="lineNum">    1107 </span>            :         /* Information about GSSAPI connection */</a>
+<a name="1108"><span class="lineNum">    1108 </span>            :         bool            st_gss;</a>
+<a name="1109"><span class="lineNum">    1109 </span>            :         PgBackendGSSStatus *st_gssstatus;</a>
+<a name="1110"><span class="lineNum">    1110 </span>            : </a>
+<a name="1111"><span class="lineNum">    1111 </span>            :         /* current state */</a>
+<a name="1112"><span class="lineNum">    1112 </span>            :         BackendState st_state;</a>
+<a name="1113"><span class="lineNum">    1113 </span>            : </a>
+<a name="1114"><span class="lineNum">    1114 </span>            :         /* application name; MUST be null-terminated */</a>
+<a name="1115"><span class="lineNum">    1115 </span>            :         char       *st_appname;</a>
+<a name="1116"><span class="lineNum">    1116 </span>            : </a>
+<a name="1117"><span class="lineNum">    1117 </span>            :         /*</a>
+<a name="1118"><span class="lineNum">    1118 </span>            :          * Current command string; MUST be null-terminated. Note that this string</a>
+<a name="1119"><span class="lineNum">    1119 </span>            :          * possibly is truncated in the middle of a multi-byte character. As</a>
+<a name="1120"><span class="lineNum">    1120 </span>            :          * activity strings are stored more frequently than read, that allows to</a>
+<a name="1121"><span class="lineNum">    1121 </span>            :          * move the cost of correct truncation to the display side. Use</a>
+<a name="1122"><span class="lineNum">    1122 </span>            :          * pgstat_clip_activity() to truncate correctly.</a>
+<a name="1123"><span class="lineNum">    1123 </span>            :          */</a>
+<a name="1124"><span class="lineNum">    1124 </span>            :         char       *st_activity_raw;</a>
+<a name="1125"><span class="lineNum">    1125 </span>            : </a>
+<a name="1126"><span class="lineNum">    1126 </span>            :         /*</a>
+<a name="1127"><span class="lineNum">    1127 </span>            :          * Command progress reporting.  Any command which wishes can advertise</a>
+<a name="1128"><span class="lineNum">    1128 </span>            :          * that it is running by setting st_progress_command,</a>
+<a name="1129"><span class="lineNum">    1129 </span>            :          * st_progress_command_target, and st_progress_param[].</a>
+<a name="1130"><span class="lineNum">    1130 </span>            :          * st_progress_command_target should be the OID of the relation which the</a>
+<a name="1131"><span class="lineNum">    1131 </span>            :          * command targets (we assume there's just one, as this is meant for</a>
+<a name="1132"><span class="lineNum">    1132 </span>            :          * utility commands), but the meaning of each element in the</a>
+<a name="1133"><span class="lineNum">    1133 </span>            :          * st_progress_param array is command-specific.</a>
+<a name="1134"><span class="lineNum">    1134 </span>            :          */</a>
+<a name="1135"><span class="lineNum">    1135 </span>            :         ProgressCommandType st_progress_command;</a>
+<a name="1136"><span class="lineNum">    1136 </span>            :         Oid                     st_progress_command_target;</a>
+<a name="1137"><span class="lineNum">    1137 </span>            :         int64           st_progress_param[PGSTAT_NUM_PROGRESS_PARAM];</a>
+<a name="1138"><span class="lineNum">    1138 </span>            : } PgBackendStatus;</a>
+<a name="1139"><span class="lineNum">    1139 </span>            : </a>
+<a name="1140"><span class="lineNum">    1140 </span>            : /*</a>
+<a name="1141"><span class="lineNum">    1141 </span>            :  * Macros to load and store st_changecount with appropriate memory barriers.</a>
+<a name="1142"><span class="lineNum">    1142 </span>            :  *</a>
+<a name="1143"><span class="lineNum">    1143 </span>            :  * Use PGSTAT_BEGIN_WRITE_ACTIVITY() before, and PGSTAT_END_WRITE_ACTIVITY()</a>
+<a name="1144"><span class="lineNum">    1144 </span>            :  * after, modifying the current process's PgBackendStatus data.  Note that,</a>
+<a name="1145"><span class="lineNum">    1145 </span>            :  * since there is no mechanism for cleaning up st_changecount after an error,</a>
+<a name="1146"><span class="lineNum">    1146 </span>            :  * THESE MACROS FORM A CRITICAL SECTION.  Any error between them will be</a>
+<a name="1147"><span class="lineNum">    1147 </span>            :  * promoted to PANIC, causing a database restart to clean up shared memory!</a>
+<a name="1148"><span class="lineNum">    1148 </span>            :  * Hence, keep the critical section as short and straight-line as possible.</a>
+<a name="1149"><span class="lineNum">    1149 </span>            :  * Aside from being safer, that minimizes the window in which readers will</a>
+<a name="1150"><span class="lineNum">    1150 </span>            :  * have to loop.</a>
+<a name="1151"><span class="lineNum">    1151 </span>            :  *</a>
+<a name="1152"><span class="lineNum">    1152 </span>            :  * Reader logic should follow this sketch:</a>
+<a name="1153"><span class="lineNum">    1153 </span>            :  *</a>
+<a name="1154"><span class="lineNum">    1154 </span>            :  *              for (;;)</a>
+<a name="1155"><span class="lineNum">    1155 </span>            :  *              {</a>
+<a name="1156"><span class="lineNum">    1156 </span>            :  *                      int before_ct, after_ct;</a>
+<a name="1157"><span class="lineNum">    1157 </span>            :  *</a>
+<a name="1158"><span class="lineNum">    1158 </span>            :  *                      pgstat_begin_read_activity(beentry, before_ct);</a>
+<a name="1159"><span class="lineNum">    1159 </span>            :  *                      ... copy beentry data to local memory ...</a>
+<a name="1160"><span class="lineNum">    1160 </span>            :  *                      pgstat_end_read_activity(beentry, after_ct);</a>
+<a name="1161"><span class="lineNum">    1161 </span>            :  *                      if (pgstat_read_activity_complete(before_ct, after_ct))</a>
+<a name="1162"><span class="lineNum">    1162 </span>            :  *                              break;</a>
+<a name="1163"><span class="lineNum">    1163 </span>            :  *                      CHECK_FOR_INTERRUPTS();</a>
+<a name="1164"><span class="lineNum">    1164 </span>            :  *              }</a>
+<a name="1165"><span class="lineNum">    1165 </span>            :  *</a>
+<a name="1166"><span class="lineNum">    1166 </span>            :  * For extra safety, we generally use volatile beentry pointers, although</a>
+<a name="1167"><span class="lineNum">    1167 </span>            :  * the memory barriers should theoretically be sufficient.</a>
+<a name="1168"><span class="lineNum">    1168 </span>            :  */</a>
+<a name="1169"><span class="lineNum">    1169 </span>            : #define PGSTAT_BEGIN_WRITE_ACTIVITY(beentry) \</a>
+<a name="1170"><span class="lineNum">    1170 </span>            :         do { \</a>
+<a name="1171"><span class="lineNum">    1171 </span>            :                 START_CRIT_SECTION(); \</a>
+<a name="1172"><span class="lineNum">    1172 </span>            :                 (beentry)-&gt;st_changecount++; \</a>
+<a name="1173"><span class="lineNum">    1173 </span>            :                 pg_write_barrier(); \</a>
+<a name="1174"><span class="lineNum">    1174 </span>            :         } while (0)</a>
+<a name="1175"><span class="lineNum">    1175 </span>            : </a>
+<a name="1176"><span class="lineNum">    1176 </span>            : #define PGSTAT_END_WRITE_ACTIVITY(beentry) \</a>
+<a name="1177"><span class="lineNum">    1177 </span>            :         do { \</a>
+<a name="1178"><span class="lineNum">    1178 </span>            :                 pg_write_barrier(); \</a>
+<a name="1179"><span class="lineNum">    1179 </span>            :                 (beentry)-&gt;st_changecount++; \</a>
+<a name="1180"><span class="lineNum">    1180 </span>            :                 Assert(((beentry)-&gt;st_changecount &amp; 1) == 0); \</a>
+<a name="1181"><span class="lineNum">    1181 </span>            :                 END_CRIT_SECTION(); \</a>
+<a name="1182"><span class="lineNum">    1182 </span>            :         } while (0)</a>
+<a name="1183"><span class="lineNum">    1183 </span>            : </a>
+<a name="1184"><span class="lineNum">    1184 </span>            : #define pgstat_begin_read_activity(beentry, before_changecount) \</a>
+<a name="1185"><span class="lineNum">    1185 </span>            :         do { \</a>
+<a name="1186"><span class="lineNum">    1186 </span>            :                 (before_changecount) = (beentry)-&gt;st_changecount; \</a>
+<a name="1187"><span class="lineNum">    1187 </span>            :                 pg_read_barrier(); \</a>
+<a name="1188"><span class="lineNum">    1188 </span>            :         } while (0)</a>
+<a name="1189"><span class="lineNum">    1189 </span>            : </a>
+<a name="1190"><span class="lineNum">    1190 </span>            : #define pgstat_end_read_activity(beentry, after_changecount) \</a>
+<a name="1191"><span class="lineNum">    1191 </span>            :         do { \</a>
+<a name="1192"><span class="lineNum">    1192 </span>            :                 pg_read_barrier(); \</a>
+<a name="1193"><span class="lineNum">    1193 </span>            :                 (after_changecount) = (beentry)-&gt;st_changecount; \</a>
+<a name="1194"><span class="lineNum">    1194 </span>            :         } while (0)</a>
+<a name="1195"><span class="lineNum">    1195 </span>            : </a>
+<a name="1196"><span class="lineNum">    1196 </span>            : #define pgstat_read_activity_complete(before_changecount, after_changecount) \</a>
+<a name="1197"><span class="lineNum">    1197 </span>            :         ((before_changecount) == (after_changecount) &amp;&amp; \</a>
+<a name="1198"><span class="lineNum">    1198 </span>            :          ((before_changecount) &amp; 1) == 0)</a>
+<a name="1199"><span class="lineNum">    1199 </span>            : </a>
+<a name="1200"><span class="lineNum">    1200 </span>            : </a>
+<a name="1201"><span class="lineNum">    1201 </span>            : /* ----------</a>
+<a name="1202"><span class="lineNum">    1202 </span>            :  * LocalPgBackendStatus</a>
+<a name="1203"><span class="lineNum">    1203 </span>            :  *</a>
+<a name="1204"><span class="lineNum">    1204 </span>            :  * When we build the backend status array, we use LocalPgBackendStatus to be</a>
+<a name="1205"><span class="lineNum">    1205 </span>            :  * able to add new values to the struct when needed without adding new fields</a>
+<a name="1206"><span class="lineNum">    1206 </span>            :  * to the shared memory. It contains the backend status as a first member.</a>
+<a name="1207"><span class="lineNum">    1207 </span>            :  * ----------</a>
+<a name="1208"><span class="lineNum">    1208 </span>            :  */</a>
+<a name="1209"><span class="lineNum">    1209 </span>            : typedef struct LocalPgBackendStatus</a>
+<a name="1210"><span class="lineNum">    1210 </span>            : {</a>
+<a name="1211"><span class="lineNum">    1211 </span>            :         /*</a>
+<a name="1212"><span class="lineNum">    1212 </span>            :          * Local version of the backend status entry.</a>
+<a name="1213"><span class="lineNum">    1213 </span>            :          */</a>
+<a name="1214"><span class="lineNum">    1214 </span>            :         PgBackendStatus backendStatus;</a>
+<a name="1215"><span class="lineNum">    1215 </span>            : </a>
+<a name="1216"><span class="lineNum">    1216 </span>            :         /*</a>
+<a name="1217"><span class="lineNum">    1217 </span>            :          * The xid of the current transaction if available, InvalidTransactionId</a>
+<a name="1218"><span class="lineNum">    1218 </span>            :          * if not.</a>
+<a name="1219"><span class="lineNum">    1219 </span>            :          */</a>
+<a name="1220"><span class="lineNum">    1220 </span>            :         TransactionId backend_xid;</a>
+<a name="1221"><span class="lineNum">    1221 </span>            : </a>
+<a name="1222"><span class="lineNum">    1222 </span>            :         /*</a>
+<a name="1223"><span class="lineNum">    1223 </span>            :          * The xmin of the current session if available, InvalidTransactionId if</a>
+<a name="1224"><span class="lineNum">    1224 </span>            :          * not.</a>
+<a name="1225"><span class="lineNum">    1225 </span>            :          */</a>
+<a name="1226"><span class="lineNum">    1226 </span>            :         TransactionId backend_xmin;</a>
+<a name="1227"><span class="lineNum">    1227 </span>            : } LocalPgBackendStatus;</a>
+<a name="1228"><span class="lineNum">    1228 </span>            : </a>
+<a name="1229"><span class="lineNum">    1229 </span>            : /*</a>
+<a name="1230"><span class="lineNum">    1230 </span>            :  * Working state needed to accumulate per-function-call timing statistics.</a>
+<a name="1231"><span class="lineNum">    1231 </span>            :  */</a>
+<a name="1232"><span class="lineNum">    1232 </span>            : typedef struct PgStat_FunctionCallUsage</a>
+<a name="1233"><span class="lineNum">    1233 </span>            : {</a>
+<a name="1234"><span class="lineNum">    1234 </span>            :         /* Link to function's hashtable entry (must still be there at exit!) */</a>
+<a name="1235"><span class="lineNum">    1235 </span>            :         /* NULL means we are not tracking the current function call */</a>
+<a name="1236"><span class="lineNum">    1236 </span>            :         PgStat_FunctionCounts *fs;</a>
+<a name="1237"><span class="lineNum">    1237 </span>            :         /* Total time previously charged to function, as of function start */</a>
+<a name="1238"><span class="lineNum">    1238 </span>            :         instr_time      save_f_total_time;</a>
+<a name="1239"><span class="lineNum">    1239 </span>            :         /* Backend-wide total time as of function start */</a>
+<a name="1240"><span class="lineNum">    1240 </span>            :         instr_time      save_total;</a>
+<a name="1241"><span class="lineNum">    1241 </span>            :         /* system clock as of function start */</a>
+<a name="1242"><span class="lineNum">    1242 </span>            :         instr_time      f_start;</a>
+<a name="1243"><span class="lineNum">    1243 </span>            : } PgStat_FunctionCallUsage;</a>
+<a name="1244"><span class="lineNum">    1244 </span>            : </a>
+<a name="1245"><span class="lineNum">    1245 </span>            : </a>
+<a name="1246"><span class="lineNum">    1246 </span>            : /* ----------</a>
+<a name="1247"><span class="lineNum">    1247 </span>            :  * GUC parameters</a>
+<a name="1248"><span class="lineNum">    1248 </span>            :  * ----------</a>
+<a name="1249"><span class="lineNum">    1249 </span>            :  */</a>
+<a name="1250"><span class="lineNum">    1250 </span>            : extern PGDLLIMPORT bool pgstat_track_activities;</a>
+<a name="1251"><span class="lineNum">    1251 </span>            : extern PGDLLIMPORT bool pgstat_track_counts;</a>
+<a name="1252"><span class="lineNum">    1252 </span>            : extern PGDLLIMPORT int pgstat_track_functions;</a>
+<a name="1253"><span class="lineNum">    1253 </span>            : extern PGDLLIMPORT int pgstat_track_activity_query_size;</a>
+<a name="1254"><span class="lineNum">    1254 </span>            : extern char *pgstat_stat_directory;</a>
+<a name="1255"><span class="lineNum">    1255 </span>            : extern char *pgstat_stat_tmpname;</a>
+<a name="1256"><span class="lineNum">    1256 </span>            : extern char *pgstat_stat_filename;</a>
+<a name="1257"><span class="lineNum">    1257 </span>            : </a>
+<a name="1258"><span class="lineNum">    1258 </span>            : /*</a>
+<a name="1259"><span class="lineNum">    1259 </span>            :  * BgWriter statistics counters are updated directly by bgwriter and bufmgr</a>
+<a name="1260"><span class="lineNum">    1260 </span>            :  */</a>
+<a name="1261"><span class="lineNum">    1261 </span>            : extern PgStat_MsgBgWriter BgWriterStats;</a>
+<a name="1262"><span class="lineNum">    1262 </span>            : </a>
+<a name="1263"><span class="lineNum">    1263 </span>            : /*</a>
+<a name="1264"><span class="lineNum">    1264 </span>            :  * Updated by pgstat_count_buffer_*_time macros</a>
+<a name="1265"><span class="lineNum">    1265 </span>            :  */</a>
+<a name="1266"><span class="lineNum">    1266 </span>            : extern PgStat_Counter pgStatBlockReadTime;</a>
+<a name="1267"><span class="lineNum">    1267 </span>            : extern PgStat_Counter pgStatBlockWriteTime;</a>
+<a name="1268"><span class="lineNum">    1268 </span>            : </a>
+<a name="1269"><span class="lineNum">    1269 </span>            : /* ----------</a>
+<a name="1270"><span class="lineNum">    1270 </span>            :  * Functions called from postmaster</a>
+<a name="1271"><span class="lineNum">    1271 </span>            :  * ----------</a>
+<a name="1272"><span class="lineNum">    1272 </span>            :  */</a>
+<a name="1273"><span class="lineNum">    1273 </span>            : extern Size BackendStatusShmemSize(void);</a>
+<a name="1274"><span class="lineNum">    1274 </span>            : extern void CreateSharedBackendStatus(void);</a>
+<a name="1275"><span class="lineNum">    1275 </span>            : </a>
+<a name="1276"><span class="lineNum">    1276 </span>            : extern void pgstat_init(void);</a>
+<a name="1277"><span class="lineNum">    1277 </span>            : extern int      pgstat_start(void);</a>
+<a name="1278"><span class="lineNum">    1278 </span>            : extern void pgstat_reset_all(void);</a>
+<a name="1279"><span class="lineNum">    1279 </span>            : extern void allow_immediate_pgstat_restart(void);</a>
+<a name="1280"><span class="lineNum">    1280 </span>            : </a>
+<a name="1281"><span class="lineNum">    1281 </span>            : #ifdef EXEC_BACKEND</a>
+<a name="1282"><span class="lineNum">    1282 </span>            : extern void PgstatCollectorMain(int argc, char *argv[]) pg_attribute_noreturn();</a>
+<a name="1283"><span class="lineNum">    1283 </span>            : #endif</a>
+<a name="1284"><span class="lineNum">    1284 </span>            : </a>
+<a name="1285"><span class="lineNum">    1285 </span>            : </a>
+<a name="1286"><span class="lineNum">    1286 </span>            : /* ----------</a>
+<a name="1287"><span class="lineNum">    1287 </span>            :  * Functions called from backends</a>
+<a name="1288"><span class="lineNum">    1288 </span>            :  * ----------</a>
+<a name="1289"><span class="lineNum">    1289 </span>            :  */</a>
+<a name="1290"><span class="lineNum">    1290 </span>            : extern void pgstat_ping(void);</a>
+<a name="1291"><span class="lineNum">    1291 </span>            : </a>
+<a name="1292"><span class="lineNum">    1292 </span>            : extern void pgstat_report_stat(bool force);</a>
+<a name="1293"><span class="lineNum">    1293 </span>            : extern void pgstat_vacuum_stat(void);</a>
+<a name="1294"><span class="lineNum">    1294 </span>            : extern void pgstat_drop_database(Oid databaseid);</a>
+<a name="1295"><span class="lineNum">    1295 </span>            : </a>
+<a name="1296"><span class="lineNum">    1296 </span>            : extern void pgstat_clear_snapshot(void);</a>
+<a name="1297"><span class="lineNum">    1297 </span>            : extern void pgstat_reset_counters(void);</a>
+<a name="1298"><span class="lineNum">    1298 </span>            : extern void pgstat_reset_shared_counters(const char *);</a>
+<a name="1299"><span class="lineNum">    1299 </span>            : extern void pgstat_reset_single_counter(Oid objectid, PgStat_Single_Reset_Type type);</a>
+<a name="1300"><span class="lineNum">    1300 </span>            : extern void pgstat_reset_slru_counter(const char *);</a>
+<a name="1301"><span class="lineNum">    1301 </span>            : </a>
+<a name="1302"><span class="lineNum">    1302 </span>            : extern void pgstat_report_autovac(Oid dboid);</a>
+<a name="1303"><span class="lineNum">    1303 </span>            : extern void pgstat_report_vacuum(Oid tableoid, bool shared,</a>
+<a name="1304"><span class="lineNum">    1304 </span>            :                                                                  PgStat_Counter livetuples, PgStat_Counter deadtuples);</a>
+<a name="1305"><span class="lineNum">    1305 </span>            : extern void pgstat_report_analyze(Relation rel,</a>
+<a name="1306"><span class="lineNum">    1306 </span>            :                                                                   PgStat_Counter livetuples, PgStat_Counter deadtuples,</a>
+<a name="1307"><span class="lineNum">    1307 </span>            :                                                                   bool resetcounter);</a>
+<a name="1308"><span class="lineNum">    1308 </span>            : </a>
+<a name="1309"><span class="lineNum">    1309 </span>            : extern void pgstat_report_recovery_conflict(int reason);</a>
+<a name="1310"><span class="lineNum">    1310 </span>            : extern void pgstat_report_deadlock(void);</a>
+<a name="1311"><span class="lineNum">    1311 </span>            : extern void pgstat_report_checksum_failures_in_db(Oid dboid, int failurecount);</a>
+<a name="1312"><span class="lineNum">    1312 </span>            : extern void pgstat_report_checksum_failure(void);</a>
+<a name="1313"><span class="lineNum">    1313 </span>            : </a>
+<a name="1314"><span class="lineNum">    1314 </span>            : extern void pgstat_initialize(void);</a>
+<a name="1315"><span class="lineNum">    1315 </span>            : extern void pgstat_bestart(void);</a>
+<a name="1316"><span class="lineNum">    1316 </span>            : </a>
+<a name="1317"><span class="lineNum">    1317 </span>            : extern void pgstat_report_activity(BackendState state, const char *cmd_str);</a>
+<a name="1318"><span class="lineNum">    1318 </span>            : extern void pgstat_report_tempfile(size_t filesize);</a>
+<a name="1319"><span class="lineNum">    1319 </span>            : extern void pgstat_report_appname(const char *appname);</a>
+<a name="1320"><span class="lineNum">    1320 </span>            : extern void pgstat_report_xact_timestamp(TimestampTz tstamp);</a>
+<a name="1321"><span class="lineNum">    1321 </span>            : extern const char *pgstat_get_wait_event(uint32 wait_event_info);</a>
+<a name="1322"><span class="lineNum">    1322 </span>            : extern const char *pgstat_get_wait_event_type(uint32 wait_event_info);</a>
+<a name="1323"><span class="lineNum">    1323 </span>            : extern const char *pgstat_get_backend_current_activity(int pid, bool checkUser);</a>
+<a name="1324"><span class="lineNum">    1324 </span>            : extern const char *pgstat_get_crashed_backend_activity(int pid, char *buffer,</a>
+<a name="1325"><span class="lineNum">    1325 </span>            :                                                                                                            int buflen);</a>
+<a name="1326"><span class="lineNum">    1326 </span>            : </a>
+<a name="1327"><span class="lineNum">    1327 </span>            : extern void pgstat_progress_start_command(ProgressCommandType cmdtype,</a>
+<a name="1328"><span class="lineNum">    1328 </span>            :                                                                                   Oid relid);</a>
+<a name="1329"><span class="lineNum">    1329 </span>            : extern void pgstat_progress_update_param(int index, int64 val);</a>
+<a name="1330"><span class="lineNum">    1330 </span>            : extern void pgstat_progress_update_multi_param(int nparam, const int *index,</a>
+<a name="1331"><span class="lineNum">    1331 </span>            :                                                                                            const int64 *val);</a>
+<a name="1332"><span class="lineNum">    1332 </span>            : extern void pgstat_progress_end_command(void);</a>
+<a name="1333"><span class="lineNum">    1333 </span>            : </a>
+<a name="1334"><span class="lineNum">    1334 </span>            : extern PgStat_TableStatus *find_tabstat_entry(Oid rel_id);</a>
+<a name="1335"><span class="lineNum">    1335 </span>            : extern PgStat_BackendFunctionEntry *find_funcstat_entry(Oid func_id);</a>
+<a name="1336"><span class="lineNum">    1336 </span>            : </a>
+<a name="1337"><span class="lineNum">    1337 </span>            : extern void pgstat_initstats(Relation rel);</a>
+<a name="1338"><span class="lineNum">    1338 </span>            : </a>
+<a name="1339"><span class="lineNum">    1339 </span>            : extern char *pgstat_clip_activity(const char *raw_activity);</a>
+<a name="1340"><span class="lineNum">    1340 </span>            : </a>
+<a name="1341"><span class="lineNum">    1341 </span>            : /* ----------</a>
+<a name="1342"><span class="lineNum">    1342 </span>            :  * pgstat_report_wait_start() -</a>
+<a name="1343"><span class="lineNum">    1343 </span>            :  *</a>
+<a name="1344"><span class="lineNum">    1344 </span>            :  *      Called from places where server process needs to wait.  This is called</a>
+<a name="1345"><span class="lineNum">    1345 </span>            :  *      to report wait event information.  The wait information is stored</a>
+<a name="1346"><span class="lineNum">    1346 </span>            :  *      as 4-bytes where first byte represents the wait event class (type of</a>
+<a name="1347"><span class="lineNum">    1347 </span>            :  *      wait, for different types of wait, refer WaitClass) and the next</a>
+<a name="1348"><span class="lineNum">    1348 </span>            :  *      3-bytes represent the actual wait event.  Currently 2-bytes are used</a>
+<a name="1349"><span class="lineNum">    1349 </span>            :  *      for wait event which is sufficient for current usage, 1-byte is</a>
+<a name="1350"><span class="lineNum">    1350 </span>            :  *      reserved for future usage.</a>
+<a name="1351"><span class="lineNum">    1351 </span>            :  *</a>
+<a name="1352"><span class="lineNum">    1352 </span>            :  * NB: this *must* be able to survive being called before MyProc has been</a>
+<a name="1353"><span class="lineNum">    1353 </span>            :  * initialized.</a>
+<a name="1354"><span class="lineNum">    1354 </span>            :  * ----------</a>
+<a name="1355"><span class="lineNum">    1355 </span>            :  */</a>
+<a name="1356"><span class="lineNum">    1356 </span>            : static inline void</a>
+<a name="1357"><span class="lineNum">    1357 </span><span class="lineCov">      11442 : pgstat_report_wait_start(uint32 wait_event_info)</span></a>
+<a name="1358"><span class="lineNum">    1358 </span>            : {</a>
+<a name="1359"><span class="lineNum">    1359 </span><span class="lineCov">      11442 :         volatile PGPROC *proc = MyProc;</span></a>
+<a name="1360"><span class="lineNum">    1360 </span>            : </a>
+<a name="1361"><span class="lineNum">    1361 </span><span class="lineCov">      11442 :         if (!pgstat_track_activities || !proc)</span></a>
+<a name="1362"><span class="lineNum">    1362 </span><span class="lineCov">        162 :                 return;</span></a>
+<a name="1363"><span class="lineNum">    1363 </span>            : </a>
+<a name="1364"><span class="lineNum">    1364 </span>            :         /*</a>
+<a name="1365"><span class="lineNum">    1365 </span>            :          * Since this is a four-byte field which is always read and written as</a>
+<a name="1366"><span class="lineNum">    1366 </span>            :          * four-bytes, updates are atomic.</a>
+<a name="1367"><span class="lineNum">    1367 </span>            :          */</a>
+<a name="1368"><span class="lineNum">    1368 </span><span class="lineCov">      11280 :         proc-&gt;wait_event_info = wait_event_info;</span></a>
+<a name="1369"><span class="lineNum">    1369 </span>            : }</a>
+<a name="1370"><span class="lineNum">    1370 </span>            : </a>
+<a name="1371"><span class="lineNum">    1371 </span>            : /* ----------</a>
+<a name="1372"><span class="lineNum">    1372 </span>            :  * pgstat_report_wait_end() -</a>
+<a name="1373"><span class="lineNum">    1373 </span>            :  *</a>
+<a name="1374"><span class="lineNum">    1374 </span>            :  *      Called to report end of a wait.</a>
+<a name="1375"><span class="lineNum">    1375 </span>            :  *</a>
+<a name="1376"><span class="lineNum">    1376 </span>            :  * NB: this *must* be able to survive being called before MyProc has been</a>
+<a name="1377"><span class="lineNum">    1377 </span>            :  * initialized.</a>
+<a name="1378"><span class="lineNum">    1378 </span>            :  * ----------</a>
+<a name="1379"><span class="lineNum">    1379 </span>            :  */</a>
+<a name="1380"><span class="lineNum">    1380 </span>            : static inline void</a>
+<a name="1381"><span class="lineNum">    1381 </span><span class="lineCov">      11467 : pgstat_report_wait_end(void)</span></a>
+<a name="1382"><span class="lineNum">    1382 </span>            : {</a>
+<a name="1383"><span class="lineNum">    1383 </span><span class="lineCov">      11467 :         volatile PGPROC *proc = MyProc;</span></a>
+<a name="1384"><span class="lineNum">    1384 </span>            : </a>
+<a name="1385"><span class="lineNum">    1385 </span><span class="lineCov">      11467 :         if (!pgstat_track_activities || !proc)</span></a>
+<a name="1386"><span class="lineNum">    1386 </span><span class="lineCov">        162 :                 return;</span></a>
+<a name="1387"><span class="lineNum">    1387 </span>            : </a>
+<a name="1388"><span class="lineNum">    1388 </span>            :         /*</a>
+<a name="1389"><span class="lineNum">    1389 </span>            :          * Since this is a four-byte field which is always read and written as</a>
+<a name="1390"><span class="lineNum">    1390 </span>            :          * four-bytes, updates are atomic.</a>
+<a name="1391"><span class="lineNum">    1391 </span>            :          */</a>
+<a name="1392"><span class="lineNum">    1392 </span><span class="lineCov">      11305 :         proc-&gt;wait_event_info = 0;</span></a>
+<a name="1393"><span class="lineNum">    1393 </span>            : }</a>
+<a name="1394"><span class="lineNum">    1394 </span>            : </a>
+<a name="1395"><span class="lineNum">    1395 </span>            : /* nontransactional event counts are simple enough to inline */</a>
+<a name="1396"><span class="lineNum">    1396 </span>            : </a>
+<a name="1397"><span class="lineNum">    1397 </span>            : #define pgstat_count_heap_scan(rel)                                                                     \</a>
+<a name="1398"><span class="lineNum">    1398 </span>            :         do {                                                                                                                    \</a>
+<a name="1399"><span class="lineNum">    1399 </span>            :                 if ((rel)-&gt;pgstat_info != NULL)                                                              \</a>
+<a name="1400"><span class="lineNum">    1400 </span>            :                         (rel)-&gt;pgstat_info-&gt;t_counts.t_numscans++;                                \</a>
+<a name="1401"><span class="lineNum">    1401 </span>            :         } while (0)</a>
+<a name="1402"><span class="lineNum">    1402 </span>            : #define pgstat_count_heap_getnext(rel)                                                          \</a>
+<a name="1403"><span class="lineNum">    1403 </span>            :         do {                                                                                                                    \</a>
+<a name="1404"><span class="lineNum">    1404 </span>            :                 if ((rel)-&gt;pgstat_info != NULL)                                                              \</a>
+<a name="1405"><span class="lineNum">    1405 </span>            :                         (rel)-&gt;pgstat_info-&gt;t_counts.t_tuples_returned++;         \</a>
+<a name="1406"><span class="lineNum">    1406 </span>            :         } while (0)</a>
+<a name="1407"><span class="lineNum">    1407 </span>            : #define pgstat_count_heap_fetch(rel)                                                            \</a>
+<a name="1408"><span class="lineNum">    1408 </span>            :         do {                                                                                                                    \</a>
+<a name="1409"><span class="lineNum">    1409 </span>            :                 if ((rel)-&gt;pgstat_info != NULL)                                                              \</a>
+<a name="1410"><span class="lineNum">    1410 </span>            :                         (rel)-&gt;pgstat_info-&gt;t_counts.t_tuples_fetched++;          \</a>
+<a name="1411"><span class="lineNum">    1411 </span>            :         } while (0)</a>
+<a name="1412"><span class="lineNum">    1412 </span>            : #define pgstat_count_index_scan(rel)                                                            \</a>
+<a name="1413"><span class="lineNum">    1413 </span>            :         do {                                                                                                                    \</a>
+<a name="1414"><span class="lineNum">    1414 </span>            :                 if ((rel)-&gt;pgstat_info != NULL)                                                              \</a>
+<a name="1415"><span class="lineNum">    1415 </span>            :                         (rel)-&gt;pgstat_info-&gt;t_counts.t_numscans++;                                \</a>
+<a name="1416"><span class="lineNum">    1416 </span>            :         } while (0)</a>
+<a name="1417"><span class="lineNum">    1417 </span>            : #define pgstat_count_index_tuples(rel, n)                                                       \</a>
+<a name="1418"><span class="lineNum">    1418 </span>            :         do {                                                                                                                    \</a>
+<a name="1419"><span class="lineNum">    1419 </span>            :                 if ((rel)-&gt;pgstat_info != NULL)                                                              \</a>
+<a name="1420"><span class="lineNum">    1420 </span>            :                         (rel)-&gt;pgstat_info-&gt;t_counts.t_tuples_returned += (n);    \</a>
+<a name="1421"><span class="lineNum">    1421 </span>            :         } while (0)</a>
+<a name="1422"><span class="lineNum">    1422 </span>            : #define pgstat_count_buffer_read(rel)                                                           \</a>
+<a name="1423"><span class="lineNum">    1423 </span>            :         do {                                                                                                                    \</a>
+<a name="1424"><span class="lineNum">    1424 </span>            :                 if ((rel)-&gt;pgstat_info != NULL)                                                              \</a>
+<a name="1425"><span class="lineNum">    1425 </span>            :                         (rel)-&gt;pgstat_info-&gt;t_counts.t_blocks_fetched++;          \</a>
+<a name="1426"><span class="lineNum">    1426 </span>            :         } while (0)</a>
+<a name="1427"><span class="lineNum">    1427 </span>            : #define pgstat_count_buffer_hit(rel)                                                            \</a>
+<a name="1428"><span class="lineNum">    1428 </span>            :         do {                                                                                                                    \</a>
+<a name="1429"><span class="lineNum">    1429 </span>            :                 if ((rel)-&gt;pgstat_info != NULL)                                                              \</a>
+<a name="1430"><span class="lineNum">    1430 </span>            :                         (rel)-&gt;pgstat_info-&gt;t_counts.t_blocks_hit++;                      \</a>
+<a name="1431"><span class="lineNum">    1431 </span>            :         } while (0)</a>
+<a name="1432"><span class="lineNum">    1432 </span>            : #define pgstat_count_buffer_read_time(n)                                                        \</a>
+<a name="1433"><span class="lineNum">    1433 </span>            :         (pgStatBlockReadTime += (n))</a>
+<a name="1434"><span class="lineNum">    1434 </span>            : #define pgstat_count_buffer_write_time(n)                                                       \</a>
+<a name="1435"><span class="lineNum">    1435 </span>            :         (pgStatBlockWriteTime += (n))</a>
+<a name="1436"><span class="lineNum">    1436 </span>            : </a>
+<a name="1437"><span class="lineNum">    1437 </span>            : extern void pgstat_count_heap_insert(Relation rel, PgStat_Counter n);</a>
+<a name="1438"><span class="lineNum">    1438 </span>            : extern void pgstat_count_heap_update(Relation rel, bool hot);</a>
+<a name="1439"><span class="lineNum">    1439 </span>            : extern void pgstat_count_heap_delete(Relation rel);</a>
+<a name="1440"><span class="lineNum">    1440 </span>            : extern void pgstat_count_truncate(Relation rel);</a>
+<a name="1441"><span class="lineNum">    1441 </span>            : extern void pgstat_update_heap_dead_tuples(Relation rel, int delta);</a>
+<a name="1442"><span class="lineNum">    1442 </span>            : </a>
+<a name="1443"><span class="lineNum">    1443 </span>            : struct FunctionCallInfoBaseData;</a>
+<a name="1444"><span class="lineNum">    1444 </span>            : extern void pgstat_init_function_usage(struct FunctionCallInfoBaseData *fcinfo,</a>
+<a name="1445"><span class="lineNum">    1445 </span>            :                                                                            PgStat_FunctionCallUsage *fcu);</a>
+<a name="1446"><span class="lineNum">    1446 </span>            : extern void pgstat_end_function_usage(PgStat_FunctionCallUsage *fcu,</a>
+<a name="1447"><span class="lineNum">    1447 </span>            :                                                                           bool finalize);</a>
+<a name="1448"><span class="lineNum">    1448 </span>            : </a>
+<a name="1449"><span class="lineNum">    1449 </span>            : extern void AtEOXact_PgStat(bool isCommit, bool parallel);</a>
+<a name="1450"><span class="lineNum">    1450 </span>            : extern void AtEOSubXact_PgStat(bool isCommit, int nestDepth);</a>
+<a name="1451"><span class="lineNum">    1451 </span>            : </a>
+<a name="1452"><span class="lineNum">    1452 </span>            : extern void AtPrepare_PgStat(void);</a>
+<a name="1453"><span class="lineNum">    1453 </span>            : extern void PostPrepare_PgStat(void);</a>
+<a name="1454"><span class="lineNum">    1454 </span>            : </a>
+<a name="1455"><span class="lineNum">    1455 </span>            : extern void pgstat_twophase_postcommit(TransactionId xid, uint16 info,</a>
+<a name="1456"><span class="lineNum">    1456 </span>            :                                                                            void *recdata, uint32 len);</a>
+<a name="1457"><span class="lineNum">    1457 </span>            : extern void pgstat_twophase_postabort(TransactionId xid, uint16 info,</a>
+<a name="1458"><span class="lineNum">    1458 </span>            :                                                                           void *recdata, uint32 len);</a>
+<a name="1459"><span class="lineNum">    1459 </span>            : </a>
+<a name="1460"><span class="lineNum">    1460 </span>            : extern void pgstat_send_archiver(const char *xlog, bool failed);</a>
+<a name="1461"><span class="lineNum">    1461 </span>            : extern void pgstat_send_bgwriter(void);</a>
+<a name="1462"><span class="lineNum">    1462 </span>            : </a>
+<a name="1463"><span class="lineNum">    1463 </span>            : /* ----------</a>
+<a name="1464"><span class="lineNum">    1464 </span>            :  * Support functions for the SQL-callable functions to</a>
+<a name="1465"><span class="lineNum">    1465 </span>            :  * generate the pgstat* views.</a>
+<a name="1466"><span class="lineNum">    1466 </span>            :  * ----------</a>
+<a name="1467"><span class="lineNum">    1467 </span>            :  */</a>
+<a name="1468"><span class="lineNum">    1468 </span>            : extern PgStat_StatDBEntry *pgstat_fetch_stat_dbentry(Oid dbid);</a>
+<a name="1469"><span class="lineNum">    1469 </span>            : extern PgStat_StatTabEntry *pgstat_fetch_stat_tabentry(Oid relid);</a>
+<a name="1470"><span class="lineNum">    1470 </span>            : extern PgBackendStatus *pgstat_fetch_stat_beentry(int beid);</a>
+<a name="1471"><span class="lineNum">    1471 </span>            : extern LocalPgBackendStatus *pgstat_fetch_stat_local_beentry(int beid);</a>
+<a name="1472"><span class="lineNum">    1472 </span>            : extern PgStat_StatFuncEntry *pgstat_fetch_stat_funcentry(Oid funcid);</a>
+<a name="1473"><span class="lineNum">    1473 </span>            : extern int      pgstat_fetch_stat_numbackends(void);</a>
+<a name="1474"><span class="lineNum">    1474 </span>            : extern PgStat_ArchiverStats *pgstat_fetch_stat_archiver(void);</a>
+<a name="1475"><span class="lineNum">    1475 </span>            : extern PgStat_GlobalStats *pgstat_fetch_global(void);</a>
+<a name="1476"><span class="lineNum">    1476 </span>            : extern PgStat_SLRUStats *pgstat_fetch_slru(void);</a>
+<a name="1477"><span class="lineNum">    1477 </span>            : </a>
+<a name="1478"><span class="lineNum">    1478 </span>            : extern void pgstat_count_slru_page_zeroed(int slru_idx);</a>
+<a name="1479"><span class="lineNum">    1479 </span>            : extern void pgstat_count_slru_page_hit(int slru_idx);</a>
+<a name="1480"><span class="lineNum">    1480 </span>            : extern void pgstat_count_slru_page_read(int slru_idx);</a>
+<a name="1481"><span class="lineNum">    1481 </span>            : extern void pgstat_count_slru_page_written(int slru_idx);</a>
+<a name="1482"><span class="lineNum">    1482 </span>            : extern void pgstat_count_slru_page_exists(int slru_idx);</a>
+<a name="1483"><span class="lineNum">    1483 </span>            : extern void pgstat_count_slru_flush(int slru_idx);</a>
+<a name="1484"><span class="lineNum">    1484 </span>            : extern void pgstat_count_slru_truncate(int slru_idx);</a>
+<a name="1485"><span class="lineNum">    1485 </span>            : extern const char *pgstat_slru_name(int slru_idx);</a>
+<a name="1486"><span class="lineNum">    1486 </span>            : extern int      pgstat_slru_index(const char *name);</a>
+<a name="1487"><span class="lineNum">    1487 </span>            : </a>
+<a name="1488"><span class="lineNum">    1488 </span>            : #endif                                                  /* PGSTAT_H */</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 1.16</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

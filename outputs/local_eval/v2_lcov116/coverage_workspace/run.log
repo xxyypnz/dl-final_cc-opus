@@ -1,0 +1,1844 @@
+[0;32m[INFO][0m === Step 1: 全量编译 PostgreSQL (coverage) ===
+[0;32m[INFO][0m 跳过编译 (--skip-build)
+[0;32m[INFO][0m === Step 2: 设置环境变量 ===
+postgres path: /workspaces/dl-final_cc-opus/postgresql-13.23/install_coverage/bin/postgres
+psql path: /workspaces/dl-final_cc-opus/postgresql-13.23/install_coverage/bin/psql
+[0;32m[INFO][0m === Step 3: 初始化数据库 ===
+The files belonging to this database system will be owned by user "codespace".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "C.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+creating directory /workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/coverage_workspace/data ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... Etc/UTC
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+initdb: warning: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success. You can now start the database server using:
+
+    pg_ctl -D /workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/coverage_workspace/data -l logfile start
+
+[0;32m[INFO][0m === Step 4: 启动 PostgreSQL ===
+waiting for server to start.... done
+server started
+[0;32m[INFO][0m 检查 postgres 进程
+codespa+  261139  0.3  0.3 172488 29208 ?        Ss   14:11   0:00 /workspaces/dl-final_cc-opus/postgresql-13.23/install_coverage/bin/postgres -D /workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/coverage_workspace/data -k /tmp/pgcov-55432 -p 55432
+codespa+  261142  0.0  0.0 172488  7240 ?        Ss   14:11   0:00 postgres: checkpointer 
+codespa+  261143  0.0  0.0 172488  7156 ?        Ss   14:11   0:00 postgres: background writer 
+codespa+  261144  0.0  0.0 172488  7124 ?        Ss   14:11   0:00 postgres: walwriter 
+codespa+  261145  0.0  0.1 173040 10724 ?        Ss   14:11   0:00 postgres: autovacuum launcher 
+codespa+  261146  0.0  0.0  26892  6568 ?        Ss   14:11   0:00 postgres: stats collector 
+codespa+  261147  0.0  0.1 172920  9668 ?        Ss   14:11   0:00 postgres: logical replication launcher 
+[0;32m[INFO][0m 验证 PostgreSQL 实例版本
+                                                 version                                                  
+----------------------------------------------------------------------------------------------------------
+ PostgreSQL 13.23 on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
+(1 row)
+
+[0;32m[INFO][0m === Step 5: 创建数据库 ===
+[0;32m[INFO][0m === Step 6: 执行 SQL workload ===
+[0;32m[INFO][0m 总 Test Case 数(预): 186
+[0;32m[INFO][0m ========== SQL 执行统计 ==========
+[0;32m[INFO][0m [Case 级] 总计: 186 case, 成功: 162, 失败: 24, 成功率: 87.0900%
+[0;32m[INFO][0m [SQL 级]  总计: 1452 条, 成功: 1424, 失败: 28, 成功率: 98.0700%
+[0;32m[INFO][0m === Step 7: 停止 PostgreSQL（写入 gcda）===
+waiting for server to shut down.... done
+server stopped
+[0;32m[INFO][0m === Step 8: 检查覆盖率数据 ===
+总 gcda 文件数: 859
+backend gcda 文件数: 700
+backend gcno 文件数: 743
+[0;32m[INFO][0m === Step 9: 生成覆盖率报告 ===
+[0;32m[INFO][0m 使用 lcov: lcov: LCOV version 1.16 (major=1)
+Capturing coverage data from /workspaces/dl-final_cc-opus/postgresql-13.23
+Found gcov version: 13.3.0
+Using intermediate gcov format
+Using JSON module JSON::XS
+Scanning /workspaces/dl-final_cc-opus/postgresql-13.23 for .gcda files ...
+Found 859 data files in /workspaces/dl-final_cc-opus/postgresql-13.23
+Processing port/noblock_srv.gcda
+Processing port/pg_crc32c_sse42.gcda
+Processing port/strerror.gcda
+Processing port/snprintf_shlib.gcda
+Processing port/pgstrsignal_srv.gcda
+Processing port/pg_strong_random_shlib.gcda
+Processing port/snprintf.gcda
+Processing port/pgstrcasecmp_shlib.gcda
+Processing port/pg_strong_random_srv.gcda
+Processing port/quotes.gcda
+Processing port/pg_crc32c_sse42_srv.gcda
+Processing port/inet_net_ntop_shlib.gcda
+Processing port/strerror_shlib.gcda
+Processing port/qsort.gcda
+Processing port/getpeereid_srv.gcda
+Processing port/pgmkdirp_srv.gcda
+Processing port/strerror_srv.gcda
+Processing port/pgstrsignal.gcda
+Processing port/inet_net_ntop_srv.gcda
+Processing port/quotes_srv.gcda
+Processing port/pgstrcasecmp_srv.gcda
+Processing port/pg_crc32c_sse42_choose.gcda
+Processing port/pg_bitutils_srv.gcda
+Processing port/noblock_shlib.gcda
+Processing port/erand48_srv.gcda
+Processing port/path.gcda
+Processing port/pqsignal_srv.gcda
+Processing port/fls_srv.gcda
+Processing port/thread.gcda
+Processing port/pgsleep.gcda
+Processing port/chklocale.gcda
+Processing port/sprompt.gcda
+Processing port/thread_shlib.gcda
+Processing port/tar_srv.gcda
+Processing port/pqsignal.gcda
+Processing port/pg_crc32c_sb8.gcda
+Processing port/pgcheckdir.gcda
+Processing port/pgsleep_srv.gcda
+Processing port/getpeereid_shlib.gcda
+Processing port/chklocale_srv.gcda
+Processing port/path_srv.gcda
+Processing port/qsort_arg_srv.gcda
+Processing port/snprintf_srv.gcda
+Processing port/thread_srv.gcda
+Processing port/pg_crc32c_sse42_choose_srv.gcda
+Processing port/qsort_srv.gcda
+Processing port/chklocale_shlib.gcda
+Processing port/pg_crc32c_sb8_srv.gcda
+Processing port/pgmkdirp.gcda
+Processing port/pgstrcasecmp.gcda
+Processing backend/foreign/foreign.gcda
+Processing backend/commands/explain.gcda
+Processing backend/commands/functioncmds.gcda
+Processing backend/commands/conversioncmds.gcda
+Processing backend/commands/opclasscmds.gcda
+Processing backend/commands/typecmds.gcda
+Processing backend/commands/discard.gcda
+Processing backend/commands/copy.gcda
+Processing backend/commands/dbcommands.gcda
+Processing backend/commands/event_trigger.gcda
+Processing backend/commands/vacuum.gcda
+Processing backend/commands/dropcmds.gcda
+Processing backend/commands/subscriptioncmds.gcda
+Processing backend/commands/collationcmds.gcda
+Processing backend/commands/aggregatecmds.gcda
+Processing backend/commands/schemacmds.gcda
+Processing backend/commands/foreigncmds.gcda
+Processing backend/commands/prepare.gcda
+Processing backend/commands/comment.gcda
+Processing backend/commands/policy.gcda
+Processing backend/commands/alter.gcda
+Processing backend/commands/portalcmds.gcda
+Processing backend/commands/operatorcmds.gcda
+Processing backend/commands/extension.gcda
+Processing backend/commands/trigger.gcda
+Processing backend/commands/lockcmds.gcda
+Processing backend/commands/statscmds.gcda
+Processing backend/commands/indexcmds.gcda
+Processing backend/commands/sequence.gcda
+Processing backend/commands/constraint.gcda
+Processing backend/commands/publicationcmds.gcda
+Processing backend/commands/view.gcda
+Processing backend/commands/variable.gcda
+Processing backend/commands/analyze.gcda
+Processing backend/commands/tablespace.gcda
+Processing backend/commands/seclabel.gcda
+Processing backend/commands/matview.gcda
+Processing backend/commands/amcmds.gcda
+Processing backend/commands/async.gcda
+Processing backend/commands/cluster.gcda
+Processing backend/commands/tsearchcmds.gcda
+Processing backend/commands/user.gcda
+Processing backend/commands/tablecmds.gcda
+Processing backend/commands/define.gcda
+Processing backend/commands/createas.gcda
+Processing backend/commands/proclang.gcda
+Processing backend/postmaster/syslogger.gcda
+Processing backend/postmaster/fork_process.gcda
+Processing backend/postmaster/startup.gcda
+Processing backend/postmaster/pgarch.gcda
+Processing backend/postmaster/autovacuum.gcda
+Processing backend/postmaster/checkpointer.gcda
+Processing backend/postmaster/walwriter.gcda
+Processing backend/postmaster/pgstat.gcda
+Processing backend/postmaster/bgwriter.gcda
+Processing backend/postmaster/postmaster.gcda
+Processing backend/postmaster/bgworker.gcda
+Processing backend/postmaster/interrupt.gcda
+Processing backend/tcop/fastpath.gcda
+Processing backend/tcop/dest.gcda
+Processing backend/tcop/pquery.gcda
+Processing backend/tcop/cmdtag.gcda
+Processing backend/tcop/postgres.gcda
+Processing backend/tcop/utility.gcda
+Processing backend/tsearch/to_tsany.gcda
+Processing backend/tsearch/ts_typanalyze.gcda
+Processing backend/tsearch/ts_utils.gcda
+Processing backend/tsearch/dict_simple.gcda
+Processing backend/tsearch/dict.gcda
+Processing backend/tsearch/ts_locale.gcda
+Processing backend/tsearch/dict_ispell.gcda
+Processing backend/tsearch/spell.gcda
+Processing backend/tsearch/ts_parse.gcda
+Processing backend/tsearch/wparser_def.gcda
+Processing backend/tsearch/dict_synonym.gcda
+Processing backend/tsearch/dict_thesaurus.gcda
+Processing backend/tsearch/regis.gcda
+Processing backend/tsearch/ts_selfuncs.gcda
+Processing backend/tsearch/wparser.gcda
+Processing backend/statistics/dependencies.gcda
+Processing backend/statistics/mvdistinct.gcda
+Processing backend/statistics/mcv.gcda
+Processing backend/statistics/extended_stats.gcda
+Processing backend/access/brin/brin_tuple.gcda
+Processing backend/access/brin/brin_minmax.gcda
+Processing backend/access/brin/brin_inclusion.gcda
+Processing backend/access/brin/brin_xlog.gcda
+Processing backend/access/brin/brin_validate.gcda
+Processing backend/access/brin/brin_revmap.gcda
+Processing backend/access/brin/brin_pageops.gcda
+Processing backend/access/brin/brin.gcda
+Processing backend/access/spgist/spgdoinsert.gcda
+Processing backend/access/spgist/spgquadtreeproc.gcda
+Processing backend/access/spgist/spginsert.gcda
+Processing backend/access/spgist/spgproc.gcda
+Processing backend/access/spgist/spgxlog.gcda
+Processing backend/access/spgist/spgvalidate.gcda
+Processing backend/access/spgist/spgtextproc.gcda
+Processing backend/access/spgist/spgutils.gcda
+Processing backend/access/spgist/spgvacuum.gcda
+Processing backend/access/spgist/spgkdtreeproc.gcda
+Processing backend/access/spgist/spgscan.gcda
+Processing backend/access/table/toast_helper.gcda
+Processing backend/access/table/tableamapi.gcda
+Processing backend/access/table/table.gcda
+Processing backend/access/table/tableam.gcda
+Processing backend/access/index/indexam.gcda
+Processing backend/access/index/amapi.gcda
+Processing backend/access/index/genam.gcda
+Processing backend/access/index/amvalidate.gcda
+Processing backend/access/hash/hashfunc.gcda
+Processing backend/access/hash/hashovfl.gcda
+Processing backend/access/hash/hash.gcda
+Processing backend/access/hash/hashvalidate.gcda
+Processing backend/access/hash/hashinsert.gcda
+Processing backend/access/hash/hashsearch.gcda
+Processing backend/access/hash/hashsort.gcda
+Processing backend/access/hash/hashpage.gcda
+Processing backend/access/hash/hash_xlog.gcda
+Processing backend/access/hash/hashutil.gcda
+Processing backend/access/transam/twophase.gcda
+Processing backend/access/transam/generic_xlog.gcda
+Processing backend/access/transam/subtrans.gcda
+Processing backend/access/transam/multixact.gcda
+Processing backend/access/transam/xlogarchive.gcda
+Processing backend/access/transam/commit_ts.gcda
+Processing backend/access/transam/xlog.gcda
+Processing backend/access/transam/clog.gcda
+Processing backend/access/transam/transam.gcda
+Processing backend/access/transam/parallel.gcda
+Processing backend/access/transam/varsup.gcda
+Processing backend/access/transam/slru.gcda
+Processing backend/access/transam/xlogreader.gcda
+Processing backend/access/transam/xact.gcda
+Processing backend/access/transam/xloginsert.gcda
+Processing backend/access/transam/xlogutils.gcda
+Processing backend/access/transam/timeline.gcda
+Processing backend/access/transam/xlogfuncs.gcda
+Processing backend/access/common/indextuple.gcda
+Processing backend/access/common/toast_internals.gcda
+Processing backend/access/common/reloptions.gcda
+Processing backend/access/common/heaptuple.gcda
+Processing backend/access/common/attmap.gcda
+Processing backend/access/common/tupconvert.gcda
+Processing backend/access/common/printsimple.gcda
+Processing backend/access/common/bufmask.gcda
+Processing backend/access/common/detoast.gcda
+Processing backend/access/common/session.gcda
+Processing backend/access/common/printtup.gcda
+Processing backend/access/common/scankey.gcda
+Processing backend/access/common/relation.gcda
+Processing backend/access/common/tupdesc.gcda
+Processing backend/access/tablesample/system.gcda
+Processing backend/access/tablesample/tablesample.gcda
+Processing backend/access/tablesample/bernoulli.gcda
+Processing backend/access/rmgrdesc/mxactdesc.gcda
+Processing backend/access/rmgrdesc/gistdesc.gcda
+Processing backend/access/rmgrdesc/spgdesc.gcda
+Processing backend/access/rmgrdesc/seqdesc.gcda
+Processing backend/access/rmgrdesc/xlogdesc.gcda
+Processing backend/access/rmgrdesc/clogdesc.gcda
+Processing backend/access/rmgrdesc/genericdesc.gcda
+Processing backend/access/rmgrdesc/dbasedesc.gcda
+Processing backend/access/rmgrdesc/nbtdesc.gcda
+Processing backend/access/rmgrdesc/heapdesc.gcda
+Processing backend/access/rmgrdesc/hashdesc.gcda
+Processing backend/access/rmgrdesc/replorigindesc.gcda
+Processing backend/access/rmgrdesc/logicalmsgdesc.gcda
+Processing backend/access/rmgrdesc/smgrdesc.gcda
+Processing backend/access/rmgrdesc/tblspcdesc.gcda
+Processing backend/access/rmgrdesc/brindesc.gcda
+Processing backend/access/rmgrdesc/committsdesc.gcda
+Processing backend/access/rmgrdesc/standbydesc.gcda
+Processing backend/access/rmgrdesc/xactdesc.gcda
+Processing backend/access/rmgrdesc/relmapdesc.gcda
+Processing backend/access/rmgrdesc/gindesc.gcda
+Processing backend/access/heap/heapam.gcda
+Processing backend/access/heap/visibilitymap.gcda
+Processing backend/access/heap/syncscan.gcda
+Processing backend/access/heap/rewriteheap.gcda
+Processing backend/access/heap/hio.gcda
+Processing backend/access/heap/vacuumlazy.gcda
+Processing backend/access/heap/pruneheap.gcda
+Processing backend/access/heap/heaptoast.gcda
+Processing backend/access/heap/heapam_visibility.gcda
+Processing backend/access/heap/heapam_handler.gcda
+Processing backend/access/gist/gistbuildbuffers.gcda
+Processing backend/access/gist/gistbuild.gcda
+Processing backend/access/gist/gistproc.gcda
+Processing backend/access/gist/gistxlog.gcda
+Processing backend/access/gist/gistvacuum.gcda
+Processing backend/access/gist/gistget.gcda
+Processing backend/access/gist/gistutil.gcda
+Processing backend/access/gist/gistscan.gcda
+Processing backend/access/gist/gistsplit.gcda
+Processing backend/access/gist/gist.gcda
+Processing backend/access/gist/gistvalidate.gcda
+Processing backend/access/nbtree/nbtpage.gcda
+Processing backend/access/nbtree/nbtsearch.gcda
+Processing backend/access/nbtree/nbtxlog.gcda
+Processing backend/access/nbtree/nbtsplitloc.gcda
+Processing backend/access/nbtree/nbtree.gcda
+Processing backend/access/nbtree/nbtdedup.gcda
+Processing backend/access/nbtree/nbtinsert.gcda
+Processing backend/access/nbtree/nbtutils.gcda
+Processing backend/access/nbtree/nbtsort.gcda
+Processing backend/access/nbtree/nbtcompare.gcda
+Processing backend/access/nbtree/nbtvalidate.gcda
+Processing backend/access/gin/ginbtree.gcda
+Processing backend/access/gin/ginfast.gcda
+Processing backend/access/gin/ginarrayproc.gcda
+Processing backend/access/gin/ginutil.gcda
+Processing backend/access/gin/ginvacuum.gcda
+Processing backend/access/gin/ginget.gcda
+Processing backend/access/gin/ginlogic.gcda
+Processing backend/access/gin/ginbulk.gcda
+Processing backend/access/gin/ginentrypage.gcda
+Processing backend/access/gin/ginxlog.gcda
+Processing backend/access/gin/ginpostinglist.gcda
+Processing backend/access/gin/ginvalidate.gcda
+Processing backend/access/gin/ginscan.gcda
+Processing backend/access/gin/gininsert.gcda
+Processing backend/access/gin/gindatapage.gcda
+Processing backend/regex/regexec.gcda
+Processing backend/regex/regerror.gcda
+Processing backend/regex/regcomp.gcda
+Processing backend/regex/regfree.gcda
+Processing backend/regex/regprefix.gcda
+Processing backend/regex/regexport.gcda
+Processing backend/port/pg_sema.gcda
+Processing backend/port/pg_shmem.gcda
+Processing backend/storage/file/buffile.gcda
+Processing backend/storage/file/sharedfileset.gcda
+Processing backend/storage/file/fd.gcda
+Processing backend/storage/file/copydir.gcda
+Processing backend/storage/file/reinit.gcda
+Processing backend/storage/freespace/fsmpage.gcda
+Processing backend/storage/freespace/freespace.gcda
+Processing backend/storage/freespace/indexfsm.gcda
+Processing backend/storage/ipc/latch.gcda
+Processing backend/storage/ipc/ipci.gcda
+Processing backend/storage/ipc/standby.gcda
+Processing backend/storage/ipc/procarray.gcda
+Processing backend/storage/ipc/shmqueue.gcda
+Processing backend/storage/ipc/shm_toc.gcda
+Processing backend/storage/ipc/pmsignal.gcda
+Processing backend/storage/ipc/dsm_impl.gcda
+Processing backend/storage/ipc/ipc.gcda
+Processing backend/storage/ipc/procsignal.gcda
+Processing backend/storage/ipc/sinval.gcda
+Processing backend/storage/ipc/shmem.gcda
+Processing backend/storage/ipc/dsm.gcda
+Processing backend/storage/ipc/sinvaladt.gcda
+Processing backend/storage/ipc/signalfuncs.gcda
+Processing backend/storage/ipc/shm_mq.gcda
+Processing backend/storage/ipc/barrier.gcda
+Processing backend/storage/smgr/md.gcda
+Processing backend/storage/smgr/smgr.gcda
+Processing backend/storage/sync/sync.gcda
+Processing backend/storage/lmgr/lmgr.gcda
+Processing backend/storage/lmgr/lock.gcda
+Processing backend/storage/lmgr/spin.gcda
+Processing backend/storage/lmgr/proc.gcda
+Processing backend/storage/lmgr/s_lock.gcda
+Processing backend/storage/lmgr/lwlock.gcda
+Processing backend/storage/lmgr/predicate.gcda
+Processing backend/storage/lmgr/condition_variable.gcda
+Processing backend/storage/lmgr/deadlock.gcda
+Processing backend/storage/buffer/buf_init.gcda
+Processing backend/storage/buffer/freelist.gcda
+Processing backend/storage/buffer/bufmgr.gcda
+Processing backend/storage/buffer/buf_table.gcda
+Processing backend/storage/buffer/localbuf.gcda
+Processing backend/storage/large_object/inv_api.gcda
+Processing backend/storage/page/itemptr.gcda
+Processing backend/storage/page/bufpage.gcda
+Processing backend/storage/page/checksum.gcda
+Processing backend/jit/jit.gcda
+Processing backend/replication/repl_gram.gcda
+Processing backend/replication/syncrep.gcda
+Processing backend/replication/syncrep_gram.gcda
+Processing backend/replication/walreceiver.gcda
+Processing backend/replication/backup_manifest.gcda
+Processing backend/replication/slot.gcda
+Processing backend/replication/walreceiverfuncs.gcda
+Processing backend/replication/walsender.gcda
+Processing backend/replication/slotfuncs.gcda
+Processing backend/replication/basebackup.gcda
+Processing backend/replication/logical/tablesync.gcda
+Processing backend/replication/logical/logicalfuncs.gcda
+Processing backend/replication/logical/logical.gcda
+Processing backend/replication/logical/reorderbuffer.gcda
+Processing backend/replication/logical/origin.gcda
+Processing backend/replication/logical/worker.gcda
+Processing backend/replication/logical/message.gcda
+Processing backend/replication/logical/snapbuild.gcda
+Processing backend/replication/logical/launcher.gcda
+Processing backend/replication/logical/proto.gcda
+Processing backend/replication/logical/decode.gcda
+Processing backend/replication/logical/relation.gcda
+Processing backend/catalog/pg_shdepend.gcda
+Processing backend/catalog/pg_cast.gcda
+Processing backend/catalog/pg_namespace.gcda
+Processing backend/catalog/partition.gcda
+Processing backend/catalog/pg_proc.gcda
+Processing backend/catalog/catalog.gcda
+Processing backend/catalog/pg_largeobject.gcda
+Processing backend/catalog/pg_conversion.gcda
+Processing backend/catalog/aclchk.gcda
+Processing backend/catalog/heap.gcda
+Processing backend/catalog/dependency.gcda
+Processing backend/catalog/pg_publication.gcda
+Processing backend/catalog/namespace.gcda
+Processing backend/catalog/toasting.gcda
+Processing backend/catalog/indexing.gcda
+Processing backend/catalog/pg_range.gcda
+Processing backend/catalog/pg_aggregate.gcda
+Processing backend/catalog/pg_operator.gcda
+Processing backend/catalog/objectaccess.gcda
+Processing backend/catalog/objectaddress.gcda
+Processing backend/catalog/pg_collation.gcda
+Processing backend/catalog/storage.gcda
+Processing backend/catalog/pg_constraint.gcda
+Processing backend/catalog/index.gcda
+Processing backend/catalog/pg_inherits.gcda
+Processing backend/catalog/pg_depend.gcda
+Processing backend/catalog/pg_type.gcda
+Processing backend/catalog/pg_db_role_setting.gcda
+Processing backend/catalog/pg_subscription.gcda
+Processing backend/catalog/pg_enum.gcda
+Processing backend/nodes/outfuncs.gcda
+Processing backend/nodes/tidbitmap.gcda
+Processing backend/nodes/print.gcda
+Processing backend/nodes/copyfuncs.gcda
+Processing backend/nodes/params.gcda
+Processing backend/nodes/extensible.gcda
+Processing backend/nodes/bitmapset.gcda
+Processing backend/nodes/readfuncs.gcda
+Processing backend/nodes/value.gcda
+Processing backend/nodes/nodeFuncs.gcda
+Processing backend/nodes/list.gcda
+Processing backend/nodes/makefuncs.gcda
+Processing backend/nodes/read.gcda
+Processing backend/nodes/equalfuncs.gcda
+Processing backend/libpq/crypt.gcda
+Processing backend/libpq/hba.gcda
+Processing backend/libpq/be-secure.gcda
+Processing backend/libpq/pqformat.gcda
+Processing backend/libpq/auth.gcda
+Processing backend/libpq/be-fsstubs.gcda
+Processing backend/libpq/pqcomm.gcda
+Processing backend/libpq/ifaddr.gcda
+Processing backend/libpq/be-secure-common.gcda
+Processing backend/libpq/pqsignal.gcda
+Processing backend/libpq/auth-scram.gcda
+Processing backend/libpq/pqmq.gcda
+Processing backend/main/main.gcda
+Processing backend/lib/knapsack.gcda
+Processing backend/lib/ilist.gcda
+Processing backend/lib/hyperloglog.gcda
+Processing backend/lib/pairingheap.gcda
+Processing backend/lib/bloomfilter.gcda
+Processing backend/lib/dshash.gcda
+Processing backend/lib/binaryheap.gcda
+Processing backend/lib/integerset.gcda
+Processing backend/lib/bipartite_match.gcda
+Processing backend/lib/rbtree.gcda
+Processing backend/snowball/stem_UTF_8_danish.gcda
+Processing backend/snowball/stem_UTF_8_arabic.gcda
+Processing backend/snowball/stem_UTF_8_finnish.gcda
+Processing backend/snowball/stem_ISO_8859_1_indonesian.gcda
+Processing backend/snowball/stem_ISO_8859_1_finnish.gcda
+Processing backend/snowball/stem_UTF_8_romanian.gcda
+Processing backend/snowball/stem_ISO_8859_2_hungarian.gcda
+Processing backend/snowball/stem_UTF_8_portuguese.gcda
+Processing backend/snowball/stem_ISO_8859_1_german.gcda
+Processing backend/snowball/stem_UTF_8_irish.gcda
+Processing backend/snowball/stem_ISO_8859_1_norwegian.gcda
+Processing backend/snowball/stem_ISO_8859_1_swedish.gcda
+Processing backend/snowball/stem_ISO_8859_1_dutch.gcda
+Processing backend/snowball/stem_ISO_8859_1_porter.gcda
+Processing backend/snowball/stem_UTF_8_dutch.gcda
+Processing backend/snowball/stem_UTF_8_english.gcda
+Processing backend/snowball/stem_ISO_8859_1_english.gcda
+Processing backend/snowball/stem_UTF_8_indonesian.gcda
+Processing backend/snowball/stem_UTF_8_french.gcda
+Processing backend/snowball/stem_UTF_8_porter.gcda
+Processing backend/snowball/api.gcda
+Processing backend/snowball/stem_ISO_8859_1_spanish.gcda
+Processing backend/snowball/stem_UTF_8_german.gcda
+Processing backend/snowball/stem_UTF_8_russian.gcda
+Processing backend/snowball/stem_ISO_8859_1_portuguese.gcda
+Processing backend/snowball/stem_ISO_8859_1_danish.gcda
+Processing backend/snowball/stem_UTF_8_norwegian.gcda
+Processing backend/snowball/utilities.gcda
+Processing backend/snowball/stem_UTF_8_italian.gcda
+Processing backend/snowball/stem_UTF_8_swedish.gcda
+Processing backend/snowball/stem_UTF_8_nepali.gcda
+Processing backend/snowball/stem_UTF_8_tamil.gcda
+Processing backend/snowball/stem_KOI8_R_russian.gcda
+Processing backend/snowball/stem_UTF_8_lithuanian.gcda
+Processing backend/snowball/stem_UTF_8_greek.gcda
+Processing backend/snowball/dict_snowball.gcda
+Processing backend/snowball/stem_ISO_8859_1_irish.gcda
+Processing backend/snowball/stem_UTF_8_hungarian.gcda
+Processing backend/snowball/stem_UTF_8_turkish.gcda
+Processing backend/snowball/stem_UTF_8_spanish.gcda
+Processing backend/snowball/stem_ISO_8859_1_french.gcda
+Processing backend/snowball/stem_ISO_8859_2_romanian.gcda
+Processing backend/snowball/stem_ISO_8859_1_italian.gcda
+Processing backend/parser/parser.gcda
+Processing backend/parser/parse_relation.gcda
+Processing backend/parser/parse_func.gcda
+Processing backend/parser/parse_node.gcda
+Processing backend/parser/parse_type.gcda
+Processing backend/parser/parse_param.gcda
+Processing backend/parser/scansup.gcda
+Processing backend/parser/parse_coerce.gcda
+Processing backend/parser/parse_oper.gcda
+Processing backend/parser/analyze.gcda
+Processing backend/parser/parse_agg.gcda
+Processing backend/parser/parse_expr.gcda
+Processing backend/parser/scan.gcda
+Processing backend/parser/parse_enr.gcda
+Processing backend/parser/parse_utilcmd.gcda
+Processing backend/parser/parse_clause.gcda
+Processing backend/parser/gram.gcda
+Processing backend/parser/parse_cte.gcda
+Processing backend/parser/parse_target.gcda
+Processing backend/parser/parse_collate.gcda
+Processing backend/optimizer/util/relnode.gcda
+Processing backend/optimizer/util/tlist.gcda
+Processing backend/optimizer/util/inherit.gcda
+Processing backend/optimizer/util/placeholder.gcda
+Processing backend/optimizer/util/clauses.gcda
+Processing backend/optimizer/util/appendinfo.gcda
+Processing backend/optimizer/util/joininfo.gcda
+Processing backend/optimizer/util/paramassign.gcda
+Processing backend/optimizer/util/orclauses.gcda
+Processing backend/optimizer/util/pathnode.gcda
+Processing backend/optimizer/util/restrictinfo.gcda
+Processing backend/optimizer/util/plancat.gcda
+Processing backend/optimizer/util/var.gcda
+Processing backend/optimizer/util/predtest.gcda
+Processing backend/optimizer/geqo/geqo_erx.gcda
+Processing backend/optimizer/geqo/geqo_random.gcda
+Processing backend/optimizer/geqo/geqo_pool.gcda
+Processing backend/optimizer/geqo/geqo_recombination.gcda
+Processing backend/optimizer/geqo/geqo_selection.gcda
+Processing backend/optimizer/geqo/geqo_copy.gcda
+Processing backend/optimizer/geqo/geqo_eval.gcda
+Processing backend/optimizer/geqo/geqo_main.gcda
+Processing backend/optimizer/prep/prepjointree.gcda
+Processing backend/optimizer/prep/prepunion.gcda
+Processing backend/optimizer/prep/preptlist.gcda
+Processing backend/optimizer/prep/prepqual.gcda
+Processing backend/optimizer/plan/planmain.gcda
+Processing backend/optimizer/plan/setrefs.gcda
+Processing backend/optimizer/plan/createplan.gcda
+Processing backend/optimizer/plan/planagg.gcda
+Processing backend/optimizer/plan/planner.gcda
+Processing backend/optimizer/plan/initsplan.gcda
+Processing backend/optimizer/plan/analyzejoins.gcda
+Processing backend/optimizer/plan/subselect.gcda
+Processing backend/optimizer/path/joinrels.gcda
+Processing backend/optimizer/path/clausesel.gcda
+Processing backend/optimizer/path/tidpath.gcda
+Processing backend/optimizer/path/equivclass.gcda
+Processing backend/optimizer/path/allpaths.gcda
+Processing backend/optimizer/path/pathkeys.gcda
+Processing backend/optimizer/path/joinpath.gcda
+Processing backend/optimizer/path/indxpath.gcda
+Processing backend/optimizer/path/costsize.gcda
+Processing backend/utils/cache/spccache.gcda
+Processing backend/utils/cache/catcache.gcda
+Processing backend/utils/cache/lsyscache.gcda
+Processing backend/utils/cache/plancache.gcda
+Processing backend/utils/cache/attoptcache.gcda
+Processing backend/utils/cache/relmapper.gcda
+Processing backend/utils/cache/inval.gcda
+Processing backend/utils/cache/ts_cache.gcda
+Processing backend/utils/cache/partcache.gcda
+Processing backend/utils/cache/relfilenodemap.gcda
+Processing backend/utils/cache/evtcache.gcda
+Processing backend/utils/cache/typcache.gcda
+Processing backend/utils/cache/relcache.gcda
+Processing backend/utils/cache/syscache.gcda
+Processing backend/utils/error/assert.gcda
+Processing backend/utils/error/elog.gcda
+Processing backend/utils/hash/dynahash.gcda
+Processing backend/utils/time/snapmgr.gcda
+Processing backend/utils/time/combocid.gcda
+Processing backend/utils/resowner/resowner.gcda
+Processing backend/utils/misc/queryenvironment.gcda
+Processing backend/utils/misc/superuser.gcda
+Processing backend/utils/misc/pg_config.gcda
+Processing backend/utils/misc/pg_controldata.gcda
+Processing backend/utils/misc/guc.gcda
+Processing backend/utils/misc/timeout.gcda
+Processing backend/utils/misc/rls.gcda
+Processing backend/utils/misc/ps_status.gcda
+Processing backend/utils/misc/help_config.gcda
+Processing backend/utils/misc/sampling.gcda
+Processing backend/utils/misc/pg_rusage.gcda
+Processing backend/utils/misc/tzparser.gcda
+Processing backend/utils/mmgr/mcxt.gcda
+Processing backend/utils/mmgr/dsa.gcda
+Processing backend/utils/mmgr/slab.gcda
+Processing backend/utils/mmgr/freepage.gcda
+Processing backend/utils/mmgr/portalmem.gcda
+Processing backend/utils/mmgr/generation.gcda
+Processing backend/utils/mmgr/aset.gcda
+Processing backend/utils/init/postinit.gcda
+Processing backend/utils/init/miscinit.gcda
+Processing backend/utils/sort/sharedtuplestore.gcda
+Processing backend/utils/sort/logtape.gcda
+Processing backend/utils/sort/sortsupport.gcda
+Processing backend/utils/sort/tuplesort.gcda
+Processing backend/utils/sort/tuplestore.gcda
+Processing backend/utils/mb/wstrncmp.gcda
+Processing backend/utils/mb/stringinfo_mb.gcda
+Processing backend/utils/mb/mbutils.gcda
+Processing backend/utils/mb/wstrcmp.gcda
+Processing backend/utils/mb/conv.gcda
+Processing backend/utils/fmgr/dfmgr.gcda
+Processing backend/utils/fmgr/funcapi.gcda
+Processing backend/utils/fmgr/fmgr.gcda
+Processing backend/utils/adt/array_typanalyze.gcda
+Processing backend/utils/adt/mac8.gcda
+Processing backend/utils/adt/xml.gcda
+Processing backend/utils/adt/date.gcda
+Processing backend/utils/adt/numeric.gcda
+Processing backend/utils/adt/datetime.gcda
+Processing backend/utils/adt/jsonpath.gcda
+Processing backend/utils/adt/mac.gcda
+Processing backend/utils/adt/tsquery.gcda
+Processing backend/utils/adt/pgstatfuncs.gcda
+Processing backend/utils/adt/like_support.gcda
+Processing backend/utils/adt/amutils.gcda
+Processing backend/utils/adt/partitionfuncs.gcda
+Processing backend/utils/adt/rangetypes.gcda
+Processing backend/utils/adt/acl.gcda
+Processing backend/utils/adt/xid8funcs.gcda
+Processing backend/utils/adt/misc.gcda
+Processing backend/utils/adt/tsginidx.gcda
+Processing backend/utils/adt/datum.gcda
+Processing backend/utils/adt/jsonb_util.gcda
+Processing backend/utils/adt/pseudotypes.gcda
+Processing backend/utils/adt/jsonpath_gram.gcda
+Processing backend/utils/adt/arrayutils.gcda
+Processing backend/utils/adt/pg_upgrade_support.gcda
+Processing backend/utils/adt/expandedrecord.gcda
+Processing backend/utils/adt/expandeddatum.gcda
+Processing backend/utils/adt/trigfuncs.gcda
+Processing backend/utils/adt/orderedsetaggs.gcda
+Processing backend/utils/adt/geo_spgist.gcda
+Processing backend/utils/adt/formatting.gcda
+Processing backend/utils/adt/tsquery_rewrite.gcda
+Processing backend/utils/adt/ruleutils.gcda
+Processing backend/utils/adt/varbit.gcda
+Processing backend/utils/adt/cryptohashes.gcda
+Processing backend/utils/adt/rangetypes_spgist.gcda
+Processing backend/utils/adt/int8.gcda
+Processing backend/utils/adt/float.gcda
+Processing backend/utils/adt/name.gcda
+Processing backend/utils/adt/windowfuncs.gcda
+Processing backend/utils/adt/jsonpath_exec.gcda
+Processing backend/utils/adt/version.gcda
+Processing backend/utils/adt/tsquery_op.gcda
+Processing backend/utils/adt/encode.gcda
+Processing backend/utils/adt/tsquery_cleanup.gcda
+Processing backend/utils/adt/varlena.gcda
+Processing backend/utils/adt/rowtypes.gcda
+Processing backend/utils/adt/selfuncs.gcda
+Processing backend/utils/adt/jsonfuncs.gcda
+Processing backend/utils/adt/jsonb_op.gcda
+Processing backend/utils/adt/pg_locale.gcda
+Processing backend/utils/adt/regexp.gcda
+Processing backend/utils/adt/tsvector_op.gcda
+Processing backend/utils/adt/array_expanded.gcda
+Processing backend/utils/adt/network_selfuncs.gcda
+Processing backend/utils/adt/xid.gcda
+Processing backend/utils/adt/ascii.gcda
+Processing backend/utils/adt/array_userfuncs.gcda
+Processing backend/utils/adt/tsgistidx.gcda
+Processing backend/utils/adt/json.gcda
+Processing backend/utils/adt/int.gcda
+Processing backend/utils/adt/dbsize.gcda
+Processing backend/utils/adt/geo_ops.gcda
+Processing backend/utils/adt/array_selfuncs.gcda
+Processing backend/utils/adt/inet_cidr_ntop.gcda
+Processing backend/utils/adt/jsonb.gcda
+Processing backend/utils/adt/char.gcda
+Processing backend/utils/adt/oid.gcda
+Processing backend/utils/adt/tsquery_util.gcda
+Processing backend/utils/adt/network_spgist.gcda
+Processing backend/utils/adt/tsvector.gcda
+Processing backend/utils/adt/tsrank.gcda
+Processing backend/utils/adt/oracle_compat.gcda
+Processing backend/utils/adt/domains.gcda
+Processing backend/utils/adt/lockfuncs.gcda
+Processing backend/utils/adt/regproc.gcda
+Processing backend/utils/adt/quote.gcda
+Processing backend/utils/adt/format_type.gcda
+Processing backend/utils/adt/rangetypes_typanalyze.gcda
+Processing backend/utils/adt/tid.gcda
+Processing backend/utils/adt/rangetypes_selfuncs.gcda
+Processing backend/utils/adt/pg_lsn.gcda
+Processing backend/utils/adt/genfile.gcda
+Processing backend/utils/adt/like.gcda
+Processing backend/utils/adt/rangetypes_gist.gcda
+Processing backend/utils/adt/geo_selfuncs.gcda
+Processing backend/utils/adt/bool.gcda
+Processing backend/utils/adt/ri_triggers.gcda
+Processing backend/utils/adt/enum.gcda
+Processing backend/utils/adt/jsonb_gin.gcda
+Processing backend/utils/adt/network_gist.gcda
+Processing backend/utils/adt/tsvector_parser.gcda
+Processing backend/utils/adt/uuid.gcda
+Processing backend/utils/adt/cash.gcda
+Processing backend/utils/adt/network.gcda
+Processing backend/utils/adt/tsquery_gist.gcda
+Processing backend/utils/adt/inet_net_pton.gcda
+Processing backend/utils/adt/arrayfuncs.gcda
+Processing backend/utils/adt/timestamp.gcda
+Processing backend/utils/adt/varchar.gcda
+Processing backend/utils/adt/numutils.gcda
+Processing backend/rewrite/rewriteRemove.gcda
+Processing backend/rewrite/rewriteHandler.gcda
+Processing backend/rewrite/rewriteSupport.gcda
+Processing backend/rewrite/rewriteManip.gcda
+Processing backend/rewrite/rewriteDefine.gcda
+Processing backend/rewrite/rowsecurity.gcda
+Processing backend/bootstrap/bootstrap.gcda
+Processing backend/bootstrap/bootparse.gcda
+Processing backend/partitioning/partdesc.gcda
+Processing backend/partitioning/partbounds.gcda
+Processing backend/partitioning/partprune.gcda
+Processing backend/executor/execGrouping.gcda
+Processing backend/executor/nodeBitmapOr.gcda
+Processing backend/executor/nodeSubplan.gcda
+Processing backend/executor/tqueue.gcda
+Processing backend/executor/nodeWindowAgg.gcda
+Processing backend/executor/nodeMaterial.gcda
+Processing backend/executor/nodeTableFuncscan.gcda
+Processing backend/executor/nodeSeqscan.gcda
+Processing backend/executor/execReplication.gcda
+Processing backend/executor/execProcnode.gcda
+Processing backend/executor/nodeLimit.gcda
+Processing backend/executor/nodeCustom.gcda
+Processing backend/executor/execParallel.gcda
+Processing backend/executor/nodeResult.gcda
+Processing backend/executor/nodeMergejoin.gcda
+Processing backend/executor/nodeGatherMerge.gcda
+Processing backend/executor/nodeBitmapAnd.gcda
+Processing backend/executor/execTuples.gcda
+Processing backend/executor/nodeAgg.gcda
+Processing backend/executor/instrument.gcda
+Processing backend/executor/spi.gcda
+Processing backend/executor/nodeRecursiveunion.gcda
+Processing backend/executor/nodeProjectSet.gcda
+Processing backend/executor/nodeIncrementalSort.gcda
+Processing backend/executor/nodeHashjoin.gcda
+Processing backend/executor/execAmi.gcda
+Processing backend/executor/nodeCtescan.gcda
+Processing backend/executor/nodeFunctionscan.gcda
+Processing backend/executor/execSRF.gcda
+Processing backend/executor/execIndexing.gcda
+Processing backend/executor/execMain.gcda
+Processing backend/executor/nodeForeignscan.gcda
+Processing backend/executor/nodeBitmapIndexscan.gcda
+Processing backend/executor/nodeModifyTable.gcda
+Processing backend/executor/execPartition.gcda
+Processing backend/executor/nodeGather.gcda
+Processing backend/executor/tstoreReceiver.gcda
+Processing backend/executor/nodeSamplescan.gcda
+Processing backend/executor/execCurrent.gcda
+Processing backend/executor/execJunk.gcda
+Processing backend/executor/nodeSubqueryscan.gcda
+Processing backend/executor/nodeMergeAppend.gcda
+Processing backend/executor/nodeGroup.gcda
+Processing backend/executor/nodeBitmapHeapscan.gcda
+Processing backend/executor/nodeNamedtuplestorescan.gcda
+Processing backend/executor/execUtils.gcda
+Processing backend/executor/nodeUnique.gcda
+Processing backend/executor/nodeIndexscan.gcda
+Processing backend/executor/nodeWorktablescan.gcda
+Processing backend/executor/nodeNestloop.gcda
+Processing backend/executor/nodeIndexonlyscan.gcda
+Processing backend/executor/nodeValuesscan.gcda
+Processing backend/executor/nodeAppend.gcda
+Processing backend/executor/execExpr.gcda
+Processing backend/executor/nodeLockRows.gcda
+Processing backend/executor/execScan.gcda
+Processing backend/executor/nodeHash.gcda
+Processing backend/executor/execExprInterp.gcda
+Processing backend/executor/nodeSetOp.gcda
+Processing backend/executor/nodeSort.gcda
+Processing backend/executor/functions.gcda
+Processing backend/executor/nodeTidscan.gcda
+Processing common/archive_srv.gcda
+Processing common/jsonapi_srv.gcda
+Processing common/md5_shlib.gcda
+Processing common/logging.gcda
+Processing common/sha2_srv.gcda
+Processing common/pgfnames_srv.gcda
+Processing common/scram-common_srv.gcda
+Processing common/link-canary_srv.gcda
+Processing common/relpath_srv.gcda
+Processing common/rmtree_srv.gcda
+Processing common/saslprep_srv.gcda
+Processing common/config_info_srv.gcda
+Processing common/exec_srv.gcda
+Processing common/exec.gcda
+Processing common/username.gcda
+Processing common/psprintf_srv.gcda
+Processing common/ip_srv.gcda
+Processing common/wchar_srv.gcda
+Processing common/wchar_shlib.gcda
+Processing common/wait_error_srv.gcda
+Processing common/ip_shlib.gcda
+Processing common/file_utils.gcda
+Processing common/file_perm_srv.gcda
+Processing common/wchar.gcda
+Processing common/pg_lzcompress_srv.gcda
+Processing common/string_srv.gcda
+Processing common/file_perm.gcda
+Processing common/base64_srv.gcda
+Processing common/encnames_shlib.gcda
+Processing common/string.gcda
+Processing common/string_shlib.gcda
+Processing common/md5_srv.gcda
+Processing common/keywords.gcda
+Processing common/controldata_utils.gcda
+Processing common/encnames_srv.gcda
+Processing common/sha2_shlib.gcda
+Processing common/psprintf.gcda
+Processing common/username_srv.gcda
+Processing common/checksum_helper_srv.gcda
+Processing common/scram-common_shlib.gcda
+Processing common/kwlookup_srv.gcda
+Processing common/unicode_norm_shlib.gcda
+Processing common/keywords_srv.gcda
+Processing common/base64_shlib.gcda
+Processing common/wait_error.gcda
+Processing common/controldata_utils_srv.gcda
+Processing common/pgfnames.gcda
+Processing common/hashfn_srv.gcda
+Processing common/rmtree.gcda
+Processing common/f2s_srv.gcda
+Processing common/saslprep_shlib.gcda
+Processing common/fe_memutils.gcda
+Processing common/d2s_srv.gcda
+Processing common/link-canary_shlib.gcda
+Processing common/stringinfo_srv.gcda
+Processing common/unicode_norm_srv.gcda
+Processing common/encnames.gcda
+Processing common/kwlookup.gcda
+Processing common/restricted_token.gcda
+Processing pl/plpgsql/src/pl_exec.gcda
+Processing pl/plpgsql/src/pl_funcs.gcda
+Processing pl/plpgsql/src/pl_handler.gcda
+Processing pl/plpgsql/src/pl_scanner.gcda
+Processing pl/plpgsql/src/pl_gram.gcda
+Processing pl/plpgsql/src/pl_comp.gcda
+Processing interfaces/libpq/legacy-pqsignal.gcda
+Processing interfaces/libpq/fe-auth-scram.gcda
+Processing interfaces/libpq/fe-auth.gcda
+Processing interfaces/libpq/fe-misc.gcda
+Processing interfaces/libpq/fe-exec.gcda
+Processing interfaces/libpq/fe-connect.gcda
+Processing interfaces/libpq/fe-print.gcda
+Processing interfaces/libpq/libpq-events.gcda
+Processing interfaces/libpq/fe-secure.gcda
+Processing interfaces/libpq/pqexpbuffer.gcda
+Processing interfaces/libpq/fe-protocol3.gcda
+Processing interfaces/libpq/fe-protocol2.gcda
+Processing interfaces/libpq/fe-lobj.gcda
+Processing fe_utils/cancel.gcda
+Processing fe_utils/print.gcda
+Processing fe_utils/mbprint.gcda
+Processing fe_utils/psqlscan.gcda
+Processing fe_utils/string_utils.gcda
+Processing fe_utils/conditional.gcda
+Processing bin/initdb/findtimezone.gcda
+Processing bin/initdb/localtime.gcda
+Processing bin/initdb/initdb.gcda
+Processing bin/pg_ctl/pg_ctl.gcda
+Processing bin/psql/copy.gcda
+Processing bin/psql/sql_help.gcda
+Processing bin/psql/startup.gcda
+Processing bin/psql/psqlscanslash.gcda
+Processing bin/psql/crosstabview.gcda
+Processing bin/psql/mainloop.gcda
+Processing bin/psql/help.gcda
+Processing bin/psql/prompt.gcda
+Processing bin/psql/input.gcda
+Processing bin/psql/tab-complete.gcda
+Processing bin/psql/common.gcda
+Processing bin/psql/command.gcda
+Processing bin/psql/large_obj.gcda
+Processing bin/psql/stringutils.gcda
+Processing bin/psql/variables.gcda
+Processing bin/psql/describe.gcda
+Processing bin/scripts/common.gcda
+Processing bin/scripts/createdb.gcda
+Processing timezone/pgtz.gcda
+Processing timezone/strftime.gcda
+Processing timezone/localtime.gcda
+Finished .info-file creation
+Reading tracefile /workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/coverage_workspace/coverage.info
+Removing /usr/lib/gcc/x86_64-linux-gnu/13/include/cpuid.h
+Removing /usr/lib/gcc/x86_64-linux-gnu/13/include/smmintrin.h
+Deleted 2 files
+Writing data to /workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/coverage_workspace/coverage_filtered.info
+Summary coverage rate:
+  lines......: 29.6% (102254 of 345530 lines)
+  functions..: 37.9% (6712 of 17687 functions)
+  branches...: no data found
+Reading data file /workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/coverage_workspace/coverage_filtered.info
+Found 879 entries.
+Found common filename prefix "/workspaces/dl-final_cc-opus/postgresql-13.23/src"
+Writing .css and .png files.
+Generating output.
+Processing file backend/access/brin/brin.c
+Processing file backend/access/brin/brin_inclusion.c
+Processing file backend/access/brin/brin_tuple.c
+Processing file backend/access/brin/brin_validate.c
+Processing file backend/access/brin/brin_minmax.c
+Processing file backend/access/brin/brin_revmap.c
+Processing file backend/access/brin/brin_xlog.c
+Processing file backend/access/brin/brin_pageops.c
+Processing file backend/access/common/reloptions.c
+Processing file backend/access/common/tupconvert.c
+Processing file backend/access/common/printsimple.c
+Processing file backend/access/common/heaptuple.c
+Processing file backend/access/common/bufmask.c
+Processing file backend/access/common/printtup.c
+Processing file backend/access/common/toast_internals.c
+Processing file backend/access/common/attmap.c
+Processing file backend/access/common/relation.c
+Processing file backend/access/common/detoast.c
+Processing file backend/access/common/session.c
+Processing file backend/access/common/scankey.c
+Processing file backend/access/common/tupdesc.c
+Processing file backend/access/common/indextuple.c
+Processing file backend/access/gin/ginutil.c
+Processing file backend/access/gin/ginbulk.c
+Processing file backend/access/gin/ginlogic.c
+Processing file backend/access/gin/ginarrayproc.c
+Processing file backend/access/gin/ginvacuum.c
+Processing file backend/access/gin/ginfast.c
+Processing file backend/access/gin/ginvalidate.c
+Processing file backend/access/gin/ginbtree.c
+Processing file backend/access/gin/gininsert.c
+Processing file backend/access/gin/gindatapage.c
+Processing file backend/access/gin/ginpostinglist.c
+Processing file backend/access/gin/ginget.c
+Processing file backend/access/gin/ginxlog.c
+Processing file backend/access/gin/ginentrypage.c
+Processing file backend/access/gin/ginscan.c
+Processing file backend/access/gist/gistproc.c
+Processing file backend/access/gist/gistxlog.c
+Processing file backend/access/gist/gistvacuum.c
+Processing file backend/access/gist/gistbuild.c
+Processing file backend/access/gist/gistscan.c
+Processing file backend/access/gist/gist.c
+Processing file backend/access/gist/gistget.c
+Processing file backend/access/gist/gistsplit.c
+Processing file backend/access/gist/gistvalidate.c
+Processing file backend/access/gist/gistbuildbuffers.c
+Processing file backend/access/gist/gistutil.c
+Processing file backend/access/hash/hash_xlog.c
+Processing file backend/access/hash/hashsort.c
+Processing file backend/access/hash/hashutil.c
+Processing file backend/access/hash/hashsearch.c
+Processing file backend/access/hash/hashpage.c
+Processing file backend/access/hash/hashfunc.c
+Processing file backend/access/hash/hashovfl.c
+Processing file backend/access/hash/hashvalidate.c
+Processing file backend/access/hash/hash.c
+Processing file backend/access/hash/hashinsert.c
+Processing file backend/access/heap/heapam_handler.c
+Processing file backend/access/heap/syncscan.c
+Processing file backend/access/heap/rewriteheap.c
+Processing file backend/access/heap/pruneheap.c
+Processing file backend/access/heap/visibilitymap.c
+Processing file backend/access/heap/vacuumlazy.c
+Processing file backend/access/heap/heapam_visibility.c
+Processing file backend/access/heap/heaptoast.c
+Processing file backend/access/heap/heapam.c
+Processing file backend/access/heap/hio.c
+Processing file backend/access/index/amapi.c
+Processing file backend/access/index/genam.c
+Processing file backend/access/index/indexam.c
+Processing file backend/access/index/amvalidate.c
+Processing file backend/access/nbtree/nbtsort.c
+Processing file backend/access/nbtree/nbtdedup.c
+Processing file backend/access/nbtree/nbtpage.c
+Processing file backend/access/nbtree/nbtree.c
+Processing file backend/access/nbtree/nbtsplitloc.c
+Processing file backend/access/nbtree/nbtinsert.c
+Processing file backend/access/nbtree/nbtutils.c
+Processing file backend/access/nbtree/nbtcompare.c
+Processing file backend/access/nbtree/nbtsearch.c
+Processing file backend/access/nbtree/nbtxlog.c
+Processing file backend/access/nbtree/nbtvalidate.c
+Processing file backend/access/rmgrdesc/mxactdesc.c
+Processing file backend/access/rmgrdesc/dbasedesc.c
+Processing file backend/access/rmgrdesc/xactdesc.c
+Processing file backend/access/rmgrdesc/relmapdesc.c
+Processing file backend/access/rmgrdesc/xlogdesc.c
+Processing file backend/access/rmgrdesc/tblspcdesc.c
+Processing file backend/access/rmgrdesc/replorigindesc.c
+Processing file backend/access/rmgrdesc/nbtdesc.c
+Processing file backend/access/rmgrdesc/heapdesc.c
+Processing file backend/access/rmgrdesc/standbydesc.c
+Processing file backend/access/rmgrdesc/spgdesc.c
+Processing file backend/access/rmgrdesc/logicalmsgdesc.c
+Processing file backend/access/rmgrdesc/gistdesc.c
+Processing file backend/access/rmgrdesc/committsdesc.c
+Processing file backend/access/rmgrdesc/hashdesc.c
+Processing file backend/access/rmgrdesc/genericdesc.c
+Processing file backend/access/rmgrdesc/clogdesc.c
+Processing file backend/access/rmgrdesc/brindesc.c
+Processing file backend/access/rmgrdesc/gindesc.c
+Processing file backend/access/rmgrdesc/smgrdesc.c
+Processing file backend/access/rmgrdesc/seqdesc.c
+Processing file backend/access/spgist/spgtextproc.c
+Processing file backend/access/spgist/spgscan.c
+Processing file backend/access/spgist/spgkdtreeproc.c
+Processing file backend/access/spgist/spgvalidate.c
+Processing file backend/access/spgist/spgxlog.c
+Processing file backend/access/spgist/spgdoinsert.c
+Processing file backend/access/spgist/spgvacuum.c
+Processing file backend/access/spgist/spgutils.c
+Processing file backend/access/spgist/spginsert.c
+Processing file backend/access/spgist/spgquadtreeproc.c
+Processing file backend/access/spgist/spgproc.c
+Processing file backend/access/table/tableamapi.c
+Processing file backend/access/table/toast_helper.c
+Processing file backend/access/table/tableam.c
+Processing file backend/access/table/table.c
+Processing file backend/access/tablesample/bernoulli.c
+Processing file backend/access/tablesample/tablesample.c
+Processing file backend/access/tablesample/system.c
+Processing file backend/access/transam/varsup.c
+Processing file backend/access/transam/xlogarchive.c
+Processing file backend/access/transam/xloginsert.c
+Processing file backend/access/transam/xlogutils.c
+Processing file backend/access/transam/commit_ts.c
+Processing file backend/access/transam/slru.c
+Processing file backend/access/transam/xact.c
+Processing file backend/access/transam/generic_xlog.c
+Processing file backend/access/transam/subtrans.c
+Processing file backend/access/transam/xlog.c
+Processing file backend/access/transam/clog.c
+Processing file backend/access/transam/multixact.c
+Processing file backend/access/transam/timeline.c
+Processing file backend/access/transam/transam.c
+Processing file backend/access/transam/twophase.c
+Processing file backend/access/transam/xlogreader.c
+Processing file backend/access/transam/xlogfuncs.c
+Processing file backend/access/transam/parallel.c
+Processing file backend/bootstrap/bootstrap.c
+Processing file backend/bootstrap/bootscanner.l
+Processing file backend/bootstrap/bootparse.y
+Processing file backend/bootstrap/bootparse.c
+Processing file backend/catalog/partition.c
+Processing file backend/catalog/pg_depend.c
+Processing file backend/catalog/pg_constraint.c
+Processing file backend/catalog/pg_cast.c
+Processing file backend/catalog/namespace.c
+Processing file backend/catalog/dependency.c
+Processing file backend/catalog/pg_proc.c
+Processing file backend/catalog/indexing.c
+Processing file backend/catalog/pg_db_role_setting.c
+Processing file backend/catalog/pg_publication.c
+Processing file backend/catalog/aclchk.c
+Processing file backend/catalog/toasting.c
+Processing file backend/catalog/pg_conversion.c
+Processing file backend/catalog/pg_largeobject.c
+Processing file backend/catalog/index.c
+Processing file backend/catalog/pg_enum.c
+Processing file backend/catalog/pg_type.c
+Processing file backend/catalog/pg_collation.c
+Processing file backend/catalog/storage.c
+Processing file backend/catalog/pg_inherits.c
+Processing file backend/catalog/heap.c
+Processing file backend/catalog/pg_subscription.c
+Processing file backend/catalog/pg_operator.c
+Processing file backend/catalog/objectaddress.c
+Processing file backend/catalog/pg_shdepend.c
+Processing file backend/catalog/pg_namespace.c
+Processing file backend/catalog/objectaccess.c
+Processing file backend/catalog/catalog.c
+Processing file backend/catalog/pg_range.c
+Processing file backend/catalog/pg_aggregate.c
+Processing file backend/commands/analyze.c
+Processing file backend/commands/dropcmds.c
+Processing file backend/commands/lockcmds.c
+Processing file backend/commands/vacuum.c
+Processing file backend/commands/seclabel.c
+Processing file backend/commands/event_trigger.c
+Processing file backend/commands/prepare.c
+Processing file backend/commands/tablecmds.c
+Processing file backend/commands/tablespace.c
+Processing file backend/commands/dbcommands.c
+Processing file backend/commands/collationcmds.c
+Processing file backend/commands/indexcmds.c
+Processing file backend/commands/define.c
+Processing file backend/commands/constraint.c
+Processing file backend/commands/subscriptioncmds.c
+Processing file backend/commands/explain.c
+Processing file backend/commands/comment.c
+Processing file backend/commands/functioncmds.c
+Processing file backend/commands/cluster.c
+Processing file backend/commands/policy.c
+Processing file backend/commands/tsearchcmds.c
+Processing file backend/commands/trigger.c
+Processing file backend/commands/publicationcmds.c
+Processing file backend/commands/statscmds.c
+Processing file backend/commands/proclang.c
+Processing file backend/commands/opclasscmds.c
+Processing file backend/commands/async.c
+Processing file backend/commands/variable.c
+Processing file backend/commands/portalcmds.c
+Processing file backend/commands/aggregatecmds.c
+Processing file backend/commands/typecmds.c
+Processing file backend/commands/extension.c
+Processing file backend/commands/view.c
+Processing file backend/commands/amcmds.c
+Processing file backend/commands/operatorcmds.c
+Processing file backend/commands/foreigncmds.c
+Processing file backend/commands/sequence.c
+Processing file backend/commands/matview.c
+Processing file backend/commands/createas.c
+Processing file backend/commands/user.c
+Processing file backend/commands/discard.c
+Processing file backend/commands/schemacmds.c
+Processing file backend/commands/alter.c
+Processing file backend/commands/conversioncmds.c
+Processing file backend/commands/copy.c
+Processing file backend/executor/functions.c
+Processing file backend/executor/execPartition.c
+Processing file backend/executor/nodeNamedtuplestorescan.c
+Processing file backend/executor/nodeUnique.c
+Processing file backend/executor/execParallel.c
+Processing file backend/executor/execExprInterp.c
+Processing file backend/executor/nodeGather.c
+Processing file backend/executor/nodeSetOp.c
+Processing file backend/executor/nodeSubqueryscan.c
+Processing file backend/executor/nodeBitmapOr.c
+Processing file backend/executor/execProcnode.c
+Processing file backend/executor/nodeRecursiveunion.c
+Processing file backend/executor/execScan.c
+Processing file backend/executor/nodeBitmapIndexscan.c
+Processing file backend/executor/execUtils.c
+Processing file backend/executor/nodeLockRows.c
+Processing file backend/executor/nodeNestloop.c
+Processing file backend/executor/nodeBitmapHeapscan.c
+Processing file backend/executor/nodeGatherMerge.c
+Processing file backend/executor/nodeBitmapAnd.c
+Processing file backend/executor/execIndexing.c
+Processing file backend/executor/execSRF.c
+Processing file backend/executor/nodeSeqscan.c
+Processing file backend/executor/instrument.c
+Processing file backend/executor/nodeForeignscan.c
+Processing file backend/executor/nodeHashjoin.c
+Processing file backend/executor/execGrouping.c
+Processing file backend/executor/nodeWindowAgg.c
+Processing file backend/executor/nodeCustom.c
+Processing file backend/executor/nodeAgg.c
+Processing file backend/executor/execCurrent.c
+Processing file backend/executor/tstoreReceiver.c
+Processing file backend/executor/nodeValuesscan.c
+Processing file backend/executor/nodeCtescan.c
+Processing file backend/executor/nodeMergejoin.c
+Processing file backend/executor/nodeIncrementalSort.c
+Processing file backend/executor/execReplication.c
+Processing file backend/executor/nodeFunctionscan.c
+Processing file backend/executor/nodeLimit.c
+Processing file backend/executor/nodeModifyTable.c
+Processing file backend/executor/tqueue.c
+Processing file backend/executor/execMain.c
+Processing file backend/executor/nodeResult.c
+Processing file backend/executor/nodeSort.c
+Processing file backend/executor/nodeIndexscan.c
+Processing file backend/executor/nodeWorktablescan.c
+Processing file backend/executor/execTuples.c
+Processing file backend/executor/nodeGroup.c
+Processing file backend/executor/spi.c
+Processing file backend/executor/nodeAppend.c
+Processing file backend/executor/nodeMaterial.c
+Processing file backend/executor/nodeTidscan.c
+Processing file backend/executor/nodeTableFuncscan.c
+Processing file backend/executor/nodeHash.c
+Processing file backend/executor/nodeIndexonlyscan.c
+Processing file backend/executor/nodeSamplescan.c
+Processing file backend/executor/nodeMergeAppend.c
+Processing file backend/executor/nodeSubplan.c
+Processing file backend/executor/nodeProjectSet.c
+Processing file backend/executor/execJunk.c
+Processing file backend/executor/execAmi.c
+Processing file backend/executor/execExpr.c
+Processing file backend/foreign/foreign.c
+Processing file backend/jit/jit.c
+Processing file backend/lib/binaryheap.c
+Processing file backend/lib/integerset.c
+Processing file backend/lib/ilist.c
+Processing file backend/lib/knapsack.c
+Processing file backend/lib/dshash.c
+Processing file backend/lib/bloomfilter.c
+Processing file backend/lib/rbtree.c
+Processing file backend/lib/bipartite_match.c
+Processing file backend/lib/pairingheap.c
+Processing file backend/lib/hyperloglog.c
+Processing file backend/libpq/auth.c
+Processing file backend/libpq/pqsignal.c
+Processing file backend/libpq/be-secure-common.c
+Processing file backend/libpq/auth-scram.c
+Processing file backend/libpq/pqcomm.c
+Processing file backend/libpq/ifaddr.c
+Processing file backend/libpq/hba.c
+Processing file backend/libpq/pqmq.c
+Processing file backend/libpq/be-secure.c
+Processing file backend/libpq/crypt.c
+Processing file backend/libpq/pqformat.c
+Processing file backend/libpq/be-fsstubs.c
+Processing file backend/main/main.c
+Processing file backend/nodes/readfuncs.c
+Processing file backend/nodes/list.c
+Processing file backend/nodes/value.c
+Processing file backend/nodes/read.c
+Processing file backend/nodes/params.c
+Processing file backend/nodes/extensible.c
+Processing file backend/nodes/outfuncs.c
+Processing file backend/nodes/equalfuncs.c
+Processing file backend/nodes/print.c
+Processing file backend/nodes/tidbitmap.c
+Processing file backend/nodes/bitmapset.c
+Processing file backend/nodes/nodeFuncs.c
+Processing file backend/nodes/makefuncs.c
+Processing file backend/nodes/copyfuncs.c
+Processing file backend/optimizer/geqo/geqo_erx.c
+Processing file backend/optimizer/geqo/geqo_recombination.c
+Processing file backend/optimizer/geqo/geqo_pool.c
+Processing file backend/optimizer/geqo/geqo_random.c
+Processing file backend/optimizer/geqo/geqo_copy.c
+Processing file backend/optimizer/geqo/geqo_eval.c
+Processing file backend/optimizer/geqo/geqo_main.c
+Processing file backend/optimizer/geqo/geqo_selection.c
+Processing file backend/optimizer/path/joinpath.c
+Processing file backend/optimizer/path/joinrels.c
+Processing file backend/optimizer/path/allpaths.c
+Processing file backend/optimizer/path/equivclass.c
+Processing file backend/optimizer/path/pathkeys.c
+Processing file backend/optimizer/path/costsize.c
+Processing file backend/optimizer/path/tidpath.c
+Processing file backend/optimizer/path/clausesel.c
+Processing file backend/optimizer/path/indxpath.c
+Processing file backend/optimizer/plan/planner.c
+Processing file backend/optimizer/plan/analyzejoins.c
+Processing file backend/optimizer/plan/planagg.c
+Processing file backend/optimizer/plan/setrefs.c
+Processing file backend/optimizer/plan/planmain.c
+Processing file backend/optimizer/plan/initsplan.c
+Processing file backend/optimizer/plan/createplan.c
+Processing file backend/optimizer/plan/subselect.c
+Processing file backend/optimizer/prep/prepqual.c
+Processing file backend/optimizer/prep/preptlist.c
+Processing file backend/optimizer/prep/prepunion.c
+Processing file backend/optimizer/prep/prepjointree.c
+Processing file backend/optimizer/util/relnode.c
+Processing file backend/optimizer/util/placeholder.c
+Processing file backend/optimizer/util/restrictinfo.c
+Processing file backend/optimizer/util/plancat.c
+Processing file backend/optimizer/util/paramassign.c
+Processing file backend/optimizer/util/clauses.c
+Processing file backend/optimizer/util/appendinfo.c
+Processing file backend/optimizer/util/predtest.c
+Processing file backend/optimizer/util/joininfo.c
+Processing file backend/optimizer/util/pathnode.c
+Processing file backend/optimizer/util/orclauses.c
+Processing file backend/optimizer/util/var.c
+Processing file backend/optimizer/util/inherit.c
+Processing file backend/optimizer/util/tlist.c
+Processing file backend/parser/scan.l
+Processing file backend/parser/parser.c
+Processing file backend/parser/parse_collate.c
+Processing file backend/parser/parse_node.c
+Processing file backend/parser/parse_enr.c
+Processing file backend/parser/parse_clause.c
+Processing file backend/parser/parse_utilcmd.c
+Processing file backend/parser/parse_func.c
+Processing file backend/parser/analyze.c
+Processing file backend/parser/gram.y
+Processing file backend/parser/parse_param.c
+Processing file backend/parser/parse_cte.c
+Processing file backend/parser/parse_oper.c
+Processing file backend/parser/gram.c
+Processing file backend/parser/parse_relation.c
+Processing file backend/parser/parse_type.c
+Processing file backend/parser/parse_target.c
+Processing file backend/parser/scansup.c
+Processing file backend/parser/parse_coerce.c
+Processing file backend/parser/parse_expr.c
+Processing file backend/parser/parse_agg.c
+Processing file backend/partitioning/partdesc.c
+Processing file backend/partitioning/partprune.c
+Processing file backend/partitioning/partbounds.c
+Processing file backend/port/pg_sema.c
+Processing file backend/port/pg_shmem.c
+Processing file backend/postmaster/checkpointer.c
+Processing file backend/postmaster/startup.c
+Processing file backend/postmaster/bgworker.c
+Processing file backend/postmaster/pgstat.c
+Processing file backend/postmaster/syslogger.c
+Processing file backend/postmaster/interrupt.c
+Processing file backend/postmaster/walwriter.c
+Processing file backend/postmaster/autovacuum.c
+Processing file backend/postmaster/postmaster.c
+Processing file backend/postmaster/fork_process.c
+Processing file backend/postmaster/bgwriter.c
+Processing file backend/postmaster/pgarch.c
+Processing file backend/regex/regc_lex.c
+Processing file backend/regex/regc_pg_locale.c
+Processing file backend/regex/regprefix.c
+Processing file backend/regex/regc_color.c
+Processing file backend/regex/regexec.c
+Processing file backend/regex/regexport.c
+Processing file backend/regex/regc_locale.c
+Processing file backend/regex/regcomp.c
+Processing file backend/regex/regfree.c
+Processing file backend/regex/regc_cvec.c
+Processing file backend/regex/regerror.c
+Processing file backend/regex/regc_nfa.c
+Processing file backend/regex/rege_dfa.c
+Processing file backend/replication/slotfuncs.c
+Processing file backend/replication/basebackup.c
+Processing file backend/replication/repl_gram.y
+Processing file backend/replication/walreceiver.c
+Processing file backend/replication/repl_gram.c
+Processing file backend/replication/syncrep.c
+Processing file backend/replication/syncrep_gram.c
+Processing file backend/replication/slot.c
+Processing file backend/replication/syncrep_scanner.l
+Processing file backend/replication/walreceiverfuncs.c
+Processing file backend/replication/backup_manifest.c
+Processing file backend/replication/walsender.c
+Processing file backend/replication/syncrep_gram.y
+Processing file backend/replication/repl_scanner.l
+Processing file backend/replication/logical/tablesync.c
+Processing file backend/replication/logical/relation.c
+Processing file backend/replication/logical/reorderbuffer.c
+Processing file backend/replication/logical/origin.c
+Processing file backend/replication/logical/logical.c
+Processing file backend/replication/logical/message.c
+Processing file backend/replication/logical/worker.c
+Processing file backend/replication/logical/logicalfuncs.c
+Processing file backend/replication/logical/launcher.c
+Processing file backend/replication/logical/proto.c
+Processing file backend/replication/logical/snapbuild.c
+Processing file backend/replication/logical/decode.c
+Processing file backend/rewrite/rewriteDefine.c
+Processing file backend/rewrite/rowsecurity.c
+Processing file backend/rewrite/rewriteSupport.c
+Processing file backend/rewrite/rewriteManip.c
+Processing file backend/rewrite/rewriteHandler.c
+Processing file backend/rewrite/rewriteRemove.c
+Processing file backend/snowball/dict_snowball.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_spanish.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_norwegian.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_italian.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_french.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_danish.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_dutch.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_greek.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_tamil.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_arabic.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_finnish.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_porter.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_dutch.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_irish.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_hungarian.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_french.c
+Processing file backend/snowball/libstemmer/api.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_norwegian.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_english.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_turkish.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_lithuanian.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_english.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_portuguese.c
+Processing file backend/snowball/libstemmer/stem_KOI8_R_russian.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_swedish.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_german.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_romanian.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_irish.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_indonesian.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_russian.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_2_hungarian.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_danish.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_indonesian.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_portuguese.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_2_romanian.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_finnish.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_swedish.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_nepali.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_italian.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_spanish.c
+Processing file backend/snowball/libstemmer/utilities.c
+Processing file backend/snowball/libstemmer/stem_UTF_8_german.c
+Processing file backend/snowball/libstemmer/stem_ISO_8859_1_porter.c
+Processing file backend/statistics/extended_stats.c
+Processing file backend/statistics/dependencies.c
+Processing file backend/statistics/mcv.c
+Processing file backend/statistics/mvdistinct.c
+Processing file backend/storage/buffer/localbuf.c
+Processing file backend/storage/buffer/buf_init.c
+Processing file backend/storage/buffer/buf_table.c
+Processing file backend/storage/buffer/bufmgr.c
+Processing file backend/storage/buffer/freelist.c
+Processing file backend/storage/file/sharedfileset.c
+Processing file backend/storage/file/buffile.c
+Processing file backend/storage/file/copydir.c
+Processing file backend/storage/file/reinit.c
+Processing file backend/storage/file/fd.c
+Processing file backend/storage/freespace/freespace.c
+Processing file backend/storage/freespace/indexfsm.c
+Processing file backend/storage/freespace/fsmpage.c
+Processing file backend/storage/ipc/shmqueue.c
+Processing file backend/storage/ipc/shm_toc.c
+Processing file backend/storage/ipc/shm_mq.c
+Processing file backend/storage/ipc/barrier.c
+Processing file backend/storage/ipc/procarray.c
+Processing file backend/storage/ipc/pmsignal.c
+Processing file backend/storage/ipc/dsm.c
+Processing file backend/storage/ipc/sinvaladt.c
+Processing file backend/storage/ipc/ipc.c
+Processing file backend/storage/ipc/latch.c
+Processing file backend/storage/ipc/shmem.c
+Processing file backend/storage/ipc/ipci.c
+Processing file backend/storage/ipc/signalfuncs.c
+Processing file backend/storage/ipc/dsm_impl.c
+Processing file backend/storage/ipc/sinval.c
+Processing file backend/storage/ipc/standby.c
+Processing file backend/storage/ipc/procsignal.c
+Processing file backend/storage/large_object/inv_api.c
+Processing file backend/storage/lmgr/condition_variable.c
+Processing file backend/storage/lmgr/lmgr.c
+Processing file backend/storage/lmgr/deadlock.c
+Processing file backend/storage/lmgr/s_lock.c
+Processing file backend/storage/lmgr/predicate.c
+Processing file backend/storage/lmgr/lwlock.c
+Processing file backend/storage/lmgr/lock.c
+Processing file backend/storage/lmgr/proc.c
+Processing file backend/storage/lmgr/spin.c
+Processing file backend/storage/page/bufpage.c
+Processing file backend/storage/page/itemptr.c
+Processing file backend/storage/smgr/smgr.c
+Processing file backend/storage/smgr/md.c
+Processing file backend/storage/sync/sync.c
+Processing file backend/tcop/cmdtag.c
+Processing file backend/tcop/fastpath.c
+Processing file backend/tcop/postgres.c
+Processing file backend/tcop/utility.c
+Processing file backend/tcop/pquery.c
+Processing file backend/tcop/dest.c
+Processing file backend/tsearch/dict_simple.c
+Processing file backend/tsearch/regis.c
+Processing file backend/tsearch/dict_thesaurus.c
+Processing file backend/tsearch/to_tsany.c
+Processing file backend/tsearch/ts_utils.c
+Processing file backend/tsearch/ts_selfuncs.c
+Processing file backend/tsearch/wparser.c
+Processing file backend/tsearch/dict.c
+Processing file backend/tsearch/dict_synonym.c
+Processing file backend/tsearch/ts_typanalyze.c
+Processing file backend/tsearch/dict_ispell.c
+Processing file backend/tsearch/wparser_def.c
+Processing file backend/tsearch/spell.c
+Processing file backend/tsearch/ts_locale.c
+Processing file backend/tsearch/ts_parse.c
+Processing file backend/utils/adt/lockfuncs.c
+Processing file backend/utils/adt/int8.c
+Processing file backend/utils/adt/array_typanalyze.c
+Processing file backend/utils/adt/trigfuncs.c
+Processing file backend/utils/adt/tsvector.c
+Processing file backend/utils/adt/arrayfuncs.c
+Processing file backend/utils/adt/enum.c
+Processing file backend/utils/adt/rangetypes_gist.c
+Processing file backend/utils/adt/pgstatfuncs.c
+Processing file backend/utils/adt/name.c
+Processing file backend/utils/adt/rangetypes.c
+Processing file backend/utils/adt/regexp.c
+Processing file backend/utils/adt/tsgistidx.c
+Processing file backend/utils/adt/mac.c
+Processing file backend/utils/adt/pg_lsn.c
+Processing file backend/utils/adt/network_spgist.c
+Processing file backend/utils/adt/cash.c
+Processing file backend/utils/adt/network_gist.c
+Processing file backend/utils/adt/array_selfuncs.c
+Processing file backend/utils/adt/varlena.c
+Processing file backend/utils/adt/pg_upgrade_support.c
+Processing file backend/utils/adt/ascii.c
+Processing file backend/utils/adt/selfuncs.c
+Processing file backend/utils/adt/rangetypes_selfuncs.c
+Processing file backend/utils/adt/quote.c
+Processing file backend/utils/adt/levenshtein.c
+Processing file backend/utils/adt/version.c
+Processing file backend/utils/adt/varbit.c
+Processing file backend/utils/adt/xml.c
+Processing file backend/utils/adt/expandedrecord.c
+Processing file backend/utils/adt/tsquery.c
+Processing file backend/utils/adt/datetime.c
+Processing file backend/utils/adt/geo_spgist.c
+Processing file backend/utils/adt/tsrank.c
+Processing file backend/utils/adt/tsginidx.c
+Processing file backend/utils/adt/acl.c
+Processing file backend/utils/adt/float.c
+Processing file backend/utils/adt/like_match.c
+Processing file backend/utils/adt/expandeddatum.c
+Processing file backend/utils/adt/jsonfuncs.c
+Processing file backend/utils/adt/dbsize.c
+Processing file backend/utils/adt/tsquery_op.c
+Processing file backend/utils/adt/bool.c
+Processing file backend/utils/adt/tid.c
+Processing file backend/utils/adt/mac8.c
+Processing file backend/utils/adt/json.c
+Processing file backend/utils/adt/jsonpath_scan.l
+Processing file backend/utils/adt/varchar.c
+Processing file backend/utils/adt/misc.c
+Processing file backend/utils/adt/network_selfuncs.c
+Processing file backend/utils/adt/jsonpath_gram.c
+Processing file backend/utils/adt/inet_cidr_ntop.c
+Processing file backend/utils/adt/oracle_compat.c
+Processing file backend/utils/adt/tsquery_cleanup.c
+Processing file backend/utils/adt/tsquery_rewrite.c
+Processing file backend/utils/adt/xid.c
+Processing file backend/utils/adt/oid.c
+Processing file backend/utils/adt/tsvector_op.c
+Processing file backend/utils/adt/like_support.c
+Processing file backend/utils/adt/network.c
+Processing file backend/utils/adt/numutils.c
+Processing file backend/utils/adt/array_userfuncs.c
+Processing file backend/utils/adt/domains.c
+Processing file backend/utils/adt/jsonb_gin.c
+Processing file backend/utils/adt/orderedsetaggs.c
+Processing file backend/utils/adt/jsonb_op.c
+Processing file backend/utils/adt/pseudotypes.c
+Processing file backend/utils/adt/jsonb.c
+Processing file backend/utils/adt/ruleutils.c
+Processing file backend/utils/adt/rangetypes_spgist.c
+Processing file backend/utils/adt/windowfuncs.c
+Processing file backend/utils/adt/jsonb_util.c
+Processing file backend/utils/adt/jsonpath_gram.y
+Processing file backend/utils/adt/geo_ops.c
+Processing file backend/utils/adt/char.c
+Processing file backend/utils/adt/geo_selfuncs.c
+Processing file backend/utils/adt/tsquery_gist.c
+Processing file backend/utils/adt/amutils.c
+Processing file backend/utils/adt/jsonpath_exec.c
+Processing file backend/utils/adt/format_type.c
+Processing file backend/utils/adt/numeric.c
+Processing file backend/utils/adt/arrayutils.c
+Processing file backend/utils/adt/like.c
+Processing file backend/utils/adt/formatting.c
+Processing file backend/utils/adt/regproc.c
+Processing file backend/utils/adt/rowtypes.c
+Processing file backend/utils/adt/timestamp.c
+Processing file backend/utils/adt/uuid.c
+Processing file backend/utils/adt/tsquery_util.c
+Processing file backend/utils/adt/array_expanded.c
+Processing file backend/utils/adt/cryptohashes.c
+Processing file backend/utils/adt/pg_locale.c
+Processing file backend/utils/adt/datum.c
+Processing file backend/utils/adt/inet_net_pton.c
+Processing file backend/utils/adt/genfile.c
+Processing file backend/utils/adt/ri_triggers.c
+Processing file backend/utils/adt/xid8funcs.c
+Processing file backend/utils/adt/partitionfuncs.c
+Processing file backend/utils/adt/encode.c
+Processing file backend/utils/adt/int.c
+Processing file backend/utils/adt/tsvector_parser.c
+Processing file backend/utils/adt/rangetypes_typanalyze.c
+Processing file backend/utils/adt/date.c
+Processing file backend/utils/adt/jsonpath.c
+Processing file backend/utils/cache/relcache.c
+Processing file backend/utils/cache/lsyscache.c
+Processing file backend/utils/cache/ts_cache.c
+Processing file backend/utils/cache/catcache.c
+Processing file backend/utils/cache/inval.c
+Processing file backend/utils/cache/attoptcache.c
+Processing file backend/utils/cache/spccache.c
+Processing file backend/utils/cache/relfilenodemap.c
+Processing file backend/utils/cache/typcache.c
+Processing file backend/utils/cache/plancache.c
+Processing file backend/utils/cache/evtcache.c
+Processing file backend/utils/cache/partcache.c
+Processing file backend/utils/cache/relmapper.c
+Processing file backend/utils/cache/syscache.c
+Processing file backend/utils/error/elog.c
+Processing file backend/utils/error/assert.c
+Processing file backend/utils/fmgr/dfmgr.c
+Processing file backend/utils/fmgr/fmgr.c
+Processing file backend/utils/fmgr/funcapi.c
+Processing file backend/utils/hash/dynahash.c
+Processing file backend/utils/init/miscinit.c
+Processing file backend/utils/init/postinit.c
+Processing file backend/utils/mb/wstrcmp.c
+Processing file backend/utils/mb/conv.c
+Processing file backend/utils/mb/stringinfo_mb.c
+Processing file backend/utils/mb/mbutils.c
+Processing file backend/utils/mb/wstrncmp.c
+Processing file backend/utils/misc/guc-file.l
+Processing file backend/utils/misc/superuser.c
+Processing file backend/utils/misc/pg_controldata.c
+Processing file backend/utils/misc/pg_config.c
+Processing file backend/utils/misc/rls.c
+Processing file backend/utils/misc/timeout.c
+Processing file backend/utils/misc/sampling.c
+Processing file backend/utils/misc/queryenvironment.c
+Processing file backend/utils/misc/tzparser.c
+Processing file backend/utils/misc/ps_status.c
+Processing file backend/utils/misc/guc.c
+Processing file backend/utils/misc/pg_rusage.c
+Processing file backend/utils/misc/help_config.c
+Processing file backend/utils/mmgr/generation.c
+Processing file backend/utils/mmgr/dsa.c
+Processing file backend/utils/mmgr/mcxt.c
+Processing file backend/utils/mmgr/slab.c
+Processing file backend/utils/mmgr/aset.c
+Processing file backend/utils/mmgr/portalmem.c
+Processing file backend/utils/mmgr/freepage.c
+Processing file backend/utils/resowner/resowner.c
+Processing file backend/utils/sort/tuplesort.c
+Processing file backend/utils/sort/sharedtuplestore.c
+Processing file backend/utils/sort/sortsupport.c
+Processing file backend/utils/sort/logtape.c
+Processing file backend/utils/sort/tuplestore.c
+Processing file backend/utils/sort/qsort_tuple.c
+Processing file backend/utils/time/snapmgr.c
+Processing file backend/utils/time/combocid.c
+Processing file bin/initdb/findtimezone.c
+Processing file bin/initdb/initdb.c
+Processing file bin/initdb/localtime.c
+Processing file bin/pg_ctl/pg_ctl.c
+Processing file bin/psql/variables.c
+Processing file bin/psql/crosstabview.c
+Processing file bin/psql/command.c
+Processing file bin/psql/psqlscanslash.l
+Processing file bin/psql/describe.c
+Processing file bin/psql/prompt.c
+Processing file bin/psql/common.c
+Processing file bin/psql/mainloop.c
+Processing file bin/psql/input.c
+Processing file bin/psql/startup.c
+Processing file bin/psql/tab-complete.c
+Processing file bin/psql/stringutils.c
+Processing file bin/psql/help.c
+Processing file bin/psql/copy.c
+Processing file bin/psql/large_obj.c
+Processing file bin/psql/sql_help.c
+Processing file bin/scripts/common.c
+Processing file bin/scripts/createdb.c
+Processing file common/jsonapi.c
+Processing file common/scram-common.c
+Processing file common/file_perm.c
+Processing file common/wchar.c
+Processing file common/encnames.c
+Processing file common/d2s_intrinsics.h
+Processing file common/ryu_common.h
+Processing file common/hashfn.c
+Processing file common/saslprep.c
+Processing file common/rmtree.c
+Processing file common/kwlist_d.h
+Processing file common/ip.c
+Processing file common/string.c
+Processing file common/kwlookup.c
+Processing file common/username.c
+Processing file common/link-canary.c
+Processing file common/relpath.c
+Processing file common/sha2.c
+Processing file common/wait_error.c
+Processing file common/unicode_norm.c
+Processing file common/checksum_helper.c
+Processing file common/psprintf.c
+Processing file common/config_info.c
+Processing file common/exec.c
+Processing file common/archive.c
+Processing file common/md5.c
+Processing file common/stringinfo.c
+Processing file common/fe_memutils.c
+Processing file common/controldata_utils.c
+Processing file common/f2s.c
+Processing file common/d2s.c
+Processing file common/restricted_token.c
+Processing file common/pgfnames.c
+Processing file common/file_utils.c
+Processing file common/pg_lzcompress.c
+Processing file common/base64.c
+Processing file common/logging.c
+Processing file fe_utils/string_utils.c
+Processing file fe_utils/psqlscan.l
+Processing file fe_utils/mbprint.c
+Processing file fe_utils/conditional.c
+Processing file fe_utils/cancel.c
+Processing file fe_utils/print.c
+Processing file include/postgres.h
+Processing file include/pgstat.h
+Processing file include/access/gist.h
+Processing file include/access/gin_private.h
+Processing file include/access/transam.h
+Processing file include/access/tableam.h
+Processing file include/access/nbtree.h
+Processing file include/catalog/index.h
+Processing file include/common/hashfn.h
+Processing file include/common/int128.h
+Processing file include/common/kwlookup.h
+Processing file include/common/int.h
+Processing file include/executor/tuptable.h
+Processing file include/executor/executor.h
+Processing file include/lib/qunique.h
+Processing file include/lib/ilist.h
+Processing file include/lib/simplehash.h
+Processing file include/libpq/pqformat.h
+Processing file include/mb/pg_wchar.h
+Processing file include/nodes/nodeFuncs.h
+Processing file include/nodes/pg_list.h
+Processing file include/port/pg_bitutils.h
+Processing file include/port/atomics.h
+Processing file include/port/atomics/generic.h
+Processing file include/port/atomics/generic-gcc.h
+Processing file include/port/atomics/arch-x86.h
+Processing file include/replication/worker_internal.h
+Processing file include/replication/walreceiver.h
+Processing file include/storage/proclist.h
+Processing file include/storage/checksum_impl.h
+Processing file include/storage/pmsignal.h
+Processing file include/storage/bufmgr.h
+Processing file include/storage/s_lock.h
+Processing file include/tcop/cmdtag.h
+Processing file include/tcop/utility.h
+Processing file include/utils/relptr.h
+Processing file include/utils/arrayaccess.h
+Processing file include/utils/rel.h
+Processing file include/utils/memutils.h
+Processing file include/utils/palloc.h
+Processing file include/utils/sortsupport.h
+Processing file include/utils/expandedrecord.h
+Processing file include/utils/float.h
+Processing file include/utils/partcache.h
+Processing file interfaces/libpq/fe-lobj.c
+Processing file interfaces/libpq/fe-protocol3.c
+Processing file interfaces/libpq/fe-connect.c
+Processing file interfaces/libpq/legacy-pqsignal.c
+Processing file interfaces/libpq/fe-auth-scram.c
+Processing file interfaces/libpq/fe-auth.c
+Processing file interfaces/libpq/fe-exec.c
+Processing file interfaces/libpq/fe-misc.c
+Processing file interfaces/libpq/fe-protocol2.c
+Processing file interfaces/libpq/fe-secure.c
+Processing file interfaces/libpq/fe-print.c
+Processing file interfaces/libpq/pqexpbuffer.c
+Processing file interfaces/libpq/libpq-events.c
+Processing file pl/plpgsql/src/pl_funcs.c
+Processing file pl/plpgsql/src/pl_handler.c
+Processing file pl/plpgsql/src/pl_exec.c
+Processing file pl/plpgsql/src/pl_comp.c
+Processing file pl/plpgsql/src/pl_gram.c
+Processing file pl/plpgsql/src/pl_unreserved_kwlist_d.h
+Processing file pl/plpgsql/src/pl_gram.y
+Processing file pl/plpgsql/src/pl_scanner.c
+Processing file pl/plpgsql/src/pl_reserved_kwlist_d.h
+Processing file port/pgstrsignal.c
+Processing file port/pgstrcasecmp.c
+Processing file port/pgsleep.c
+Processing file port/inet_net_ntop.c
+Processing file port/pg_bitutils.c
+Processing file port/strerror.c
+Processing file port/fls.c
+Processing file port/getpeereid.c
+Processing file port/pgmkdirp.c
+Processing file port/erand48.c
+Processing file port/pqsignal.c
+Processing file port/pg_crc32c_sse42_choose.c
+Processing file port/pg_crc32c_sb8.c
+Processing file port/snprintf.c
+Processing file port/pgcheckdir.c
+Processing file port/pg_crc32c_sse42.c
+Processing file port/chklocale.c
+Processing file port/noblock.c
+Processing file port/thread.c
+Processing file port/qsort_arg.c
+Processing file port/path.c
+Processing file port/qsort.c
+Processing file port/tar.c
+Processing file port/sprompt.c
+Processing file port/pg_strong_random.c
+Processing file port/quotes.c
+Processing file timezone/localtime.c
+Processing file timezone/strftime.c
+Processing file timezone/pgtz.c
+Writing directory view page.
+Overall coverage rate:
+  lines......: 29.6% (102254 of 345530 lines)
+  functions..: 37.9% (6712 of 17687 functions)
+[0;32m[INFO][0m === 覆盖率摘要 ===
+[0;32m[INFO][0m 行覆盖率: 29.6%
+[0;32m[INFO][0m 函数覆盖率: 37.9%
+[0;32m[INFO][0m 分支覆盖率: 未启用
+[0;32m[INFO][0m === Step 10: Recall/Precision 评测 ===
+[0;32m[INFO][0m 运行 recall 评测: JSON=/workspaces/dl-final_cc-opus/data/test_v3.json, COVERAGE=/workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/coverage_workspace, OUTPUT=/workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/eval_result.json
+PrecNF: 0.823500
+efficiency: 0.012143
+result: /workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/eval_result.json
+[0;32m[INFO][0m Recall 评测完成，结果已保存到: /workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/eval_result.json
+[0;32m[INFO][0m === 完成 ===
+[0;32m[INFO][0m 报告路径: file:///workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/coverage_workspace/report/index.html
+[0;32m[INFO][0m Case 级 SQL 执行成功率: 87.0900%  (162/186)
+[0;32m[INFO][0m gcda 已清理，gcno 已保留
+[INFO] 日志已保存: /workspaces/dl-final_cc-opus/outputs/local_eval/v2_lcov116/coverage_workspace/logs/run_20260609_141404.log

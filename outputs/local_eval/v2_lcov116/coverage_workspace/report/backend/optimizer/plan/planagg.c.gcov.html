@@ -1,0 +1,612 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_filtered.info - backend/optimizer/plan/planagg.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">backend/optimizer/plan</a> - planagg.c<span style="font-size: 80%;"> (source / <a href="planagg.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_filtered.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">29</td>
+            <td class="headerCovTableEntry">154</td>
+            <td class="headerCovTableEntryLo">18.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2026-06-09 14:13:17</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">2</td>
+            <td class="headerCovTableEntry">5</td>
+            <td class="headerCovTableEntryLo">40.0 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*-------------------------------------------------------------------------</a>
+<a name="2"><span class="lineNum">       2 </span>            :  *</a>
+<a name="3"><span class="lineNum">       3 </span>            :  * planagg.c</a>
+<a name="4"><span class="lineNum">       4 </span>            :  *        Special planning for aggregate queries.</a>
+<a name="5"><span class="lineNum">       5 </span>            :  *</a>
+<a name="6"><span class="lineNum">       6 </span>            :  * This module tries to replace MIN/MAX aggregate functions by subqueries</a>
+<a name="7"><span class="lineNum">       7 </span>            :  * of the form</a>
+<a name="8"><span class="lineNum">       8 </span>            :  *              (SELECT col FROM tab</a>
+<a name="9"><span class="lineNum">       9 </span>            :  *               WHERE col IS NOT NULL AND existing-quals</a>
+<a name="10"><span class="lineNum">      10 </span>            :  *               ORDER BY col ASC/DESC</a>
+<a name="11"><span class="lineNum">      11 </span>            :  *               LIMIT 1)</a>
+<a name="12"><span class="lineNum">      12 </span>            :  * Given a suitable index on tab.col, this can be much faster than the</a>
+<a name="13"><span class="lineNum">      13 </span>            :  * generic scan-all-the-rows aggregation plan.  We can handle multiple</a>
+<a name="14"><span class="lineNum">      14 </span>            :  * MIN/MAX aggregates by generating multiple subqueries, and their</a>
+<a name="15"><span class="lineNum">      15 </span>            :  * orderings can be different.  However, if the query contains any</a>
+<a name="16"><span class="lineNum">      16 </span>            :  * non-optimizable aggregates, there's no point since we'll have to</a>
+<a name="17"><span class="lineNum">      17 </span>            :  * scan all the rows anyway.</a>
+<a name="18"><span class="lineNum">      18 </span>            :  *</a>
+<a name="19"><span class="lineNum">      19 </span>            :  *</a>
+<a name="20"><span class="lineNum">      20 </span>            :  * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group</a>
+<a name="21"><span class="lineNum">      21 </span>            :  * Portions Copyright (c) 1994, Regents of the University of California</a>
+<a name="22"><span class="lineNum">      22 </span>            :  *</a>
+<a name="23"><span class="lineNum">      23 </span>            :  *</a>
+<a name="24"><span class="lineNum">      24 </span>            :  * IDENTIFICATION</a>
+<a name="25"><span class="lineNum">      25 </span>            :  *        src/backend/optimizer/plan/planagg.c</a>
+<a name="26"><span class="lineNum">      26 </span>            :  *</a>
+<a name="27"><span class="lineNum">      27 </span>            :  *-------------------------------------------------------------------------</a>
+<a name="28"><span class="lineNum">      28 </span>            :  */</a>
+<a name="29"><span class="lineNum">      29 </span>            : #include &quot;postgres.h&quot;</a>
+<a name="30"><span class="lineNum">      30 </span>            : </a>
+<a name="31"><span class="lineNum">      31 </span>            : #include &quot;access/htup_details.h&quot;</a>
+<a name="32"><span class="lineNum">      32 </span>            : #include &quot;catalog/pg_aggregate.h&quot;</a>
+<a name="33"><span class="lineNum">      33 </span>            : #include &quot;catalog/pg_type.h&quot;</a>
+<a name="34"><span class="lineNum">      34 </span>            : #include &quot;nodes/makefuncs.h&quot;</a>
+<a name="35"><span class="lineNum">      35 </span>            : #include &quot;nodes/nodeFuncs.h&quot;</a>
+<a name="36"><span class="lineNum">      36 </span>            : #include &quot;optimizer/clauses.h&quot;</a>
+<a name="37"><span class="lineNum">      37 </span>            : #include &quot;optimizer/cost.h&quot;</a>
+<a name="38"><span class="lineNum">      38 </span>            : #include &quot;optimizer/optimizer.h&quot;</a>
+<a name="39"><span class="lineNum">      39 </span>            : #include &quot;optimizer/pathnode.h&quot;</a>
+<a name="40"><span class="lineNum">      40 </span>            : #include &quot;optimizer/paths.h&quot;</a>
+<a name="41"><span class="lineNum">      41 </span>            : #include &quot;optimizer/planmain.h&quot;</a>
+<a name="42"><span class="lineNum">      42 </span>            : #include &quot;optimizer/subselect.h&quot;</a>
+<a name="43"><span class="lineNum">      43 </span>            : #include &quot;optimizer/tlist.h&quot;</a>
+<a name="44"><span class="lineNum">      44 </span>            : #include &quot;parser/parse_clause.h&quot;</a>
+<a name="45"><span class="lineNum">      45 </span>            : #include &quot;parser/parsetree.h&quot;</a>
+<a name="46"><span class="lineNum">      46 </span>            : #include &quot;rewrite/rewriteManip.h&quot;</a>
+<a name="47"><span class="lineNum">      47 </span>            : #include &quot;utils/lsyscache.h&quot;</a>
+<a name="48"><span class="lineNum">      48 </span>            : #include &quot;utils/syscache.h&quot;</a>
+<a name="49"><span class="lineNum">      49 </span>            : </a>
+<a name="50"><span class="lineNum">      50 </span>            : static bool find_minmax_aggs_walker(Node *node, List **context);</a>
+<a name="51"><span class="lineNum">      51 </span>            : static bool build_minmax_path(PlannerInfo *root, MinMaxAggInfo *mminfo,</a>
+<a name="52"><span class="lineNum">      52 </span>            :                                                           Oid eqop, Oid sortop, bool nulls_first);</a>
+<a name="53"><span class="lineNum">      53 </span>            : static void minmax_qp_callback(PlannerInfo *root, void *extra);</a>
+<a name="54"><span class="lineNum">      54 </span>            : static Oid      fetch_agg_sort_op(Oid aggfnoid);</a>
+<a name="55"><span class="lineNum">      55 </span>            : </a>
+<a name="56"><span class="lineNum">      56 </span>            : </a>
+<a name="57"><span class="lineNum">      57 </span>            : /*</a>
+<a name="58"><span class="lineNum">      58 </span>            :  * preprocess_minmax_aggregates - preprocess MIN/MAX aggregates</a>
+<a name="59"><span class="lineNum">      59 </span>            :  *</a>
+<a name="60"><span class="lineNum">      60 </span>            :  * Check to see whether the query contains MIN/MAX aggregate functions that</a>
+<a name="61"><span class="lineNum">      61 </span>            :  * might be optimizable via indexscans.  If it does, and all the aggregates</a>
+<a name="62"><span class="lineNum">      62 </span>            :  * are potentially optimizable, then create a MinMaxAggPath and add it to</a>
+<a name="63"><span class="lineNum">      63 </span>            :  * the (UPPERREL_GROUP_AGG, NULL) upperrel.</a>
+<a name="64"><span class="lineNum">      64 </span>            :  *</a>
+<a name="65"><span class="lineNum">      65 </span>            :  * This should be called by grouping_planner() just before it's ready to call</a>
+<a name="66"><span class="lineNum">      66 </span>            :  * query_planner(), because we generate indexscan paths by cloning the</a>
+<a name="67"><span class="lineNum">      67 </span>            :  * planner's state and invoking query_planner() on a modified version of</a>
+<a name="68"><span class="lineNum">      68 </span>            :  * the query parsetree.  Thus, all preprocessing needed before query_planner()</a>
+<a name="69"><span class="lineNum">      69 </span>            :  * must already be done.</a>
+<a name="70"><span class="lineNum">      70 </span>            :  */</a>
+<a name="71"><span class="lineNum">      71 </span>            : void</a>
+<a name="72"><span class="lineNum">      72 </span><span class="lineCov">         23 : preprocess_minmax_aggregates(PlannerInfo *root)</span></a>
+<a name="73"><span class="lineNum">      73 </span>            : {</a>
+<a name="74"><span class="lineNum">      74 </span><span class="lineCov">         23 :         Query      *parse = root-&gt;parse;</span></a>
+<a name="75"><span class="lineNum">      75 </span>            :         FromExpr   *jtnode;</a>
+<a name="76"><span class="lineNum">      76 </span>            :         RangeTblRef *rtr;</a>
+<a name="77"><span class="lineNum">      77 </span>            :         RangeTblEntry *rte;</a>
+<a name="78"><span class="lineNum">      78 </span>            :         List       *aggs_list;</a>
+<a name="79"><span class="lineNum">      79 </span>            :         RelOptInfo *grouped_rel;</a>
+<a name="80"><span class="lineNum">      80 </span>            :         ListCell   *lc;</a>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<a name="82"><span class="lineNum">      82 </span>            :         /* minmax_aggs list should be empty at this point */</a>
+<a name="83"><span class="lineNum">      83 </span>            :         Assert(root-&gt;minmax_aggs == NIL);</a>
+<a name="84"><span class="lineNum">      84 </span>            : </a>
+<a name="85"><span class="lineNum">      85 </span>            :         /* Nothing to do if query has no aggregates */</a>
+<a name="86"><span class="lineNum">      86 </span><span class="lineCov">         23 :         if (!parse-&gt;hasAggs)</span></a>
+<a name="87"><span class="lineNum">      87 </span><span class="lineCov">         23 :                 return;</span></a>
+<a name="88"><span class="lineNum">      88 </span>            : </a>
+<a name="89"><span class="lineNum">      89 </span>            :         Assert(!parse-&gt;setOperations);       /* shouldn't get here if a setop */</a>
+<a name="90"><span class="lineNum">      90 </span>            :         Assert(parse-&gt;rowMarks == NIL); /* nor if FOR UPDATE */</a>
+<a name="91"><span class="lineNum">      91 </span>            : </a>
+<a name="92"><span class="lineNum">      92 </span>            :         /*</a>
+<a name="93"><span class="lineNum">      93 </span>            :          * Reject unoptimizable cases.</a>
+<a name="94"><span class="lineNum">      94 </span>            :          *</a>
+<a name="95"><span class="lineNum">      95 </span>            :          * We don't handle GROUP BY or windowing, because our current</a>
+<a name="96"><span class="lineNum">      96 </span>            :          * implementations of grouping require looking at all the rows anyway, and</a>
+<a name="97"><span class="lineNum">      97 </span>            :          * so there's not much point in optimizing MIN/MAX.</a>
+<a name="98"><span class="lineNum">      98 </span>            :          */</a>
+<a name="99"><span class="lineNum">      99 </span><span class="lineCov">         23 :         if (parse-&gt;groupClause || list_length(parse-&gt;groupingSets) &gt; 1 ||</span></a>
+<a name="100"><span class="lineNum">     100 </span><span class="lineCov">         13 :                 parse-&gt;hasWindowFuncs)</span></a>
+<a name="101"><span class="lineNum">     101 </span><span class="lineCov">         10 :                 return;</span></a>
+<a name="102"><span class="lineNum">     102 </span>            : </a>
+<a name="103"><span class="lineNum">     103 </span>            :         /*</a>
+<a name="104"><span class="lineNum">     104 </span>            :          * Reject if query contains any CTEs; there's no way to build an indexscan</a>
+<a name="105"><span class="lineNum">     105 </span>            :          * on one so we couldn't succeed here.  (If the CTEs are unreferenced,</a>
+<a name="106"><span class="lineNum">     106 </span>            :          * that's not true, but it doesn't seem worth expending cycles to check.)</a>
+<a name="107"><span class="lineNum">     107 </span>            :          */</a>
+<a name="108"><span class="lineNum">     108 </span><span class="lineCov">         13 :         if (parse-&gt;cteList)</span></a>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<a name="110"><span class="lineNum">     110 </span>            : </a>
+<a name="111"><span class="lineNum">     111 </span>            :         /*</a>
+<a name="112"><span class="lineNum">     112 </span>            :          * We also restrict the query to reference exactly one table, since join</a>
+<a name="113"><span class="lineNum">     113 </span>            :          * conditions can't be handled reasonably.  (We could perhaps handle a</a>
+<a name="114"><span class="lineNum">     114 </span>            :          * query containing cartesian-product joins, but it hardly seems worth the</a>
+<a name="115"><span class="lineNum">     115 </span>            :          * trouble.)  However, the single table could be buried in several levels</a>
+<a name="116"><span class="lineNum">     116 </span>            :          * of FromExpr due to subqueries.  Note the &quot;single&quot; table could be an</a>
+<a name="117"><span class="lineNum">     117 </span>            :          * inheritance parent, too, including the case of a UNION ALL subquery</a>
+<a name="118"><span class="lineNum">     118 </span>            :          * that's been flattened to an appendrel.</a>
+<a name="119"><span class="lineNum">     119 </span>            :          */</a>
+<a name="120"><span class="lineNum">     120 </span><span class="lineCov">         13 :         jtnode = parse-&gt;jointree;</span></a>
+<a name="121"><span class="lineNum">     121 </span><span class="lineCov">         26 :         while (IsA(jtnode, FromExpr))</span></a>
+<a name="122"><span class="lineNum">     122 </span>            :         {</a>
+<a name="123"><span class="lineNum">     123 </span><span class="lineCov">         13 :                 if (list_length(jtnode-&gt;fromlist) != 1)</span></a>
+<a name="124"><span class="lineNum">     124 </span><span class="lineNoCov">          0 :                         return;</span></a>
+<a name="125"><span class="lineNum">     125 </span><span class="lineCov">         13 :                 jtnode = linitial(jtnode-&gt;fromlist);</span></a>
+<a name="126"><span class="lineNum">     126 </span>            :         }</a>
+<a name="127"><span class="lineNum">     127 </span><span class="lineCov">         13 :         if (!IsA(jtnode, RangeTblRef))</span></a>
+<a name="128"><span class="lineNum">     128 </span><span class="lineCov">          2 :                 return;</span></a>
+<a name="129"><span class="lineNum">     129 </span><span class="lineCov">         11 :         rtr = (RangeTblRef *) jtnode;</span></a>
+<a name="130"><span class="lineNum">     130 </span><span class="lineCov">         11 :         rte = planner_rt_fetch(rtr-&gt;rtindex, root);</span></a>
+<a name="131"><span class="lineNum">     131 </span><span class="lineCov">         11 :         if (rte-&gt;rtekind == RTE_RELATION)</span></a>
+<a name="132"><span class="lineNum">     132 </span>            :                  /* ordinary relation, ok */ ;</a>
+<a name="133"><span class="lineNum">     133 </span><span class="lineCov">          1 :         else if (rte-&gt;rtekind == RTE_SUBQUERY &amp;&amp; rte-&gt;inh)</span></a>
+<a name="134"><span class="lineNum">     134 </span>            :                  /* flattened UNION ALL subquery, ok */ ;</a>
+<a name="135"><span class="lineNum">     135 </span>            :         else</a>
+<a name="136"><span class="lineNum">     136 </span><span class="lineCov">          1 :                 return;</span></a>
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<a name="138"><span class="lineNum">     138 </span>            :         /*</a>
+<a name="139"><span class="lineNum">     139 </span>            :          * Scan the tlist and HAVING qual to find all the aggregates and verify</a>
+<a name="140"><span class="lineNum">     140 </span>            :          * all are MIN/MAX aggregates.  Stop as soon as we find one that isn't.</a>
+<a name="141"><span class="lineNum">     141 </span>            :          */</a>
+<a name="142"><span class="lineNum">     142 </span><span class="lineCov">         10 :         aggs_list = NIL;</span></a>
+<a name="143"><span class="lineNum">     143 </span><span class="lineCov">         10 :         if (find_minmax_aggs_walker((Node *) root-&gt;processed_tlist, &amp;aggs_list))</span></a>
+<a name="144"><span class="lineNum">     144 </span><span class="lineCov">         10 :                 return;</span></a>
+<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 :         if (find_minmax_aggs_walker(parse-&gt;havingQual, &amp;aggs_list))</span></a>
+<a name="146"><span class="lineNum">     146 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<a name="147"><span class="lineNum">     147 </span>            : </a>
+<a name="148"><span class="lineNum">     148 </span>            :         /*</a>
+<a name="149"><span class="lineNum">     149 </span>            :          * OK, there is at least the possibility of performing the optimization.</a>
+<a name="150"><span class="lineNum">     150 </span>            :          * Build an access path for each aggregate.  If any of the aggregates</a>
+<a name="151"><span class="lineNum">     151 </span>            :          * prove to be non-indexable, give up; there is no point in optimizing</a>
+<a name="152"><span class="lineNum">     152 </span>            :          * just some of them.</a>
+<a name="153"><span class="lineNum">     153 </span>            :          */</a>
+<a name="154"><span class="lineNum">     154 </span><span class="lineNoCov">          0 :         foreach(lc, aggs_list)</span></a>
+<a name="155"><span class="lineNum">     155 </span>            :         {</a>
+<a name="156"><span class="lineNum">     156 </span><span class="lineNoCov">          0 :                 MinMaxAggInfo *mminfo = (MinMaxAggInfo *) lfirst(lc);</span></a>
+<a name="157"><span class="lineNum">     157 </span>            :                 Oid                     eqop;</a>
+<a name="158"><span class="lineNum">     158 </span>            :                 bool            reverse;</a>
+<a name="159"><span class="lineNum">     159 </span>            : </a>
+<a name="160"><span class="lineNum">     160 </span>            :                 /*</a>
+<a name="161"><span class="lineNum">     161 </span>            :                  * We'll need the equality operator that goes with the aggregate's</a>
+<a name="162"><span class="lineNum">     162 </span>            :                  * ordering operator.</a>
+<a name="163"><span class="lineNum">     163 </span>            :                  */</a>
+<a name="164"><span class="lineNum">     164 </span><span class="lineNoCov">          0 :                 eqop = get_equality_op_for_ordering_op(mminfo-&gt;aggsortop, &amp;reverse);</span></a>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 if (!OidIsValid(eqop))  /* shouldn't happen */</span></a>
+<a name="166"><span class="lineNum">     166 </span><span class="lineNoCov">          0 :                         elog(ERROR, &quot;could not find equality operator for ordering operator %u&quot;,</span></a>
+<a name="167"><span class="lineNum">     167 </span>            :                                  mminfo-&gt;aggsortop);</a>
+<a name="168"><span class="lineNum">     168 </span>            : </a>
+<a name="169"><span class="lineNum">     169 </span>            :                 /*</a>
+<a name="170"><span class="lineNum">     170 </span>            :                  * We can use either an ordering that gives NULLS FIRST or one that</a>
+<a name="171"><span class="lineNum">     171 </span>            :                  * gives NULLS LAST; furthermore there's unlikely to be much</a>
+<a name="172"><span class="lineNum">     172 </span>            :                  * performance difference between them, so it doesn't seem worth</a>
+<a name="173"><span class="lineNum">     173 </span>            :                  * costing out both ways if we get a hit on the first one.  NULLS</a>
+<a name="174"><span class="lineNum">     174 </span>            :                  * FIRST is more likely to be available if the operator is a</a>
+<a name="175"><span class="lineNum">     175 </span>            :                  * reverse-sort operator, so try that first if reverse.</a>
+<a name="176"><span class="lineNum">     176 </span>            :                  */</a>
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 :                 if (build_minmax_path(root, mminfo, eqop, mminfo-&gt;aggsortop, reverse))</span></a>
+<a name="178"><span class="lineNum">     178 </span><span class="lineNoCov">          0 :                         continue;</span></a>
+<a name="179"><span class="lineNum">     179 </span><span class="lineNoCov">          0 :                 if (build_minmax_path(root, mminfo, eqop, mminfo-&gt;aggsortop, !reverse))</span></a>
+<a name="180"><span class="lineNum">     180 </span><span class="lineNoCov">          0 :                         continue;</span></a>
+<a name="181"><span class="lineNum">     181 </span>            : </a>
+<a name="182"><span class="lineNum">     182 </span>            :                 /* No indexable path for this aggregate, so fail */</a>
+<a name="183"><span class="lineNum">     183 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<a name="184"><span class="lineNum">     184 </span>            :         }</a>
+<a name="185"><span class="lineNum">     185 </span>            : </a>
+<a name="186"><span class="lineNum">     186 </span>            :         /*</a>
+<a name="187"><span class="lineNum">     187 </span>            :          * OK, we can do the query this way.  Prepare to create a MinMaxAggPath</a>
+<a name="188"><span class="lineNum">     188 </span>            :          * node.</a>
+<a name="189"><span class="lineNum">     189 </span>            :          *</a>
+<a name="190"><span class="lineNum">     190 </span>            :          * First, create an output Param node for each agg.  (If we end up not</a>
+<a name="191"><span class="lineNum">     191 </span>            :          * using the MinMaxAggPath, we'll waste a PARAM_EXEC slot for each agg,</a>
+<a name="192"><span class="lineNum">     192 </span>            :          * which is not worth worrying about.  We can't wait till create_plan time</a>
+<a name="193"><span class="lineNum">     193 </span>            :          * to decide whether to make the Param, unfortunately.)</a>
+<a name="194"><span class="lineNum">     194 </span>            :          */</a>
+<a name="195"><span class="lineNum">     195 </span><span class="lineNoCov">          0 :         foreach(lc, aggs_list)</span></a>
+<a name="196"><span class="lineNum">     196 </span>            :         {</a>
+<a name="197"><span class="lineNum">     197 </span><span class="lineNoCov">          0 :                 MinMaxAggInfo *mminfo = (MinMaxAggInfo *) lfirst(lc);</span></a>
+<a name="198"><span class="lineNum">     198 </span>            : </a>
+<a name="199"><span class="lineNum">     199 </span><span class="lineNoCov">          0 :                 mminfo-&gt;param =</span></a>
+<a name="200"><span class="lineNum">     200 </span><span class="lineNoCov">          0 :                         SS_make_initplan_output_param(root,</span></a>
+<a name="201"><span class="lineNum">     201 </span><span class="lineNoCov">          0 :                                                                                   exprType((Node *) mminfo-&gt;target),</span></a>
+<a name="202"><span class="lineNum">     202 </span>            :                                                                                   -1,</a>
+<a name="203"><span class="lineNum">     203 </span><span class="lineNoCov">          0 :                                                                                   exprCollation((Node *) mminfo-&gt;target));</span></a>
+<a name="204"><span class="lineNum">     204 </span>            :         }</a>
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<a name="206"><span class="lineNum">     206 </span>            :         /*</a>
+<a name="207"><span class="lineNum">     207 </span>            :          * Create a MinMaxAggPath node with the appropriate estimated costs and</a>
+<a name="208"><span class="lineNum">     208 </span>            :          * other needed data, and add it to the UPPERREL_GROUP_AGG upperrel, where</a>
+<a name="209"><span class="lineNum">     209 </span>            :          * it will compete against the standard aggregate implementation.  (It</a>
+<a name="210"><span class="lineNum">     210 </span>            :          * will likely always win, but we need not assume that here.)</a>
+<a name="211"><span class="lineNum">     211 </span>            :          *</a>
+<a name="212"><span class="lineNum">     212 </span>            :          * Note: grouping_planner won't have created this upperrel yet, but it's</a>
+<a name="213"><span class="lineNum">     213 </span>            :          * fine for us to create it first.  We will not have inserted the correct</a>
+<a name="214"><span class="lineNum">     214 </span>            :          * consider_parallel value in it, but MinMaxAggPath paths are currently</a>
+<a name="215"><span class="lineNum">     215 </span>            :          * never parallel-safe anyway, so that doesn't matter.  Likewise, it</a>
+<a name="216"><span class="lineNum">     216 </span>            :          * doesn't matter that we haven't filled FDW-related fields in the rel.</a>
+<a name="217"><span class="lineNum">     217 </span>            :          * Also, because there are no rowmarks, we know that the processed_tlist</a>
+<a name="218"><span class="lineNum">     218 </span>            :          * doesn't need to change anymore, so making the pathtarget now is safe.</a>
+<a name="219"><span class="lineNum">     219 </span>            :          */</a>
+<a name="220"><span class="lineNum">     220 </span><span class="lineNoCov">          0 :         grouped_rel = fetch_upper_rel(root, UPPERREL_GROUP_AGG, NULL);</span></a>
+<a name="221"><span class="lineNum">     221 </span><span class="lineNoCov">          0 :         add_path(grouped_rel, (Path *)</span></a>
+<a name="222"><span class="lineNum">     222 </span><span class="lineNoCov">          0 :                          create_minmaxagg_path(root, grouped_rel,</span></a>
+<a name="223"><span class="lineNum">     223 </span>            :                                                                    create_pathtarget(root,</a>
+<a name="224"><span class="lineNum">     224 </span>            :                                                                                                          root-&gt;processed_tlist),</a>
+<a name="225"><span class="lineNum">     225 </span>            :                                                                    aggs_list,</a>
+<a name="226"><span class="lineNum">     226 </span><span class="lineNoCov">          0 :                                                                    (List *) parse-&gt;havingQual));</span></a>
+<a name="227"><span class="lineNum">     227 </span>            : }</a>
+<a name="228"><span class="lineNum">     228 </span>            : </a>
+<a name="229"><span class="lineNum">     229 </span>            : /*</a>
+<a name="230"><span class="lineNum">     230 </span>            :  * find_minmax_aggs_walker</a>
+<a name="231"><span class="lineNum">     231 </span>            :  *              Recursively scan the Aggref nodes in an expression tree, and check</a>
+<a name="232"><span class="lineNum">     232 </span>            :  *              that each one is a MIN/MAX aggregate.  If so, build a list of the</a>
+<a name="233"><span class="lineNum">     233 </span>            :  *              distinct aggregate calls in the tree.</a>
+<a name="234"><span class="lineNum">     234 </span>            :  *</a>
+<a name="235"><span class="lineNum">     235 </span>            :  * Returns true if a non-MIN/MAX aggregate is found, false otherwise.</a>
+<a name="236"><span class="lineNum">     236 </span>            :  * (This seemingly-backward definition is used because expression_tree_walker</a>
+<a name="237"><span class="lineNum">     237 </span>            :  * aborts the scan on true return, which is what we want.)</a>
+<a name="238"><span class="lineNum">     238 </span>            :  *</a>
+<a name="239"><span class="lineNum">     239 </span>            :  * Found aggregates are added to the list at *context; it's up to the caller</a>
+<a name="240"><span class="lineNum">     240 </span>            :  * to initialize the list to NIL.</a>
+<a name="241"><span class="lineNum">     241 </span>            :  *</a>
+<a name="242"><span class="lineNum">     242 </span>            :  * This does not descend into subqueries, and so should be used only after</a>
+<a name="243"><span class="lineNum">     243 </span>            :  * reduction of sublinks to subplans.  There mustn't be outer-aggregate</a>
+<a name="244"><span class="lineNum">     244 </span>            :  * references either.</a>
+<a name="245"><span class="lineNum">     245 </span>            :  */</a>
+<a name="246"><span class="lineNum">     246 </span>            : static bool</a>
+<a name="247"><span class="lineNum">     247 </span><span class="lineCov">         30 : find_minmax_aggs_walker(Node *node, List **context)</span></a>
+<a name="248"><span class="lineNum">     248 </span>            : {</a>
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">         30 :         if (node == NULL)</span></a>
+<a name="250"><span class="lineNum">     250 </span><span class="lineNoCov">          0 :                 return false;</span></a>
+<a name="251"><span class="lineNum">     251 </span><span class="lineCov">         30 :         if (IsA(node, Aggref))</span></a>
+<a name="252"><span class="lineNum">     252 </span>            :         {</a>
+<a name="253"><span class="lineNum">     253 </span><span class="lineCov">         10 :                 Aggref     *aggref = (Aggref *) node;</span></a>
+<a name="254"><span class="lineNum">     254 </span>            :                 Oid                     aggsortop;</a>
+<a name="255"><span class="lineNum">     255 </span>            :                 TargetEntry *curTarget;</a>
+<a name="256"><span class="lineNum">     256 </span>            :                 MinMaxAggInfo *mminfo;</a>
+<a name="257"><span class="lineNum">     257 </span>            :                 ListCell   *l;</a>
+<a name="258"><span class="lineNum">     258 </span>            : </a>
+<a name="259"><span class="lineNum">     259 </span>            :                 Assert(aggref-&gt;agglevelsup == 0);</a>
+<a name="260"><span class="lineNum">     260 </span><span class="lineCov">         10 :                 if (list_length(aggref-&gt;args) != 1)</span></a>
+<a name="261"><span class="lineNum">     261 </span><span class="lineCov">         10 :                         return true;            /* it couldn't be MIN/MAX */</span></a>
+<a name="262"><span class="lineNum">     262 </span>            : </a>
+<a name="263"><span class="lineNum">     263 </span>            :                 /*</a>
+<a name="264"><span class="lineNum">     264 </span>            :                  * ORDER BY is usually irrelevant for MIN/MAX, but it can change the</a>
+<a name="265"><span class="lineNum">     265 </span>            :                  * outcome if the aggsortop's operator class recognizes non-identical</a>
+<a name="266"><span class="lineNum">     266 </span>            :                  * values as equal.  For example, 4.0 and 4.00 are equal according to</a>
+<a name="267"><span class="lineNum">     267 </span>            :                  * numeric_ops, yet distinguishable.  If MIN() receives more than one</a>
+<a name="268"><span class="lineNum">     268 </span>            :                  * value equal to 4.0 and no value less than 4.0, it is unspecified</a>
+<a name="269"><span class="lineNum">     269 </span>            :                  * which of those equal values MIN() returns.  An ORDER BY expression</a>
+<a name="270"><span class="lineNum">     270 </span>            :                  * that differs for each of those equal values of the argument</a>
+<a name="271"><span class="lineNum">     271 </span>            :                  * expression makes the result predictable once again.  This is a</a>
+<a name="272"><span class="lineNum">     272 </span>            :                  * niche requirement, and we do not implement it with subquery paths.</a>
+<a name="273"><span class="lineNum">     273 </span>            :                  * In any case, this test lets us reject ordered-set aggregates</a>
+<a name="274"><span class="lineNum">     274 </span>            :                  * quickly.</a>
+<a name="275"><span class="lineNum">     275 </span>            :                  */</a>
+<a name="276"><span class="lineNum">     276 </span><span class="lineNoCov">          0 :                 if (aggref-&gt;aggorder != NIL)</span></a>
+<a name="277"><span class="lineNum">     277 </span><span class="lineNoCov">          0 :                         return true;</span></a>
+<a name="278"><span class="lineNum">     278 </span>            :                 /* note: we do not care if DISTINCT is mentioned ... */</a>
+<a name="279"><span class="lineNum">     279 </span>            : </a>
+<a name="280"><span class="lineNum">     280 </span>            :                 /*</a>
+<a name="281"><span class="lineNum">     281 </span>            :                  * We might implement the optimization when a FILTER clause is present</a>
+<a name="282"><span class="lineNum">     282 </span>            :                  * by adding the filter to the quals of the generated subquery.  For</a>
+<a name="283"><span class="lineNum">     283 </span>            :                  * now, just punt.</a>
+<a name="284"><span class="lineNum">     284 </span>            :                  */</a>
+<a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :                 if (aggref-&gt;aggfilter != NULL)</span></a>
+<a name="286"><span class="lineNum">     286 </span><span class="lineNoCov">          0 :                         return true;</span></a>
+<a name="287"><span class="lineNum">     287 </span>            : </a>
+<a name="288"><span class="lineNum">     288 </span><span class="lineNoCov">          0 :                 aggsortop = fetch_agg_sort_op(aggref-&gt;aggfnoid);</span></a>
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :                 if (!OidIsValid(aggsortop))</span></a>
+<a name="290"><span class="lineNum">     290 </span><span class="lineNoCov">          0 :                         return true;            /* not a MIN/MAX aggregate */</span></a>
+<a name="291"><span class="lineNum">     291 </span>            : </a>
+<a name="292"><span class="lineNum">     292 </span><span class="lineNoCov">          0 :                 curTarget = (TargetEntry *) linitial(aggref-&gt;args);</span></a>
+<a name="293"><span class="lineNum">     293 </span>            : </a>
+<a name="294"><span class="lineNum">     294 </span><span class="lineNoCov">          0 :                 if (contain_mutable_functions((Node *) curTarget-&gt;expr))</span></a>
+<a name="295"><span class="lineNum">     295 </span><span class="lineNoCov">          0 :                         return true;            /* not potentially indexable */</span></a>
+<a name="296"><span class="lineNum">     296 </span>            : </a>
+<a name="297"><span class="lineNum">     297 </span><span class="lineNoCov">          0 :                 if (type_is_rowtype(exprType((Node *) curTarget-&gt;expr)))</span></a>
+<a name="298"><span class="lineNum">     298 </span><span class="lineNoCov">          0 :                         return true;            /* IS NOT NULL would have weird semantics */</span></a>
+<a name="299"><span class="lineNum">     299 </span>            : </a>
+<a name="300"><span class="lineNum">     300 </span>            :                 /*</a>
+<a name="301"><span class="lineNum">     301 </span>            :                  * Check whether it's already in the list, and add it if not.</a>
+<a name="302"><span class="lineNum">     302 </span>            :                  */</a>
+<a name="303"><span class="lineNum">     303 </span><span class="lineNoCov">          0 :                 foreach(l, *context)</span></a>
+<a name="304"><span class="lineNum">     304 </span>            :                 {</a>
+<a name="305"><span class="lineNum">     305 </span><span class="lineNoCov">          0 :                         mminfo = (MinMaxAggInfo *) lfirst(l);</span></a>
+<a name="306"><span class="lineNum">     306 </span><span class="lineNoCov">          0 :                         if (mminfo-&gt;aggfnoid == aggref-&gt;aggfnoid &amp;&amp;</span></a>
+<a name="307"><span class="lineNum">     307 </span><span class="lineNoCov">          0 :                                 equal(mminfo-&gt;target, curTarget-&gt;expr))</span></a>
+<a name="308"><span class="lineNum">     308 </span><span class="lineNoCov">          0 :                                 return false;</span></a>
+<a name="309"><span class="lineNum">     309 </span>            :                 }</a>
+<a name="310"><span class="lineNum">     310 </span>            : </a>
+<a name="311"><span class="lineNum">     311 </span><span class="lineNoCov">          0 :                 mminfo = makeNode(MinMaxAggInfo);</span></a>
+<a name="312"><span class="lineNum">     312 </span><span class="lineNoCov">          0 :                 mminfo-&gt;aggfnoid = aggref-&gt;aggfnoid;</span></a>
+<a name="313"><span class="lineNum">     313 </span><span class="lineNoCov">          0 :                 mminfo-&gt;aggsortop = aggsortop;</span></a>
+<a name="314"><span class="lineNum">     314 </span><span class="lineNoCov">          0 :                 mminfo-&gt;target = curTarget-&gt;expr;</span></a>
+<a name="315"><span class="lineNum">     315 </span><span class="lineNoCov">          0 :                 mminfo-&gt;subroot = NULL; /* don't compute path yet */</span></a>
+<a name="316"><span class="lineNum">     316 </span><span class="lineNoCov">          0 :                 mminfo-&gt;path = NULL;</span></a>
+<a name="317"><span class="lineNum">     317 </span><span class="lineNoCov">          0 :                 mminfo-&gt;pathcost = 0;</span></a>
+<a name="318"><span class="lineNum">     318 </span><span class="lineNoCov">          0 :                 mminfo-&gt;param = NULL;</span></a>
+<a name="319"><span class="lineNum">     319 </span>            : </a>
+<a name="320"><span class="lineNum">     320 </span><span class="lineNoCov">          0 :                 *context = lappend(*context, mminfo);</span></a>
+<a name="321"><span class="lineNum">     321 </span>            : </a>
+<a name="322"><span class="lineNum">     322 </span>            :                 /*</a>
+<a name="323"><span class="lineNum">     323 </span>            :                  * We need not recurse into the argument, since it can't contain any</a>
+<a name="324"><span class="lineNum">     324 </span>            :                  * aggregates.</a>
+<a name="325"><span class="lineNum">     325 </span>            :                  */</a>
+<a name="326"><span class="lineNum">     326 </span><span class="lineNoCov">          0 :                 return false;</span></a>
+<a name="327"><span class="lineNum">     327 </span>            :         }</a>
+<a name="328"><span class="lineNum">     328 </span>            :         Assert(!IsA(node, SubLink));</a>
+<a name="329"><span class="lineNum">     329 </span><span class="lineCov">         20 :         return expression_tree_walker(node, find_minmax_aggs_walker,</span></a>
+<a name="330"><span class="lineNum">     330 </span>            :                                                                   (void *) context);</a>
+<a name="331"><span class="lineNum">     331 </span>            : }</a>
+<a name="332"><span class="lineNum">     332 </span>            : </a>
+<a name="333"><span class="lineNum">     333 </span>            : /*</a>
+<a name="334"><span class="lineNum">     334 </span>            :  * build_minmax_path</a>
+<a name="335"><span class="lineNum">     335 </span>            :  *              Given a MIN/MAX aggregate, try to build an indexscan Path it can be</a>
+<a name="336"><span class="lineNum">     336 </span>            :  *              optimized with.</a>
+<a name="337"><span class="lineNum">     337 </span>            :  *</a>
+<a name="338"><span class="lineNum">     338 </span>            :  * If successful, stash the best path in *mminfo and return true.</a>
+<a name="339"><span class="lineNum">     339 </span>            :  * Otherwise, return false.</a>
+<a name="340"><span class="lineNum">     340 </span>            :  */</a>
+<a name="341"><span class="lineNum">     341 </span>            : static bool</a>
+<a name="342"><span class="lineNum">     342 </span><span class="lineNoCov">          0 : build_minmax_path(PlannerInfo *root, MinMaxAggInfo *mminfo,</span></a>
+<a name="343"><span class="lineNum">     343 </span>            :                                   Oid eqop, Oid sortop, bool nulls_first)</a>
+<a name="344"><span class="lineNum">     344 </span>            : {</a>
+<a name="345"><span class="lineNum">     345 </span>            :         PlannerInfo *subroot;</a>
+<a name="346"><span class="lineNum">     346 </span>            :         Query      *parse;</a>
+<a name="347"><span class="lineNum">     347 </span>            :         TargetEntry *tle;</a>
+<a name="348"><span class="lineNum">     348 </span>            :         List       *tlist;</a>
+<a name="349"><span class="lineNum">     349 </span>            :         NullTest   *ntest;</a>
+<a name="350"><span class="lineNum">     350 </span>            :         SortGroupClause *sortcl;</a>
+<a name="351"><span class="lineNum">     351 </span>            :         RelOptInfo *final_rel;</a>
+<a name="352"><span class="lineNum">     352 </span>            :         Path       *sorted_path;</a>
+<a name="353"><span class="lineNum">     353 </span>            :         Cost            path_cost;</a>
+<a name="354"><span class="lineNum">     354 </span>            :         double          path_fraction;</a>
+<a name="355"><span class="lineNum">     355 </span>            : </a>
+<a name="356"><span class="lineNum">     356 </span>            :         /*</a>
+<a name="357"><span class="lineNum">     357 </span>            :          * We are going to construct what is effectively a sub-SELECT query, so</a>
+<a name="358"><span class="lineNum">     358 </span>            :          * clone the current query level's state and adjust it to make it look</a>
+<a name="359"><span class="lineNum">     359 </span>            :          * like a subquery.  Any outer references will now be one level higher</a>
+<a name="360"><span class="lineNum">     360 </span>            :          * than before.  (This means that when we are done, there will be no Vars</a>
+<a name="361"><span class="lineNum">     361 </span>            :          * of level 1, which is why the subquery can become an initplan.)</a>
+<a name="362"><span class="lineNum">     362 </span>            :          */</a>
+<a name="363"><span class="lineNum">     363 </span><span class="lineNoCov">          0 :         subroot = (PlannerInfo *) palloc(sizeof(PlannerInfo));</span></a>
+<a name="364"><span class="lineNum">     364 </span><span class="lineNoCov">          0 :         memcpy(subroot, root, sizeof(PlannerInfo));</span></a>
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :         subroot-&gt;query_level++;</span></a>
+<a name="366"><span class="lineNum">     366 </span><span class="lineNoCov">          0 :         subroot-&gt;parent_root = root;</span></a>
+<a name="367"><span class="lineNum">     367 </span>            :         /* reset subplan-related stuff */</a>
+<a name="368"><span class="lineNum">     368 </span><span class="lineNoCov">          0 :         subroot-&gt;plan_params = NIL;</span></a>
+<a name="369"><span class="lineNum">     369 </span><span class="lineNoCov">          0 :         subroot-&gt;outer_params = NULL;</span></a>
+<a name="370"><span class="lineNum">     370 </span><span class="lineNoCov">          0 :         subroot-&gt;init_plans = NIL;</span></a>
+<a name="371"><span class="lineNum">     371 </span>            : </a>
+<a name="372"><span class="lineNum">     372 </span><span class="lineNoCov">          0 :         subroot-&gt;parse = parse = copyObject(root-&gt;parse);</span></a>
+<a name="373"><span class="lineNum">     373 </span><span class="lineNoCov">          0 :         IncrementVarSublevelsUp((Node *) parse, 1, 1);</span></a>
+<a name="374"><span class="lineNum">     374 </span>            : </a>
+<a name="375"><span class="lineNum">     375 </span>            :         /* append_rel_list might contain outer Vars? */</a>
+<a name="376"><span class="lineNum">     376 </span><span class="lineNoCov">          0 :         subroot-&gt;append_rel_list = copyObject(root-&gt;append_rel_list);</span></a>
+<a name="377"><span class="lineNum">     377 </span><span class="lineNoCov">          0 :         IncrementVarSublevelsUp((Node *) subroot-&gt;append_rel_list, 1, 1);</span></a>
+<a name="378"><span class="lineNum">     378 </span>            :         /* There shouldn't be any OJ info to translate, as yet */</a>
+<a name="379"><span class="lineNum">     379 </span>            :         Assert(subroot-&gt;join_info_list == NIL);</a>
+<a name="380"><span class="lineNum">     380 </span>            :         /* and we haven't made equivalence classes, either */</a>
+<a name="381"><span class="lineNum">     381 </span>            :         Assert(subroot-&gt;eq_classes == NIL);</a>
+<a name="382"><span class="lineNum">     382 </span>            :         /* and we haven't created PlaceHolderInfos, either */</a>
+<a name="383"><span class="lineNum">     383 </span>            :         Assert(subroot-&gt;placeholder_list == NIL);</a>
+<a name="384"><span class="lineNum">     384 </span>            : </a>
+<a name="385"><span class="lineNum">     385 </span>            :         /*----------</a>
+<a name="386"><span class="lineNum">     386 </span>            :          * Generate modified query of the form</a>
+<a name="387"><span class="lineNum">     387 </span>            :          *              (SELECT col FROM tab</a>
+<a name="388"><span class="lineNum">     388 </span>            :          *               WHERE col IS NOT NULL AND existing-quals</a>
+<a name="389"><span class="lineNum">     389 </span>            :          *               ORDER BY col ASC/DESC</a>
+<a name="390"><span class="lineNum">     390 </span>            :          *               LIMIT 1)</a>
+<a name="391"><span class="lineNum">     391 </span>            :          *----------</a>
+<a name="392"><span class="lineNum">     392 </span>            :          */</a>
+<a name="393"><span class="lineNum">     393 </span>            :         /* single tlist entry that is the aggregate target */</a>
+<a name="394"><span class="lineNum">     394 </span><span class="lineNoCov">          0 :         tle = makeTargetEntry(copyObject(mminfo-&gt;target),</span></a>
+<a name="395"><span class="lineNum">     395 </span>            :                                                   (AttrNumber) 1,</a>
+<a name="396"><span class="lineNum">     396 </span>            :                                                   pstrdup(&quot;agg_target&quot;),</a>
+<a name="397"><span class="lineNum">     397 </span>            :                                                   false);</a>
+<a name="398"><span class="lineNum">     398 </span><span class="lineNoCov">          0 :         tlist = list_make1(tle);</span></a>
+<a name="399"><span class="lineNum">     399 </span><span class="lineNoCov">          0 :         subroot-&gt;processed_tlist = parse-&gt;targetList = tlist;</span></a>
+<a name="400"><span class="lineNum">     400 </span>            : </a>
+<a name="401"><span class="lineNum">     401 </span>            :         /* No HAVING, no DISTINCT, no aggregates anymore */</a>
+<a name="402"><span class="lineNum">     402 </span><span class="lineNoCov">          0 :         parse-&gt;havingQual = NULL;</span></a>
+<a name="403"><span class="lineNum">     403 </span><span class="lineNoCov">          0 :         subroot-&gt;hasHavingQual = false;</span></a>
+<a name="404"><span class="lineNum">     404 </span><span class="lineNoCov">          0 :         parse-&gt;distinctClause = NIL;</span></a>
+<a name="405"><span class="lineNum">     405 </span><span class="lineNoCov">          0 :         parse-&gt;hasDistinctOn = false;</span></a>
+<a name="406"><span class="lineNum">     406 </span><span class="lineNoCov">          0 :         parse-&gt;hasAggs = false;</span></a>
+<a name="407"><span class="lineNum">     407 </span>            : </a>
+<a name="408"><span class="lineNum">     408 </span>            :         /* Build &quot;target IS NOT NULL&quot; expression */</a>
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :         ntest = makeNode(NullTest);</span></a>
+<a name="410"><span class="lineNum">     410 </span><span class="lineNoCov">          0 :         ntest-&gt;nulltesttype = IS_NOT_NULL;</span></a>
+<a name="411"><span class="lineNum">     411 </span><span class="lineNoCov">          0 :         ntest-&gt;arg = copyObject(mminfo-&gt;target);</span></a>
+<a name="412"><span class="lineNum">     412 </span>            :         /* we checked it wasn't a rowtype in find_minmax_aggs_walker */</a>
+<a name="413"><span class="lineNum">     413 </span><span class="lineNoCov">          0 :         ntest-&gt;argisrow = false;</span></a>
+<a name="414"><span class="lineNum">     414 </span><span class="lineNoCov">          0 :         ntest-&gt;location = -1;</span></a>
+<a name="415"><span class="lineNum">     415 </span>            : </a>
+<a name="416"><span class="lineNum">     416 </span>            :         /* User might have had that in WHERE already */</a>
+<a name="417"><span class="lineNum">     417 </span><span class="lineNoCov">          0 :         if (!list_member((List *) parse-&gt;jointree-&gt;quals, ntest))</span></a>
+<a name="418"><span class="lineNum">     418 </span><span class="lineNoCov">          0 :                 parse-&gt;jointree-&gt;quals = (Node *)</span></a>
+<a name="419"><span class="lineNum">     419 </span><span class="lineNoCov">          0 :                         lcons(ntest, (List *) parse-&gt;jointree-&gt;quals);</span></a>
+<a name="420"><span class="lineNum">     420 </span>            : </a>
+<a name="421"><span class="lineNum">     421 </span>            :         /* Build suitable ORDER BY clause */</a>
+<a name="422"><span class="lineNum">     422 </span><span class="lineNoCov">          0 :         sortcl = makeNode(SortGroupClause);</span></a>
+<a name="423"><span class="lineNum">     423 </span><span class="lineNoCov">          0 :         sortcl-&gt;tleSortGroupRef = assignSortGroupRef(tle, subroot-&gt;processed_tlist);</span></a>
+<a name="424"><span class="lineNum">     424 </span><span class="lineNoCov">          0 :         sortcl-&gt;eqop = eqop;</span></a>
+<a name="425"><span class="lineNum">     425 </span><span class="lineNoCov">          0 :         sortcl-&gt;sortop = sortop;</span></a>
+<a name="426"><span class="lineNum">     426 </span><span class="lineNoCov">          0 :         sortcl-&gt;nulls_first = nulls_first;</span></a>
+<a name="427"><span class="lineNum">     427 </span><span class="lineNoCov">          0 :         sortcl-&gt;hashable = false;    /* no need to make this accurate */</span></a>
+<a name="428"><span class="lineNum">     428 </span><span class="lineNoCov">          0 :         parse-&gt;sortClause = list_make1(sortcl);</span></a>
+<a name="429"><span class="lineNum">     429 </span>            : </a>
+<a name="430"><span class="lineNum">     430 </span>            :         /* set up expressions for LIMIT 1 */</a>
+<a name="431"><span class="lineNum">     431 </span><span class="lineNoCov">          0 :         parse-&gt;limitOffset = NULL;</span></a>
+<a name="432"><span class="lineNum">     432 </span><span class="lineNoCov">          0 :         parse-&gt;limitCount = (Node *) makeConst(INT8OID, -1, InvalidOid,</span></a>
+<a name="433"><span class="lineNum">     433 </span>            :                                                                                    sizeof(int64),</a>
+<a name="434"><span class="lineNum">     434 </span>            :                                                                                    Int64GetDatum(1), false,</a>
+<a name="435"><span class="lineNum">     435 </span>            :                                                                                    FLOAT8PASSBYVAL);</a>
+<a name="436"><span class="lineNum">     436 </span>            : </a>
+<a name="437"><span class="lineNum">     437 </span>            :         /*</a>
+<a name="438"><span class="lineNum">     438 </span>            :          * Generate the best paths for this query, telling query_planner that we</a>
+<a name="439"><span class="lineNum">     439 </span>            :          * have LIMIT 1.</a>
+<a name="440"><span class="lineNum">     440 </span>            :          */</a>
+<a name="441"><span class="lineNum">     441 </span><span class="lineNoCov">          0 :         subroot-&gt;tuple_fraction = 1.0;</span></a>
+<a name="442"><span class="lineNum">     442 </span><span class="lineNoCov">          0 :         subroot-&gt;limit_tuples = 1.0;</span></a>
+<a name="443"><span class="lineNum">     443 </span>            : </a>
+<a name="444"><span class="lineNum">     444 </span><span class="lineNoCov">          0 :         final_rel = query_planner(subroot, minmax_qp_callback, NULL);</span></a>
+<a name="445"><span class="lineNum">     445 </span>            : </a>
+<a name="446"><span class="lineNum">     446 </span>            :         /*</a>
+<a name="447"><span class="lineNum">     447 </span>            :          * Since we didn't go through subquery_planner() to handle the subquery,</a>
+<a name="448"><span class="lineNum">     448 </span>            :          * we have to do some of the same cleanup it would do, in particular cope</a>
+<a name="449"><span class="lineNum">     449 </span>            :          * with params and initplans used within this subquery.  (This won't</a>
+<a name="450"><span class="lineNum">     450 </span>            :          * matter if we end up not using the subplan.)</a>
+<a name="451"><span class="lineNum">     451 </span>            :          */</a>
+<a name="452"><span class="lineNum">     452 </span><span class="lineNoCov">          0 :         SS_identify_outer_params(subroot);</span></a>
+<a name="453"><span class="lineNum">     453 </span><span class="lineNoCov">          0 :         SS_charge_for_initplans(subroot, final_rel);</span></a>
+<a name="454"><span class="lineNum">     454 </span>            : </a>
+<a name="455"><span class="lineNum">     455 </span>            :         /*</a>
+<a name="456"><span class="lineNum">     456 </span>            :          * Get the best presorted path, that being the one that's cheapest for</a>
+<a name="457"><span class="lineNum">     457 </span>            :          * fetching just one row.  If there's no such path, fail.</a>
+<a name="458"><span class="lineNum">     458 </span>            :          */</a>
+<a name="459"><span class="lineNum">     459 </span><span class="lineNoCov">          0 :         if (final_rel-&gt;rows &gt; 1.0)</span></a>
+<a name="460"><span class="lineNum">     460 </span><span class="lineNoCov">          0 :                 path_fraction = 1.0 / final_rel-&gt;rows;</span></a>
+<a name="461"><span class="lineNum">     461 </span>            :         else</a>
+<a name="462"><span class="lineNum">     462 </span><span class="lineNoCov">          0 :                 path_fraction = 1.0;</span></a>
+<a name="463"><span class="lineNum">     463 </span>            : </a>
+<a name="464"><span class="lineNum">     464 </span>            :         sorted_path =</a>
+<a name="465"><span class="lineNum">     465 </span><span class="lineNoCov">          0 :                 get_cheapest_fractional_path_for_pathkeys(final_rel-&gt;pathlist,</span></a>
+<a name="466"><span class="lineNum">     466 </span>            :                                                                                                   subroot-&gt;query_pathkeys,</a>
+<a name="467"><span class="lineNum">     467 </span>            :                                                                                                   NULL,</a>
+<a name="468"><span class="lineNum">     468 </span>            :                                                                                                   path_fraction);</a>
+<a name="469"><span class="lineNum">     469 </span><span class="lineNoCov">          0 :         if (!sorted_path)</span></a>
+<a name="470"><span class="lineNum">     470 </span><span class="lineNoCov">          0 :                 return false;</span></a>
+<a name="471"><span class="lineNum">     471 </span>            : </a>
+<a name="472"><span class="lineNum">     472 </span>            :         /*</a>
+<a name="473"><span class="lineNum">     473 </span>            :          * The path might not return exactly what we want, so fix that.  (We</a>
+<a name="474"><span class="lineNum">     474 </span>            :          * assume that this won't change any conclusions about which was the</a>
+<a name="475"><span class="lineNum">     475 </span>            :          * cheapest path.)</a>
+<a name="476"><span class="lineNum">     476 </span>            :          */</a>
+<a name="477"><span class="lineNum">     477 </span><span class="lineNoCov">          0 :         sorted_path = apply_projection_to_path(subroot, final_rel, sorted_path,</span></a>
+<a name="478"><span class="lineNum">     478 </span>            :                                                                                    create_pathtarget(subroot,</a>
+<a name="479"><span class="lineNum">     479 </span>            :                                                                                                                          subroot-&gt;processed_tlist));</a>
+<a name="480"><span class="lineNum">     480 </span>            : </a>
+<a name="481"><span class="lineNum">     481 </span>            :         /*</a>
+<a name="482"><span class="lineNum">     482 </span>            :          * Determine cost to get just the first row of the presorted path.</a>
+<a name="483"><span class="lineNum">     483 </span>            :          *</a>
+<a name="484"><span class="lineNum">     484 </span>            :          * Note: cost calculation here should match</a>
+<a name="485"><span class="lineNum">     485 </span>            :          * compare_fractional_path_costs().</a>
+<a name="486"><span class="lineNum">     486 </span>            :          */</a>
+<a name="487"><span class="lineNum">     487 </span><span class="lineNoCov">          0 :         path_cost = sorted_path-&gt;startup_cost +</span></a>
+<a name="488"><span class="lineNum">     488 </span><span class="lineNoCov">          0 :                 path_fraction * (sorted_path-&gt;total_cost - sorted_path-&gt;startup_cost);</span></a>
+<a name="489"><span class="lineNum">     489 </span>            : </a>
+<a name="490"><span class="lineNum">     490 </span>            :         /* Save state for further processing */</a>
+<a name="491"><span class="lineNum">     491 </span><span class="lineNoCov">          0 :         mminfo-&gt;subroot = subroot;</span></a>
+<a name="492"><span class="lineNum">     492 </span><span class="lineNoCov">          0 :         mminfo-&gt;path = sorted_path;</span></a>
+<a name="493"><span class="lineNum">     493 </span><span class="lineNoCov">          0 :         mminfo-&gt;pathcost = path_cost;</span></a>
+<a name="494"><span class="lineNum">     494 </span>            : </a>
+<a name="495"><span class="lineNum">     495 </span><span class="lineNoCov">          0 :         return true;</span></a>
+<a name="496"><span class="lineNum">     496 </span>            : }</a>
+<a name="497"><span class="lineNum">     497 </span>            : </a>
+<a name="498"><span class="lineNum">     498 </span>            : /*</a>
+<a name="499"><span class="lineNum">     499 </span>            :  * Compute query_pathkeys and other pathkeys during query_planner()</a>
+<a name="500"><span class="lineNum">     500 </span>            :  */</a>
+<a name="501"><span class="lineNum">     501 </span>            : static void</a>
+<a name="502"><span class="lineNum">     502 </span><span class="lineNoCov">          0 : minmax_qp_callback(PlannerInfo *root, void *extra)</span></a>
+<a name="503"><span class="lineNum">     503 </span>            : {</a>
+<a name="504"><span class="lineNum">     504 </span><span class="lineNoCov">          0 :         root-&gt;group_pathkeys = NIL;</span></a>
+<a name="505"><span class="lineNum">     505 </span><span class="lineNoCov">          0 :         root-&gt;window_pathkeys = NIL;</span></a>
+<a name="506"><span class="lineNum">     506 </span><span class="lineNoCov">          0 :         root-&gt;distinct_pathkeys = NIL;</span></a>
+<a name="507"><span class="lineNum">     507 </span>            : </a>
+<a name="508"><span class="lineNum">     508 </span><span class="lineNoCov">          0 :         root-&gt;sort_pathkeys =</span></a>
+<a name="509"><span class="lineNum">     509 </span><span class="lineNoCov">          0 :                 make_pathkeys_for_sortclauses(root,</span></a>
+<a name="510"><span class="lineNum">     510 </span><span class="lineNoCov">          0 :                                                                           root-&gt;parse-&gt;sortClause,</span></a>
+<a name="511"><span class="lineNum">     511 </span><span class="lineNoCov">          0 :                                                                           root-&gt;parse-&gt;targetList);</span></a>
+<a name="512"><span class="lineNum">     512 </span>            : </a>
+<a name="513"><span class="lineNum">     513 </span><span class="lineNoCov">          0 :         root-&gt;query_pathkeys = root-&gt;sort_pathkeys;</span></a>
+<a name="514"><span class="lineNum">     514 </span><span class="lineNoCov">          0 : }</span></a>
+<a name="515"><span class="lineNum">     515 </span>            : </a>
+<a name="516"><span class="lineNum">     516 </span>            : /*</a>
+<a name="517"><span class="lineNum">     517 </span>            :  * Get the OID of the sort operator, if any, associated with an aggregate.</a>
+<a name="518"><span class="lineNum">     518 </span>            :  * Returns InvalidOid if there is no such operator.</a>
+<a name="519"><span class="lineNum">     519 </span>            :  */</a>
+<a name="520"><span class="lineNum">     520 </span>            : static Oid</a>
+<a name="521"><span class="lineNum">     521 </span><span class="lineNoCov">          0 : fetch_agg_sort_op(Oid aggfnoid)</span></a>
+<a name="522"><span class="lineNum">     522 </span>            : {</a>
+<a name="523"><span class="lineNum">     523 </span>            :         HeapTuple       aggTuple;</a>
+<a name="524"><span class="lineNum">     524 </span>            :         Form_pg_aggregate aggform;</a>
+<a name="525"><span class="lineNum">     525 </span>            :         Oid                     aggsortop;</a>
+<a name="526"><span class="lineNum">     526 </span>            : </a>
+<a name="527"><span class="lineNum">     527 </span>            :         /* fetch aggregate entry from pg_aggregate */</a>
+<a name="528"><span class="lineNum">     528 </span><span class="lineNoCov">          0 :         aggTuple = SearchSysCache1(AGGFNOID, ObjectIdGetDatum(aggfnoid));</span></a>
+<a name="529"><span class="lineNum">     529 </span><span class="lineNoCov">          0 :         if (!HeapTupleIsValid(aggTuple))</span></a>
+<a name="530"><span class="lineNum">     530 </span><span class="lineNoCov">          0 :                 return InvalidOid;</span></a>
+<a name="531"><span class="lineNum">     531 </span><span class="lineNoCov">          0 :         aggform = (Form_pg_aggregate) GETSTRUCT(aggTuple);</span></a>
+<a name="532"><span class="lineNum">     532 </span><span class="lineNoCov">          0 :         aggsortop = aggform-&gt;aggsortop;</span></a>
+<a name="533"><span class="lineNum">     533 </span><span class="lineNoCov">          0 :         ReleaseSysCache(aggTuple);</span></a>
+<a name="534"><span class="lineNum">     534 </span>            : </a>
+<a name="535"><span class="lineNum">     535 </span><span class="lineNoCov">          0 :         return aggsortop;</span></a>
+<a name="536"><span class="lineNum">     536 </span>            : }</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 1.16</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

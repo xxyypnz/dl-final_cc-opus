@@ -1,0 +1,17 @@
+-- ===== Commit 126 =====
+-- Source:  - 
+
+-- --- Test Case 1 ---
+DROP TABLE IF EXISTS c126_t CASCADE;
+CREATE TABLE c126_t (id int, v int);
+INSERT INTO c126_t SELECT g, g % 100 FROM generate_series(1, 5000) g;
+ANALYZE c126_t;
+SELECT * FROM c126_t ORDER BY id LIMIT 5;
+SELECT id FROM c126_t WHERE v = 3 LIMIT 1;
+BEGIN;
+DECLARE c126_cur NO SCROLL CURSOR FOR SELECT id FROM c126_t ORDER BY id;
+FETCH 3 FROM c126_cur;
+CLOSE c126_cur;
+COMMIT;
+DROP TABLE IF EXISTS c126_t CASCADE;
+

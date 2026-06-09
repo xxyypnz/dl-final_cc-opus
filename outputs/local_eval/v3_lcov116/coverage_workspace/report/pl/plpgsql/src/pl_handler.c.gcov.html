@@ -1,0 +1,602 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_filtered.info - pl/plpgsql/src/pl_handler.c</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">pl/plpgsql/src</a> - pl_handler.c<span style="font-size: 80%;"> (source / <a href="pl_handler.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_filtered.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">94</td>
+            <td class="headerCovTableEntry">169</td>
+            <td class="headerCovTableEntryLo">55.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2026-06-09 14:40:53</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*-------------------------------------------------------------------------</a>
+<a name="2"><span class="lineNum">       2 </span>            :  *</a>
+<a name="3"><span class="lineNum">       3 </span>            :  * pl_handler.c         - Handler for the PL/pgSQL</a>
+<a name="4"><span class="lineNum">       4 </span>            :  *                        procedural language</a>
+<a name="5"><span class="lineNum">       5 </span>            :  *</a>
+<a name="6"><span class="lineNum">       6 </span>            :  * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group</a>
+<a name="7"><span class="lineNum">       7 </span>            :  * Portions Copyright (c) 1994, Regents of the University of California</a>
+<a name="8"><span class="lineNum">       8 </span>            :  *</a>
+<a name="9"><span class="lineNum">       9 </span>            :  *</a>
+<a name="10"><span class="lineNum">      10 </span>            :  * IDENTIFICATION</a>
+<a name="11"><span class="lineNum">      11 </span>            :  *        src/pl/plpgsql/src/pl_handler.c</a>
+<a name="12"><span class="lineNum">      12 </span>            :  *</a>
+<a name="13"><span class="lineNum">      13 </span>            :  *-------------------------------------------------------------------------</a>
+<a name="14"><span class="lineNum">      14 </span>            :  */</a>
+<a name="15"><span class="lineNum">      15 </span>            : </a>
+<a name="16"><span class="lineNum">      16 </span>            : #include &quot;postgres.h&quot;</a>
+<a name="17"><span class="lineNum">      17 </span>            : </a>
+<a name="18"><span class="lineNum">      18 </span>            : #include &quot;access/htup_details.h&quot;</a>
+<a name="19"><span class="lineNum">      19 </span>            : #include &quot;catalog/pg_proc.h&quot;</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &quot;catalog/pg_type.h&quot;</a>
+<a name="21"><span class="lineNum">      21 </span>            : #include &quot;funcapi.h&quot;</a>
+<a name="22"><span class="lineNum">      22 </span>            : #include &quot;miscadmin.h&quot;</a>
+<a name="23"><span class="lineNum">      23 </span>            : #include &quot;plpgsql.h&quot;</a>
+<a name="24"><span class="lineNum">      24 </span>            : #include &quot;utils/builtins.h&quot;</a>
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;utils/guc.h&quot;</a>
+<a name="26"><span class="lineNum">      26 </span>            : #include &quot;utils/lsyscache.h&quot;</a>
+<a name="27"><span class="lineNum">      27 </span>            : #include &quot;utils/syscache.h&quot;</a>
+<a name="28"><span class="lineNum">      28 </span>            : #include &quot;utils/varlena.h&quot;</a>
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<a name="30"><span class="lineNum">      30 </span>            : static bool plpgsql_extra_checks_check_hook(char **newvalue, void **extra, GucSource source);</a>
+<a name="31"><span class="lineNum">      31 </span>            : static void plpgsql_extra_warnings_assign_hook(const char *newvalue, void *extra);</a>
+<a name="32"><span class="lineNum">      32 </span>            : static void plpgsql_extra_errors_assign_hook(const char *newvalue, void *extra);</a>
+<a name="33"><span class="lineNum">      33 </span>            : </a>
+<a name="34"><span class="lineNum">      34 </span><span class="lineCov">          2 : PG_MODULE_MAGIC;</span></a>
+<a name="35"><span class="lineNum">      35 </span>            : </a>
+<a name="36"><span class="lineNum">      36 </span>            : /* Custom GUC variable */</a>
+<a name="37"><span class="lineNum">      37 </span>            : static const struct config_enum_entry variable_conflict_options[] = {</a>
+<a name="38"><span class="lineNum">      38 </span>            :         {&quot;error&quot;, PLPGSQL_RESOLVE_ERROR, false},</a>
+<a name="39"><span class="lineNum">      39 </span>            :         {&quot;use_variable&quot;, PLPGSQL_RESOLVE_VARIABLE, false},</a>
+<a name="40"><span class="lineNum">      40 </span>            :         {&quot;use_column&quot;, PLPGSQL_RESOLVE_COLUMN, false},</a>
+<a name="41"><span class="lineNum">      41 </span>            :         {NULL, 0, false}</a>
+<a name="42"><span class="lineNum">      42 </span>            : };</a>
+<a name="43"><span class="lineNum">      43 </span>            : </a>
+<a name="44"><span class="lineNum">      44 </span>            : int                     plpgsql_variable_conflict = PLPGSQL_RESOLVE_ERROR;</a>
+<a name="45"><span class="lineNum">      45 </span>            : </a>
+<a name="46"><span class="lineNum">      46 </span>            : bool            plpgsql_print_strict_params = false;</a>
+<a name="47"><span class="lineNum">      47 </span>            : </a>
+<a name="48"><span class="lineNum">      48 </span>            : bool            plpgsql_check_asserts = true;</a>
+<a name="49"><span class="lineNum">      49 </span>            : </a>
+<a name="50"><span class="lineNum">      50 </span>            : char       *plpgsql_extra_warnings_string = NULL;</a>
+<a name="51"><span class="lineNum">      51 </span>            : char       *plpgsql_extra_errors_string = NULL;</a>
+<a name="52"><span class="lineNum">      52 </span>            : int                     plpgsql_extra_warnings;</a>
+<a name="53"><span class="lineNum">      53 </span>            : int                     plpgsql_extra_errors;</a>
+<a name="54"><span class="lineNum">      54 </span>            : </a>
+<a name="55"><span class="lineNum">      55 </span>            : /* Hook for plugins */</a>
+<a name="56"><span class="lineNum">      56 </span>            : PLpgSQL_plugin **plpgsql_plugin_ptr = NULL;</a>
+<a name="57"><span class="lineNum">      57 </span>            : </a>
+<a name="58"><span class="lineNum">      58 </span>            : </a>
+<a name="59"><span class="lineNum">      59 </span>            : static bool</a>
+<a name="60"><span class="lineNum">      60 </span><span class="lineCov">          4 : plpgsql_extra_checks_check_hook(char **newvalue, void **extra, GucSource source)</span></a>
+<a name="61"><span class="lineNum">      61 </span>            : {</a>
+<a name="62"><span class="lineNum">      62 </span>            :         char       *rawstring;</a>
+<a name="63"><span class="lineNum">      63 </span>            :         List       *elemlist;</a>
+<a name="64"><span class="lineNum">      64 </span>            :         ListCell   *l;</a>
+<a name="65"><span class="lineNum">      65 </span><span class="lineCov">          4 :         int                     extrachecks = 0;</span></a>
+<a name="66"><span class="lineNum">      66 </span>            :         int                *myextra;</a>
+<a name="67"><span class="lineNum">      67 </span>            : </a>
+<a name="68"><span class="lineNum">      68 </span><span class="lineCov">          4 :         if (pg_strcasecmp(*newvalue, &quot;all&quot;) == 0)</span></a>
+<a name="69"><span class="lineNum">      69 </span><span class="lineNoCov">          0 :                 extrachecks = PLPGSQL_XCHECK_ALL;</span></a>
+<a name="70"><span class="lineNum">      70 </span><span class="lineCov">          4 :         else if (pg_strcasecmp(*newvalue, &quot;none&quot;) == 0)</span></a>
+<a name="71"><span class="lineNum">      71 </span><span class="lineCov">          4 :                 extrachecks = PLPGSQL_XCHECK_NONE;</span></a>
+<a name="72"><span class="lineNum">      72 </span>            :         else</a>
+<a name="73"><span class="lineNum">      73 </span>            :         {</a>
+<a name="74"><span class="lineNum">      74 </span>            :                 /* Need a modifiable copy of string */</a>
+<a name="75"><span class="lineNum">      75 </span><span class="lineNoCov">          0 :                 rawstring = pstrdup(*newvalue);</span></a>
+<a name="76"><span class="lineNum">      76 </span>            : </a>
+<a name="77"><span class="lineNum">      77 </span>            :                 /* Parse string into list of identifiers */</a>
+<a name="78"><span class="lineNum">      78 </span><span class="lineNoCov">          0 :                 if (!SplitIdentifierString(rawstring, ',', &amp;elemlist))</span></a>
+<a name="79"><span class="lineNum">      79 </span>            :                 {</a>
+<a name="80"><span class="lineNum">      80 </span>            :                         /* syntax error in list */</a>
+<a name="81"><span class="lineNum">      81 </span><span class="lineNoCov">          0 :                         GUC_check_errdetail(&quot;List syntax is invalid.&quot;);</span></a>
+<a name="82"><span class="lineNum">      82 </span><span class="lineNoCov">          0 :                         pfree(rawstring);</span></a>
+<a name="83"><span class="lineNum">      83 </span><span class="lineNoCov">          0 :                         list_free(elemlist);</span></a>
+<a name="84"><span class="lineNum">      84 </span><span class="lineNoCov">          0 :                         return false;</span></a>
+<a name="85"><span class="lineNum">      85 </span>            :                 }</a>
+<a name="86"><span class="lineNum">      86 </span>            : </a>
+<a name="87"><span class="lineNum">      87 </span><span class="lineNoCov">          0 :                 foreach(l, elemlist)</span></a>
+<a name="88"><span class="lineNum">      88 </span>            :                 {</a>
+<a name="89"><span class="lineNum">      89 </span><span class="lineNoCov">          0 :                         char       *tok = (char *) lfirst(l);</span></a>
+<a name="90"><span class="lineNum">      90 </span>            : </a>
+<a name="91"><span class="lineNum">      91 </span><span class="lineNoCov">          0 :                         if (pg_strcasecmp(tok, &quot;shadowed_variables&quot;) == 0)</span></a>
+<a name="92"><span class="lineNum">      92 </span><span class="lineNoCov">          0 :                                 extrachecks |= PLPGSQL_XCHECK_SHADOWVAR;</span></a>
+<a name="93"><span class="lineNum">      93 </span><span class="lineNoCov">          0 :                         else if (pg_strcasecmp(tok, &quot;too_many_rows&quot;) == 0)</span></a>
+<a name="94"><span class="lineNum">      94 </span><span class="lineNoCov">          0 :                                 extrachecks |= PLPGSQL_XCHECK_TOOMANYROWS;</span></a>
+<a name="95"><span class="lineNum">      95 </span><span class="lineNoCov">          0 :                         else if (pg_strcasecmp(tok, &quot;strict_multi_assignment&quot;) == 0)</span></a>
+<a name="96"><span class="lineNum">      96 </span><span class="lineNoCov">          0 :                                 extrachecks |= PLPGSQL_XCHECK_STRICTMULTIASSIGNMENT;</span></a>
+<a name="97"><span class="lineNum">      97 </span><span class="lineNoCov">          0 :                         else if (pg_strcasecmp(tok, &quot;all&quot;) == 0 || pg_strcasecmp(tok, &quot;none&quot;) == 0)</span></a>
+<a name="98"><span class="lineNum">      98 </span>            :                         {</a>
+<a name="99"><span class="lineNum">      99 </span><span class="lineNoCov">          0 :                                 GUC_check_errdetail(&quot;Key word \&quot;%s\&quot; cannot be combined with other key words.&quot;, tok);</span></a>
+<a name="100"><span class="lineNum">     100 </span><span class="lineNoCov">          0 :                                 pfree(rawstring);</span></a>
+<a name="101"><span class="lineNum">     101 </span><span class="lineNoCov">          0 :                                 list_free(elemlist);</span></a>
+<a name="102"><span class="lineNum">     102 </span><span class="lineNoCov">          0 :                                 return false;</span></a>
+<a name="103"><span class="lineNum">     103 </span>            :                         }</a>
+<a name="104"><span class="lineNum">     104 </span>            :                         else</a>
+<a name="105"><span class="lineNum">     105 </span>            :                         {</a>
+<a name="106"><span class="lineNum">     106 </span><span class="lineNoCov">          0 :                                 GUC_check_errdetail(&quot;Unrecognized key word: \&quot;%s\&quot;.&quot;, tok);</span></a>
+<a name="107"><span class="lineNum">     107 </span><span class="lineNoCov">          0 :                                 pfree(rawstring);</span></a>
+<a name="108"><span class="lineNum">     108 </span><span class="lineNoCov">          0 :                                 list_free(elemlist);</span></a>
+<a name="109"><span class="lineNum">     109 </span><span class="lineNoCov">          0 :                                 return false;</span></a>
+<a name="110"><span class="lineNum">     110 </span>            :                         }</a>
+<a name="111"><span class="lineNum">     111 </span>            :                 }</a>
+<a name="112"><span class="lineNum">     112 </span>            : </a>
+<a name="113"><span class="lineNum">     113 </span><span class="lineNoCov">          0 :                 pfree(rawstring);</span></a>
+<a name="114"><span class="lineNum">     114 </span><span class="lineNoCov">          0 :                 list_free(elemlist);</span></a>
+<a name="115"><span class="lineNum">     115 </span>            :         }</a>
+<a name="116"><span class="lineNum">     116 </span>            : </a>
+<a name="117"><span class="lineNum">     117 </span><span class="lineCov">          4 :         myextra = (int *) malloc(sizeof(int));</span></a>
+<a name="118"><span class="lineNum">     118 </span><span class="lineCov">          4 :         if (!myextra)</span></a>
+<a name="119"><span class="lineNum">     119 </span><span class="lineNoCov">          0 :                 return false;</span></a>
+<a name="120"><span class="lineNum">     120 </span><span class="lineCov">          4 :         *myextra = extrachecks;</span></a>
+<a name="121"><span class="lineNum">     121 </span><span class="lineCov">          4 :         *extra = (void *) myextra;</span></a>
+<a name="122"><span class="lineNum">     122 </span>            : </a>
+<a name="123"><span class="lineNum">     123 </span><span class="lineCov">          4 :         return true;</span></a>
+<a name="124"><span class="lineNum">     124 </span>            : }</a>
+<a name="125"><span class="lineNum">     125 </span>            : </a>
+<a name="126"><span class="lineNum">     126 </span>            : static void</a>
+<a name="127"><span class="lineNum">     127 </span><span class="lineCov">          2 : plpgsql_extra_warnings_assign_hook(const char *newvalue, void *extra)</span></a>
+<a name="128"><span class="lineNum">     128 </span>            : {</a>
+<a name="129"><span class="lineNum">     129 </span><span class="lineCov">          2 :         plpgsql_extra_warnings = *((int *) extra);</span></a>
+<a name="130"><span class="lineNum">     130 </span><span class="lineCov">          2 : }</span></a>
+<a name="131"><span class="lineNum">     131 </span>            : </a>
+<a name="132"><span class="lineNum">     132 </span>            : static void</a>
+<a name="133"><span class="lineNum">     133 </span><span class="lineCov">          2 : plpgsql_extra_errors_assign_hook(const char *newvalue, void *extra)</span></a>
+<a name="134"><span class="lineNum">     134 </span>            : {</a>
+<a name="135"><span class="lineNum">     135 </span><span class="lineCov">          2 :         plpgsql_extra_errors = *((int *) extra);</span></a>
+<a name="136"><span class="lineNum">     136 </span><span class="lineCov">          2 : }</span></a>
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<a name="138"><span class="lineNum">     138 </span>            : </a>
+<a name="139"><span class="lineNum">     139 </span>            : /*</a>
+<a name="140"><span class="lineNum">     140 </span>            :  * _PG_init()                   - library load-time initialization</a>
+<a name="141"><span class="lineNum">     141 </span>            :  *</a>
+<a name="142"><span class="lineNum">     142 </span>            :  * DO NOT make this static nor change its name!</a>
+<a name="143"><span class="lineNum">     143 </span>            :  */</a>
+<a name="144"><span class="lineNum">     144 </span>            : void</a>
+<a name="145"><span class="lineNum">     145 </span><span class="lineCov">          2 : _PG_init(void)</span></a>
+<a name="146"><span class="lineNum">     146 </span>            : {</a>
+<a name="147"><span class="lineNum">     147 </span>            :         /* Be sure we do initialization only once (should be redundant now) */</a>
+<a name="148"><span class="lineNum">     148 </span>            :         static bool inited = false;</a>
+<a name="149"><span class="lineNum">     149 </span>            : </a>
+<a name="150"><span class="lineNum">     150 </span><span class="lineCov">          2 :         if (inited)</span></a>
+<a name="151"><span class="lineNum">     151 </span><span class="lineNoCov">          0 :                 return;</span></a>
+<a name="152"><span class="lineNum">     152 </span>            : </a>
+<a name="153"><span class="lineNum">     153 </span><span class="lineCov">          2 :         pg_bindtextdomain(TEXTDOMAIN);</span></a>
+<a name="154"><span class="lineNum">     154 </span>            : </a>
+<a name="155"><span class="lineNum">     155 </span><span class="lineCov">          2 :         DefineCustomEnumVariable(&quot;plpgsql.variable_conflict&quot;,</span></a>
+<a name="156"><span class="lineNum">     156 </span>            :                                                          gettext_noop(&quot;Sets handling of conflicts between PL/pgSQL variable names and table column names.&quot;),</a>
+<a name="157"><span class="lineNum">     157 </span>            :                                                          NULL,</a>
+<a name="158"><span class="lineNum">     158 </span>            :                                                          &amp;plpgsql_variable_conflict,</a>
+<a name="159"><span class="lineNum">     159 </span>            :                                                          PLPGSQL_RESOLVE_ERROR,</a>
+<a name="160"><span class="lineNum">     160 </span>            :                                                          variable_conflict_options,</a>
+<a name="161"><span class="lineNum">     161 </span>            :                                                          PGC_SUSET, 0,</a>
+<a name="162"><span class="lineNum">     162 </span>            :                                                          NULL, NULL, NULL);</a>
+<a name="163"><span class="lineNum">     163 </span>            : </a>
+<a name="164"><span class="lineNum">     164 </span><span class="lineCov">          2 :         DefineCustomBoolVariable(&quot;plpgsql.print_strict_params&quot;,</span></a>
+<a name="165"><span class="lineNum">     165 </span>            :                                                          gettext_noop(&quot;Print information about parameters in the DETAIL part of the error messages generated on INTO ... STRICT failures.&quot;),</a>
+<a name="166"><span class="lineNum">     166 </span>            :                                                          NULL,</a>
+<a name="167"><span class="lineNum">     167 </span>            :                                                          &amp;plpgsql_print_strict_params,</a>
+<a name="168"><span class="lineNum">     168 </span>            :                                                          false,</a>
+<a name="169"><span class="lineNum">     169 </span>            :                                                          PGC_USERSET, 0,</a>
+<a name="170"><span class="lineNum">     170 </span>            :                                                          NULL, NULL, NULL);</a>
+<a name="171"><span class="lineNum">     171 </span>            : </a>
+<a name="172"><span class="lineNum">     172 </span><span class="lineCov">          2 :         DefineCustomBoolVariable(&quot;plpgsql.check_asserts&quot;,</span></a>
+<a name="173"><span class="lineNum">     173 </span>            :                                                          gettext_noop(&quot;Perform checks given in ASSERT statements.&quot;),</a>
+<a name="174"><span class="lineNum">     174 </span>            :                                                          NULL,</a>
+<a name="175"><span class="lineNum">     175 </span>            :                                                          &amp;plpgsql_check_asserts,</a>
+<a name="176"><span class="lineNum">     176 </span>            :                                                          true,</a>
+<a name="177"><span class="lineNum">     177 </span>            :                                                          PGC_USERSET, 0,</a>
+<a name="178"><span class="lineNum">     178 </span>            :                                                          NULL, NULL, NULL);</a>
+<a name="179"><span class="lineNum">     179 </span>            : </a>
+<a name="180"><span class="lineNum">     180 </span><span class="lineCov">          2 :         DefineCustomStringVariable(&quot;plpgsql.extra_warnings&quot;,</span></a>
+<a name="181"><span class="lineNum">     181 </span>            :                                                            gettext_noop(&quot;List of programming constructs that should produce a warning.&quot;),</a>
+<a name="182"><span class="lineNum">     182 </span>            :                                                            NULL,</a>
+<a name="183"><span class="lineNum">     183 </span>            :                                                            &amp;plpgsql_extra_warnings_string,</a>
+<a name="184"><span class="lineNum">     184 </span>            :                                                            &quot;none&quot;,</a>
+<a name="185"><span class="lineNum">     185 </span>            :                                                            PGC_USERSET, GUC_LIST_INPUT,</a>
+<a name="186"><span class="lineNum">     186 </span>            :                                                            plpgsql_extra_checks_check_hook,</a>
+<a name="187"><span class="lineNum">     187 </span>            :                                                            plpgsql_extra_warnings_assign_hook,</a>
+<a name="188"><span class="lineNum">     188 </span>            :                                                            NULL);</a>
+<a name="189"><span class="lineNum">     189 </span>            : </a>
+<a name="190"><span class="lineNum">     190 </span><span class="lineCov">          2 :         DefineCustomStringVariable(&quot;plpgsql.extra_errors&quot;,</span></a>
+<a name="191"><span class="lineNum">     191 </span>            :                                                            gettext_noop(&quot;List of programming constructs that should produce an error.&quot;),</a>
+<a name="192"><span class="lineNum">     192 </span>            :                                                            NULL,</a>
+<a name="193"><span class="lineNum">     193 </span>            :                                                            &amp;plpgsql_extra_errors_string,</a>
+<a name="194"><span class="lineNum">     194 </span>            :                                                            &quot;none&quot;,</a>
+<a name="195"><span class="lineNum">     195 </span>            :                                                            PGC_USERSET, GUC_LIST_INPUT,</a>
+<a name="196"><span class="lineNum">     196 </span>            :                                                            plpgsql_extra_checks_check_hook,</a>
+<a name="197"><span class="lineNum">     197 </span>            :                                                            plpgsql_extra_errors_assign_hook,</a>
+<a name="198"><span class="lineNum">     198 </span>            :                                                            NULL);</a>
+<a name="199"><span class="lineNum">     199 </span>            : </a>
+<a name="200"><span class="lineNum">     200 </span><span class="lineCov">          2 :         EmitWarningsOnPlaceholders(&quot;plpgsql&quot;);</span></a>
+<a name="201"><span class="lineNum">     201 </span>            : </a>
+<a name="202"><span class="lineNum">     202 </span><span class="lineCov">          2 :         plpgsql_HashTableInit();</span></a>
+<a name="203"><span class="lineNum">     203 </span><span class="lineCov">          2 :         RegisterXactCallback(plpgsql_xact_cb, NULL);</span></a>
+<a name="204"><span class="lineNum">     204 </span><span class="lineCov">          2 :         RegisterSubXactCallback(plpgsql_subxact_cb, NULL);</span></a>
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<a name="206"><span class="lineNum">     206 </span>            :         /* Set up a rendezvous point with optional instrumentation plugin */</a>
+<a name="207"><span class="lineNum">     207 </span><span class="lineCov">          2 :         plpgsql_plugin_ptr = (PLpgSQL_plugin **) find_rendezvous_variable(&quot;PLpgSQL_plugin&quot;);</span></a>
+<a name="208"><span class="lineNum">     208 </span>            : </a>
+<a name="209"><span class="lineNum">     209 </span><span class="lineCov">          2 :         inited = true;</span></a>
+<a name="210"><span class="lineNum">     210 </span>            : }</a>
+<a name="211"><span class="lineNum">     211 </span>            : </a>
+<a name="212"><span class="lineNum">     212 </span>            : /* ----------</a>
+<a name="213"><span class="lineNum">     213 </span>            :  * plpgsql_call_handler</a>
+<a name="214"><span class="lineNum">     214 </span>            :  *</a>
+<a name="215"><span class="lineNum">     215 </span>            :  * The PostgreSQL function manager and trigger manager</a>
+<a name="216"><span class="lineNum">     216 </span>            :  * call this function for execution of PL/pgSQL procedures.</a>
+<a name="217"><span class="lineNum">     217 </span>            :  * ----------</a>
+<a name="218"><span class="lineNum">     218 </span>            :  */</a>
+<a name="219"><span class="lineNum">     219 </span><span class="lineCov">          2 : PG_FUNCTION_INFO_V1(plpgsql_call_handler);</span></a>
+<a name="220"><span class="lineNum">     220 </span>            : </a>
+<a name="221"><span class="lineNum">     221 </span>            : Datum</a>
+<a name="222"><span class="lineNum">     222 </span><span class="lineCov">          4 : plpgsql_call_handler(PG_FUNCTION_ARGS)</span></a>
+<a name="223"><span class="lineNum">     223 </span>            : {</a>
+<a name="224"><span class="lineNum">     224 </span>            :         bool            nonatomic;</a>
+<a name="225"><span class="lineNum">     225 </span>            :         PLpgSQL_function *func;</a>
+<a name="226"><span class="lineNum">     226 </span>            :         PLpgSQL_execstate *save_cur_estate;</a>
+<a name="227"><span class="lineNum">     227 </span>            :         Datum           retval;</a>
+<a name="228"><span class="lineNum">     228 </span>            :         int                     rc;</a>
+<a name="229"><span class="lineNum">     229 </span>            : </a>
+<a name="230"><span class="lineNum">     230 </span><span class="lineCov">         12 :         nonatomic = fcinfo-&gt;context &amp;&amp;</span></a>
+<a name="231"><span class="lineNum">     231 </span><span class="lineCov">          4 :                 IsA(fcinfo-&gt;context, CallContext) &amp;&amp;</span></a>
+<a name="232"><span class="lineNum">     232 </span><span class="lineNoCov">          0 :                 !castNode(CallContext, fcinfo-&gt;context)-&gt;atomic;</span></a>
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<a name="234"><span class="lineNum">     234 </span>            :         /*</a>
+<a name="235"><span class="lineNum">     235 </span>            :          * Connect to SPI manager</a>
+<a name="236"><span class="lineNum">     236 </span>            :          */</a>
+<a name="237"><span class="lineNum">     237 </span><span class="lineCov">          4 :         if ((rc = SPI_connect_ext(nonatomic ? SPI_OPT_NONATOMIC : 0)) != SPI_OK_CONNECT)</span></a>
+<a name="238"><span class="lineNum">     238 </span><span class="lineNoCov">          0 :                 elog(ERROR, &quot;SPI_connect failed: %s&quot;, SPI_result_code_string(rc));</span></a>
+<a name="239"><span class="lineNum">     239 </span>            : </a>
+<a name="240"><span class="lineNum">     240 </span>            :         /* Find or compile the function */</a>
+<a name="241"><span class="lineNum">     241 </span><span class="lineCov">          4 :         func = plpgsql_compile(fcinfo, false);</span></a>
+<a name="242"><span class="lineNum">     242 </span>            : </a>
+<a name="243"><span class="lineNum">     243 </span>            :         /* Must save and restore prior value of cur_estate */</a>
+<a name="244"><span class="lineNum">     244 </span><span class="lineCov">          4 :         save_cur_estate = func-&gt;cur_estate;</span></a>
+<a name="245"><span class="lineNum">     245 </span>            : </a>
+<a name="246"><span class="lineNum">     246 </span>            :         /* Mark the function as busy, so it can't be deleted from under us */</a>
+<a name="247"><span class="lineNum">     247 </span><span class="lineCov">          4 :         func-&gt;use_count++;</span></a>
+<a name="248"><span class="lineNum">     248 </span>            : </a>
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">          4 :         PG_TRY();</span></a>
+<a name="250"><span class="lineNum">     250 </span>            :         {</a>
+<a name="251"><span class="lineNum">     251 </span>            :                 /*</a>
+<a name="252"><span class="lineNum">     252 </span>            :                  * Determine if called as function or trigger and call appropriate</a>
+<a name="253"><span class="lineNum">     253 </span>            :                  * subhandler</a>
+<a name="254"><span class="lineNum">     254 </span>            :                  */</a>
+<a name="255"><span class="lineNum">     255 </span><span class="lineCov">          4 :                 if (CALLED_AS_TRIGGER(fcinfo))</span></a>
+<a name="256"><span class="lineNum">     256 </span><span class="lineCov">          3 :                         retval = PointerGetDatum(plpgsql_exec_trigger(func,</span></a>
+<a name="257"><span class="lineNum">     257 </span>            :                                                                                                                   (TriggerData *) fcinfo-&gt;context));</a>
+<a name="258"><span class="lineNum">     258 </span><span class="lineCov">          1 :                 else if (CALLED_AS_EVENT_TRIGGER(fcinfo))</span></a>
+<a name="259"><span class="lineNum">     259 </span>            :                 {</a>
+<a name="260"><span class="lineNum">     260 </span><span class="lineCov">          1 :                         plpgsql_exec_event_trigger(func,</span></a>
+<a name="261"><span class="lineNum">     261 </span><span class="lineCov">          1 :                                                                            (EventTriggerData *) fcinfo-&gt;context);</span></a>
+<a name="262"><span class="lineNum">     262 </span><span class="lineCov">          1 :                         retval = (Datum) 0;</span></a>
+<a name="263"><span class="lineNum">     263 </span>            :                 }</a>
+<a name="264"><span class="lineNum">     264 </span>            :                 else</a>
+<a name="265"><span class="lineNum">     265 </span><span class="lineNoCov">          0 :                         retval = plpgsql_exec_function(func, fcinfo,</span></a>
+<a name="266"><span class="lineNum">     266 </span>            :                                                                                    NULL, NULL,</a>
+<a name="267"><span class="lineNum">     267 </span><span class="lineNoCov">          0 :                                                                                    !nonatomic);</span></a>
+<a name="268"><span class="lineNum">     268 </span>            :         }</a>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :         PG_FINALLY();</span></a>
+<a name="270"><span class="lineNum">     270 </span>            :         {</a>
+<a name="271"><span class="lineNum">     271 </span>            :                 /* Decrement use-count, restore cur_estate */</a>
+<a name="272"><span class="lineNum">     272 </span><span class="lineCov">          4 :                 func-&gt;use_count--;</span></a>
+<a name="273"><span class="lineNum">     273 </span><span class="lineCov">          4 :                 func-&gt;cur_estate = save_cur_estate;</span></a>
+<a name="274"><span class="lineNum">     274 </span>            :         }</a>
+<a name="275"><span class="lineNum">     275 </span><span class="lineCov">          4 :         PG_END_TRY();</span></a>
+<a name="276"><span class="lineNum">     276 </span>            : </a>
+<a name="277"><span class="lineNum">     277 </span>            :         /*</a>
+<a name="278"><span class="lineNum">     278 </span>            :          * Disconnect from SPI manager</a>
+<a name="279"><span class="lineNum">     279 </span>            :          */</a>
+<a name="280"><span class="lineNum">     280 </span><span class="lineCov">          4 :         if ((rc = SPI_finish()) != SPI_OK_FINISH)</span></a>
+<a name="281"><span class="lineNum">     281 </span><span class="lineNoCov">          0 :                 elog(ERROR, &quot;SPI_finish failed: %s&quot;, SPI_result_code_string(rc));</span></a>
+<a name="282"><span class="lineNum">     282 </span>            : </a>
+<a name="283"><span class="lineNum">     283 </span><span class="lineCov">          4 :         return retval;</span></a>
+<a name="284"><span class="lineNum">     284 </span>            : }</a>
+<a name="285"><span class="lineNum">     285 </span>            : </a>
+<a name="286"><span class="lineNum">     286 </span>            : /* ----------</a>
+<a name="287"><span class="lineNum">     287 </span>            :  * plpgsql_inline_handler</a>
+<a name="288"><span class="lineNum">     288 </span>            :  *</a>
+<a name="289"><span class="lineNum">     289 </span>            :  * Called by PostgreSQL to execute an anonymous code block</a>
+<a name="290"><span class="lineNum">     290 </span>            :  * ----------</a>
+<a name="291"><span class="lineNum">     291 </span>            :  */</a>
+<a name="292"><span class="lineNum">     292 </span><span class="lineCov">          2 : PG_FUNCTION_INFO_V1(plpgsql_inline_handler);</span></a>
+<a name="293"><span class="lineNum">     293 </span>            : </a>
+<a name="294"><span class="lineNum">     294 </span>            : Datum</a>
+<a name="295"><span class="lineNum">     295 </span><span class="lineCov">          1 : plpgsql_inline_handler(PG_FUNCTION_ARGS)</span></a>
+<a name="296"><span class="lineNum">     296 </span>            : {</a>
+<a name="297"><span class="lineNum">     297 </span><span class="lineCov">          1 :         LOCAL_FCINFO(fake_fcinfo, 0);</span></a>
+<a name="298"><span class="lineNum">     298 </span><span class="lineCov">          1 :         InlineCodeBlock *codeblock = castNode(InlineCodeBlock, DatumGetPointer(PG_GETARG_DATUM(0)));</span></a>
+<a name="299"><span class="lineNum">     299 </span>            :         PLpgSQL_function *func;</a>
+<a name="300"><span class="lineNum">     300 </span>            :         FmgrInfo        flinfo;</a>
+<a name="301"><span class="lineNum">     301 </span>            :         EState     *simple_eval_estate;</a>
+<a name="302"><span class="lineNum">     302 </span>            :         ResourceOwner simple_eval_resowner;</a>
+<a name="303"><span class="lineNum">     303 </span>            :         Datum           retval;</a>
+<a name="304"><span class="lineNum">     304 </span>            :         int                     rc;</a>
+<a name="305"><span class="lineNum">     305 </span>            : </a>
+<a name="306"><span class="lineNum">     306 </span>            :         /*</a>
+<a name="307"><span class="lineNum">     307 </span>            :          * Connect to SPI manager</a>
+<a name="308"><span class="lineNum">     308 </span>            :          */</a>
+<a name="309"><span class="lineNum">     309 </span><span class="lineCov">          1 :         if ((rc = SPI_connect_ext(codeblock-&gt;atomic ? 0 : SPI_OPT_NONATOMIC)) != SPI_OK_CONNECT)</span></a>
+<a name="310"><span class="lineNum">     310 </span><span class="lineNoCov">          0 :                 elog(ERROR, &quot;SPI_connect failed: %s&quot;, SPI_result_code_string(rc));</span></a>
+<a name="311"><span class="lineNum">     311 </span>            : </a>
+<a name="312"><span class="lineNum">     312 </span>            :         /* Compile the anonymous code block */</a>
+<a name="313"><span class="lineNum">     313 </span><span class="lineCov">          1 :         func = plpgsql_compile_inline(codeblock-&gt;source_text);</span></a>
+<a name="314"><span class="lineNum">     314 </span>            : </a>
+<a name="315"><span class="lineNum">     315 </span>            :         /* Mark the function as busy, just pro forma */</a>
+<a name="316"><span class="lineNum">     316 </span><span class="lineNoCov">          0 :         func-&gt;use_count++;</span></a>
+<a name="317"><span class="lineNum">     317 </span>            : </a>
+<a name="318"><span class="lineNum">     318 </span>            :         /*</a>
+<a name="319"><span class="lineNum">     319 </span>            :          * Set up a fake fcinfo with just enough info to satisfy</a>
+<a name="320"><span class="lineNum">     320 </span>            :          * plpgsql_exec_function().  In particular note that this sets things up</a>
+<a name="321"><span class="lineNum">     321 </span>            :          * with no arguments passed.</a>
+<a name="322"><span class="lineNum">     322 </span>            :          */</a>
+<a name="323"><span class="lineNum">     323 </span><span class="lineNoCov">          0 :         MemSet(fake_fcinfo, 0, SizeForFunctionCallInfo(0));</span></a>
+<a name="324"><span class="lineNum">     324 </span><span class="lineNoCov">          0 :         MemSet(&amp;flinfo, 0, sizeof(flinfo));</span></a>
+<a name="325"><span class="lineNum">     325 </span><span class="lineNoCov">          0 :         fake_fcinfo-&gt;flinfo = &amp;flinfo;</span></a>
+<a name="326"><span class="lineNum">     326 </span><span class="lineNoCov">          0 :         flinfo.fn_oid = InvalidOid;</span></a>
+<a name="327"><span class="lineNum">     327 </span><span class="lineNoCov">          0 :         flinfo.fn_mcxt = CurrentMemoryContext;</span></a>
+<a name="328"><span class="lineNum">     328 </span>            : </a>
+<a name="329"><span class="lineNum">     329 </span>            :         /*</a>
+<a name="330"><span class="lineNum">     330 </span>            :          * Create a private EState and resowner for simple-expression execution.</a>
+<a name="331"><span class="lineNum">     331 </span>            :          * Notice that these are NOT tied to transaction-level resources; they</a>
+<a name="332"><span class="lineNum">     332 </span>            :          * must survive any COMMIT/ROLLBACK the DO block executes, since we will</a>
+<a name="333"><span class="lineNum">     333 </span>            :          * unconditionally try to clean them up below.  (Hence, be wary of adding</a>
+<a name="334"><span class="lineNum">     334 </span>            :          * anything that could fail between here and the PG_TRY block.)  See the</a>
+<a name="335"><span class="lineNum">     335 </span>            :          * comments for shared_simple_eval_estate.</a>
+<a name="336"><span class="lineNum">     336 </span>            :          */</a>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :         simple_eval_estate = CreateExecutorState();</span></a>
+<a name="338"><span class="lineNum">     338 </span>            :         simple_eval_resowner =</a>
+<a name="339"><span class="lineNum">     339 </span><span class="lineNoCov">          0 :                 ResourceOwnerCreate(NULL, &quot;PL/pgSQL DO block simple expressions&quot;);</span></a>
+<a name="340"><span class="lineNum">     340 </span>            : </a>
+<a name="341"><span class="lineNum">     341 </span>            :         /* And run the function */</a>
+<a name="342"><span class="lineNum">     342 </span><span class="lineNoCov">          0 :         PG_TRY();</span></a>
+<a name="343"><span class="lineNum">     343 </span>            :         {</a>
+<a name="344"><span class="lineNum">     344 </span><span class="lineNoCov">          0 :                 retval = plpgsql_exec_function(func, fake_fcinfo,</span></a>
+<a name="345"><span class="lineNum">     345 </span>            :                                                                            simple_eval_estate,</a>
+<a name="346"><span class="lineNum">     346 </span>            :                                                                            simple_eval_resowner,</a>
+<a name="347"><span class="lineNum">     347 </span><span class="lineNoCov">          0 :                                                                            codeblock-&gt;atomic);</span></a>
+<a name="348"><span class="lineNum">     348 </span>            :         }</a>
+<a name="349"><span class="lineNum">     349 </span><span class="lineNoCov">          0 :         PG_CATCH();</span></a>
+<a name="350"><span class="lineNum">     350 </span>            :         {</a>
+<a name="351"><span class="lineNum">     351 </span>            :                 /*</a>
+<a name="352"><span class="lineNum">     352 </span>            :                  * We need to clean up what would otherwise be long-lived resources</a>
+<a name="353"><span class="lineNum">     353 </span>            :                  * accumulated by the failed DO block, principally cached plans for</a>
+<a name="354"><span class="lineNum">     354 </span>            :                  * statements (which can be flushed by plpgsql_free_function_memory),</a>
+<a name="355"><span class="lineNum">     355 </span>            :                  * execution trees for simple expressions, which are in the private</a>
+<a name="356"><span class="lineNum">     356 </span>            :                  * EState, and cached-plan refcounts held by the private resowner.</a>
+<a name="357"><span class="lineNum">     357 </span>            :                  *</a>
+<a name="358"><span class="lineNum">     358 </span>            :                  * Before releasing the private EState, we must clean up any</a>
+<a name="359"><span class="lineNum">     359 </span>            :                  * simple_econtext_stack entries pointing into it, which we can do by</a>
+<a name="360"><span class="lineNum">     360 </span>            :                  * invoking the subxact callback.  (It will be called again later if</a>
+<a name="361"><span class="lineNum">     361 </span>            :                  * some outer control level does a subtransaction abort, but no harm</a>
+<a name="362"><span class="lineNum">     362 </span>            :                  * is done.)  We cheat a bit knowing that plpgsql_subxact_cb does not</a>
+<a name="363"><span class="lineNum">     363 </span>            :                  * pay attention to its parentSubid argument.</a>
+<a name="364"><span class="lineNum">     364 </span>            :                  */</a>
+<a name="365"><span class="lineNum">     365 </span><span class="lineNoCov">          0 :                 plpgsql_subxact_cb(SUBXACT_EVENT_ABORT_SUB,</span></a>
+<a name="366"><span class="lineNum">     366 </span>            :                                                    GetCurrentSubTransactionId(),</a>
+<a name="367"><span class="lineNum">     367 </span>            :                                                    0, NULL);</a>
+<a name="368"><span class="lineNum">     368 </span>            : </a>
+<a name="369"><span class="lineNum">     369 </span>            :                 /* Clean up the private EState and resowner */</a>
+<a name="370"><span class="lineNum">     370 </span><span class="lineNoCov">          0 :                 FreeExecutorState(simple_eval_estate);</span></a>
+<a name="371"><span class="lineNum">     371 </span><span class="lineNoCov">          0 :                 ResourceOwnerReleaseAllPlanCacheRefs(simple_eval_resowner);</span></a>
+<a name="372"><span class="lineNum">     372 </span><span class="lineNoCov">          0 :                 ResourceOwnerDelete(simple_eval_resowner);</span></a>
+<a name="373"><span class="lineNum">     373 </span>            : </a>
+<a name="374"><span class="lineNum">     374 </span>            :                 /* Function should now have no remaining use-counts ... */</a>
+<a name="375"><span class="lineNum">     375 </span><span class="lineNoCov">          0 :                 func-&gt;use_count--;</span></a>
+<a name="376"><span class="lineNum">     376 </span>            :                 Assert(func-&gt;use_count == 0);</a>
+<a name="377"><span class="lineNum">     377 </span>            : </a>
+<a name="378"><span class="lineNum">     378 </span>            :                 /* ... so we can free subsidiary storage */</a>
+<a name="379"><span class="lineNum">     379 </span><span class="lineNoCov">          0 :                 plpgsql_free_function_memory(func);</span></a>
+<a name="380"><span class="lineNum">     380 </span>            : </a>
+<a name="381"><span class="lineNum">     381 </span>            :                 /* And propagate the error */</a>
+<a name="382"><span class="lineNum">     382 </span><span class="lineNoCov">          0 :                 PG_RE_THROW();</span></a>
+<a name="383"><span class="lineNum">     383 </span>            :         }</a>
+<a name="384"><span class="lineNum">     384 </span><span class="lineNoCov">          0 :         PG_END_TRY();</span></a>
+<a name="385"><span class="lineNum">     385 </span>            : </a>
+<a name="386"><span class="lineNum">     386 </span>            :         /* Clean up the private EState and resowner */</a>
+<a name="387"><span class="lineNum">     387 </span><span class="lineNoCov">          0 :         FreeExecutorState(simple_eval_estate);</span></a>
+<a name="388"><span class="lineNum">     388 </span><span class="lineNoCov">          0 :         ResourceOwnerReleaseAllPlanCacheRefs(simple_eval_resowner);</span></a>
+<a name="389"><span class="lineNum">     389 </span><span class="lineNoCov">          0 :         ResourceOwnerDelete(simple_eval_resowner);</span></a>
+<a name="390"><span class="lineNum">     390 </span>            : </a>
+<a name="391"><span class="lineNum">     391 </span>            :         /* Function should now have no remaining use-counts ... */</a>
+<a name="392"><span class="lineNum">     392 </span><span class="lineNoCov">          0 :         func-&gt;use_count--;</span></a>
+<a name="393"><span class="lineNum">     393 </span>            :         Assert(func-&gt;use_count == 0);</a>
+<a name="394"><span class="lineNum">     394 </span>            : </a>
+<a name="395"><span class="lineNum">     395 </span>            :         /* ... so we can free subsidiary storage */</a>
+<a name="396"><span class="lineNum">     396 </span><span class="lineNoCov">          0 :         plpgsql_free_function_memory(func);</span></a>
+<a name="397"><span class="lineNum">     397 </span>            : </a>
+<a name="398"><span class="lineNum">     398 </span>            :         /*</a>
+<a name="399"><span class="lineNum">     399 </span>            :          * Disconnect from SPI manager</a>
+<a name="400"><span class="lineNum">     400 </span>            :          */</a>
+<a name="401"><span class="lineNum">     401 </span><span class="lineNoCov">          0 :         if ((rc = SPI_finish()) != SPI_OK_FINISH)</span></a>
+<a name="402"><span class="lineNum">     402 </span><span class="lineNoCov">          0 :                 elog(ERROR, &quot;SPI_finish failed: %s&quot;, SPI_result_code_string(rc));</span></a>
+<a name="403"><span class="lineNum">     403 </span>            : </a>
+<a name="404"><span class="lineNum">     404 </span><span class="lineNoCov">          0 :         return retval;</span></a>
+<a name="405"><span class="lineNum">     405 </span>            : }</a>
+<a name="406"><span class="lineNum">     406 </span>            : </a>
+<a name="407"><span class="lineNum">     407 </span>            : /* ----------</a>
+<a name="408"><span class="lineNum">     408 </span>            :  * plpgsql_validator</a>
+<a name="409"><span class="lineNum">     409 </span>            :  *</a>
+<a name="410"><span class="lineNum">     410 </span>            :  * This function attempts to validate a PL/pgSQL function at</a>
+<a name="411"><span class="lineNum">     411 </span>            :  * CREATE FUNCTION time.</a>
+<a name="412"><span class="lineNum">     412 </span>            :  * ----------</a>
+<a name="413"><span class="lineNum">     413 </span>            :  */</a>
+<a name="414"><span class="lineNum">     414 </span><span class="lineCov">          2 : PG_FUNCTION_INFO_V1(plpgsql_validator);</span></a>
+<a name="415"><span class="lineNum">     415 </span>            : </a>
+<a name="416"><span class="lineNum">     416 </span>            : Datum</a>
+<a name="417"><span class="lineNum">     417 </span><span class="lineCov">          5 : plpgsql_validator(PG_FUNCTION_ARGS)</span></a>
+<a name="418"><span class="lineNum">     418 </span>            : {</a>
+<a name="419"><span class="lineNum">     419 </span><span class="lineCov">          5 :         Oid                     funcoid = PG_GETARG_OID(0);</span></a>
+<a name="420"><span class="lineNum">     420 </span>            :         HeapTuple       tuple;</a>
+<a name="421"><span class="lineNum">     421 </span>            :         Form_pg_proc proc;</a>
+<a name="422"><span class="lineNum">     422 </span>            :         char            functyptype;</a>
+<a name="423"><span class="lineNum">     423 </span>            :         int                     numargs;</a>
+<a name="424"><span class="lineNum">     424 </span>            :         Oid                *argtypes;</a>
+<a name="425"><span class="lineNum">     425 </span>            :         char      **argnames;</a>
+<a name="426"><span class="lineNum">     426 </span>            :         char       *argmodes;</a>
+<a name="427"><span class="lineNum">     427 </span><span class="lineCov">          5 :         bool            is_dml_trigger = false;</span></a>
+<a name="428"><span class="lineNum">     428 </span><span class="lineCov">          5 :         bool            is_event_trigger = false;</span></a>
+<a name="429"><span class="lineNum">     429 </span>            :         int                     i;</a>
+<a name="430"><span class="lineNum">     430 </span>            : </a>
+<a name="431"><span class="lineNum">     431 </span><span class="lineCov">          5 :         if (!CheckFunctionValidatorAccess(fcinfo-&gt;flinfo-&gt;fn_oid, funcoid))</span></a>
+<a name="432"><span class="lineNum">     432 </span><span class="lineNoCov">          0 :                 PG_RETURN_VOID();</span></a>
+<a name="433"><span class="lineNum">     433 </span>            : </a>
+<a name="434"><span class="lineNum">     434 </span>            :         /* Get the new function's pg_proc entry */</a>
+<a name="435"><span class="lineNum">     435 </span><span class="lineCov">          5 :         tuple = SearchSysCache1(PROCOID, ObjectIdGetDatum(funcoid));</span></a>
+<a name="436"><span class="lineNum">     436 </span><span class="lineCov">          5 :         if (!HeapTupleIsValid(tuple))</span></a>
+<a name="437"><span class="lineNum">     437 </span><span class="lineNoCov">          0 :                 elog(ERROR, &quot;cache lookup failed for function %u&quot;, funcoid);</span></a>
+<a name="438"><span class="lineNum">     438 </span><span class="lineCov">          5 :         proc = (Form_pg_proc) GETSTRUCT(tuple);</span></a>
+<a name="439"><span class="lineNum">     439 </span>            : </a>
+<a name="440"><span class="lineNum">     440 </span><span class="lineCov">          5 :         functyptype = get_typtype(proc-&gt;prorettype);</span></a>
+<a name="441"><span class="lineNum">     441 </span>            : </a>
+<a name="442"><span class="lineNum">     442 </span>            :         /* Disallow pseudotype result */</a>
+<a name="443"><span class="lineNum">     443 </span>            :         /* except for TRIGGER, EVTTRIGGER, RECORD, VOID, or polymorphic */</a>
+<a name="444"><span class="lineNum">     444 </span><span class="lineCov">          5 :         if (functyptype == TYPTYPE_PSEUDO)</span></a>
+<a name="445"><span class="lineNum">     445 </span>            :         {</a>
+<a name="446"><span class="lineNum">     446 </span><span class="lineCov">          4 :                 if (proc-&gt;prorettype == TRIGGEROID)</span></a>
+<a name="447"><span class="lineNum">     447 </span><span class="lineCov">          3 :                         is_dml_trigger = true;</span></a>
+<a name="448"><span class="lineNum">     448 </span><span class="lineCov">          1 :                 else if (proc-&gt;prorettype == EVTTRIGGEROID)</span></a>
+<a name="449"><span class="lineNum">     449 </span><span class="lineCov">          1 :                         is_event_trigger = true;</span></a>
+<a name="450"><span class="lineNum">     450 </span><span class="lineNoCov">          0 :                 else if (proc-&gt;prorettype != RECORDOID &amp;&amp;</span></a>
+<a name="451"><span class="lineNum">     451 </span><span class="lineNoCov">          0 :                                  proc-&gt;prorettype != VOIDOID &amp;&amp;</span></a>
+<a name="452"><span class="lineNum">     452 </span><span class="lineNoCov">          0 :                                  !IsPolymorphicType(proc-&gt;prorettype))</span></a>
+<a name="453"><span class="lineNum">     453 </span><span class="lineNoCov">          0 :                         ereport(ERROR,</span></a>
+<a name="454"><span class="lineNum">     454 </span>            :                                         (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),</a>
+<a name="455"><span class="lineNum">     455 </span>            :                                          errmsg(&quot;PL/pgSQL functions cannot return type %s&quot;,</a>
+<a name="456"><span class="lineNum">     456 </span>            :                                                         format_type_be(proc-&gt;prorettype))));</a>
+<a name="457"><span class="lineNum">     457 </span>            :         }</a>
+<a name="458"><span class="lineNum">     458 </span>            : </a>
+<a name="459"><span class="lineNum">     459 </span>            :         /* Disallow pseudotypes in arguments (either IN or OUT) */</a>
+<a name="460"><span class="lineNum">     460 </span>            :         /* except for RECORD and polymorphic */</a>
+<a name="461"><span class="lineNum">     461 </span><span class="lineCov">          5 :         numargs = get_func_arg_info(tuple,</span></a>
+<a name="462"><span class="lineNum">     462 </span>            :                                                                 &amp;argtypes, &amp;argnames, &amp;argmodes);</a>
+<a name="463"><span class="lineNum">     463 </span><span class="lineCov">          5 :         for (i = 0; i &lt; numargs; i++)</span></a>
+<a name="464"><span class="lineNum">     464 </span>            :         {</a>
+<a name="465"><span class="lineNum">     465 </span><span class="lineNoCov">          0 :                 if (get_typtype(argtypes[i]) == TYPTYPE_PSEUDO)</span></a>
+<a name="466"><span class="lineNum">     466 </span>            :                 {</a>
+<a name="467"><span class="lineNum">     467 </span><span class="lineNoCov">          0 :                         if (argtypes[i] != RECORDOID &amp;&amp;</span></a>
+<a name="468"><span class="lineNum">     468 </span><span class="lineNoCov">          0 :                                 !IsPolymorphicType(argtypes[i]))</span></a>
+<a name="469"><span class="lineNum">     469 </span><span class="lineNoCov">          0 :                                 ereport(ERROR,</span></a>
+<a name="470"><span class="lineNum">     470 </span>            :                                                 (errcode(ERRCODE_FEATURE_NOT_SUPPORTED),</a>
+<a name="471"><span class="lineNum">     471 </span>            :                                                  errmsg(&quot;PL/pgSQL functions cannot accept type %s&quot;,</a>
+<a name="472"><span class="lineNum">     472 </span>            :                                                                 format_type_be(argtypes[i]))));</a>
+<a name="473"><span class="lineNum">     473 </span>            :                 }</a>
+<a name="474"><span class="lineNum">     474 </span>            :         }</a>
+<a name="475"><span class="lineNum">     475 </span>            : </a>
+<a name="476"><span class="lineNum">     476 </span>            :         /* Postpone body checks if !check_function_bodies */</a>
+<a name="477"><span class="lineNum">     477 </span><span class="lineCov">          5 :         if (check_function_bodies)</span></a>
+<a name="478"><span class="lineNum">     478 </span>            :         {</a>
+<a name="479"><span class="lineNum">     479 </span><span class="lineCov">          5 :                 LOCAL_FCINFO(fake_fcinfo, 0);</span></a>
+<a name="480"><span class="lineNum">     480 </span>            :                 FmgrInfo        flinfo;</a>
+<a name="481"><span class="lineNum">     481 </span>            :                 int                     rc;</a>
+<a name="482"><span class="lineNum">     482 </span>            :                 TriggerData trigdata;</a>
+<a name="483"><span class="lineNum">     483 </span>            :                 EventTriggerData etrigdata;</a>
+<a name="484"><span class="lineNum">     484 </span>            : </a>
+<a name="485"><span class="lineNum">     485 </span>            :                 /*</a>
+<a name="486"><span class="lineNum">     486 </span>            :                  * Connect to SPI manager (is this needed for compilation?)</a>
+<a name="487"><span class="lineNum">     487 </span>            :                  */</a>
+<a name="488"><span class="lineNum">     488 </span><span class="lineCov">          5 :                 if ((rc = SPI_connect()) != SPI_OK_CONNECT)</span></a>
+<a name="489"><span class="lineNum">     489 </span><span class="lineNoCov">          0 :                         elog(ERROR, &quot;SPI_connect failed: %s&quot;, SPI_result_code_string(rc));</span></a>
+<a name="490"><span class="lineNum">     490 </span>            : </a>
+<a name="491"><span class="lineNum">     491 </span>            :                 /*</a>
+<a name="492"><span class="lineNum">     492 </span>            :                  * Set up a fake fcinfo with just enough info to satisfy</a>
+<a name="493"><span class="lineNum">     493 </span>            :                  * plpgsql_compile().</a>
+<a name="494"><span class="lineNum">     494 </span>            :                  */</a>
+<a name="495"><span class="lineNum">     495 </span><span class="lineCov">         25 :                 MemSet(fake_fcinfo, 0, SizeForFunctionCallInfo(0));</span></a>
+<a name="496"><span class="lineNum">     496 </span><span class="lineCov">         35 :                 MemSet(&amp;flinfo, 0, sizeof(flinfo));</span></a>
+<a name="497"><span class="lineNum">     497 </span><span class="lineCov">          5 :                 fake_fcinfo-&gt;flinfo = &amp;flinfo;</span></a>
+<a name="498"><span class="lineNum">     498 </span><span class="lineCov">          5 :                 flinfo.fn_oid = funcoid;</span></a>
+<a name="499"><span class="lineNum">     499 </span><span class="lineCov">          5 :                 flinfo.fn_mcxt = CurrentMemoryContext;</span></a>
+<a name="500"><span class="lineNum">     500 </span><span class="lineCov">          5 :                 if (is_dml_trigger)</span></a>
+<a name="501"><span class="lineNum">     501 </span>            :                 {</a>
+<a name="502"><span class="lineNum">     502 </span><span class="lineCov">         33 :                         MemSet(&amp;trigdata, 0, sizeof(trigdata));</span></a>
+<a name="503"><span class="lineNum">     503 </span><span class="lineCov">          3 :                         trigdata.type = T_TriggerData;</span></a>
+<a name="504"><span class="lineNum">     504 </span><span class="lineCov">          3 :                         fake_fcinfo-&gt;context = (Node *) &amp;trigdata;</span></a>
+<a name="505"><span class="lineNum">     505 </span>            :                 }</a>
+<a name="506"><span class="lineNum">     506 </span><span class="lineCov">          2 :                 else if (is_event_trigger)</span></a>
+<a name="507"><span class="lineNum">     507 </span>            :                 {</a>
+<a name="508"><span class="lineNum">     508 </span><span class="lineCov">          5 :                         MemSet(&amp;etrigdata, 0, sizeof(etrigdata));</span></a>
+<a name="509"><span class="lineNum">     509 </span><span class="lineCov">          1 :                         etrigdata.type = T_EventTriggerData;</span></a>
+<a name="510"><span class="lineNum">     510 </span><span class="lineCov">          1 :                         fake_fcinfo-&gt;context = (Node *) &amp;etrigdata;</span></a>
+<a name="511"><span class="lineNum">     511 </span>            :                 }</a>
+<a name="512"><span class="lineNum">     512 </span>            : </a>
+<a name="513"><span class="lineNum">     513 </span>            :                 /* Test-compile the function */</a>
+<a name="514"><span class="lineNum">     514 </span><span class="lineCov">          5 :                 plpgsql_compile(fake_fcinfo, true);</span></a>
+<a name="515"><span class="lineNum">     515 </span>            : </a>
+<a name="516"><span class="lineNum">     516 </span>            :                 /*</a>
+<a name="517"><span class="lineNum">     517 </span>            :                  * Disconnect from SPI manager</a>
+<a name="518"><span class="lineNum">     518 </span>            :                  */</a>
+<a name="519"><span class="lineNum">     519 </span><span class="lineCov">          4 :                 if ((rc = SPI_finish()) != SPI_OK_FINISH)</span></a>
+<a name="520"><span class="lineNum">     520 </span><span class="lineNoCov">          0 :                         elog(ERROR, &quot;SPI_finish failed: %s&quot;, SPI_result_code_string(rc));</span></a>
+<a name="521"><span class="lineNum">     521 </span>            :         }</a>
+<a name="522"><span class="lineNum">     522 </span>            : </a>
+<a name="523"><span class="lineNum">     523 </span><span class="lineCov">          4 :         ReleaseSysCache(tuple);</span></a>
+<a name="524"><span class="lineNum">     524 </span>            : </a>
+<a name="525"><span class="lineNum">     525 </span><span class="lineCov">          4 :         PG_RETURN_VOID();</span></a>
+<a name="526"><span class="lineNum">     526 </span>            : }</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 1.16</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

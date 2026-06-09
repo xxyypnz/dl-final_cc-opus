@@ -1,0 +1,538 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage_filtered.info - backend/nodes/read.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">backend/nodes</a> - read.c<span style="font-size: 80%;"> (source / <a href="read.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage_filtered.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">104</td>
+            <td class="headerCovTableEntry">143</td>
+            <td class="headerCovTableEntryLo">72.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2026-06-09 14:40:53</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntry">6</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*-------------------------------------------------------------------------</a>
+<a name="2"><span class="lineNum">       2 </span>            :  *</a>
+<a name="3"><span class="lineNum">       3 </span>            :  * read.c</a>
+<a name="4"><span class="lineNum">       4 </span>            :  *        routines to convert a string (legal ascii representation of node) back</a>
+<a name="5"><span class="lineNum">       5 </span>            :  *        to nodes</a>
+<a name="6"><span class="lineNum">       6 </span>            :  *</a>
+<a name="7"><span class="lineNum">       7 </span>            :  * Portions Copyright (c) 1996-2020, PostgreSQL Global Development Group</a>
+<a name="8"><span class="lineNum">       8 </span>            :  * Portions Copyright (c) 1994, Regents of the University of California</a>
+<a name="9"><span class="lineNum">       9 </span>            :  *</a>
+<a name="10"><span class="lineNum">      10 </span>            :  *</a>
+<a name="11"><span class="lineNum">      11 </span>            :  * IDENTIFICATION</a>
+<a name="12"><span class="lineNum">      12 </span>            :  *        src/backend/nodes/read.c</a>
+<a name="13"><span class="lineNum">      13 </span>            :  *</a>
+<a name="14"><span class="lineNum">      14 </span>            :  * HISTORY</a>
+<a name="15"><span class="lineNum">      15 </span>            :  *        AUTHOR                        DATE                    MAJOR EVENT</a>
+<a name="16"><span class="lineNum">      16 </span>            :  *        Andrew Yu                     Nov 2, 1994             file creation</a>
+<a name="17"><span class="lineNum">      17 </span>            :  *</a>
+<a name="18"><span class="lineNum">      18 </span>            :  *-------------------------------------------------------------------------</a>
+<a name="19"><span class="lineNum">      19 </span>            :  */</a>
+<a name="20"><span class="lineNum">      20 </span>            : #include &quot;postgres.h&quot;</a>
+<a name="21"><span class="lineNum">      21 </span>            : </a>
+<a name="22"><span class="lineNum">      22 </span>            : #include &lt;ctype.h&gt;</a>
+<a name="23"><span class="lineNum">      23 </span>            : </a>
+<a name="24"><span class="lineNum">      24 </span>            : #include &quot;common/string.h&quot;</a>
+<a name="25"><span class="lineNum">      25 </span>            : #include &quot;nodes/pg_list.h&quot;</a>
+<a name="26"><span class="lineNum">      26 </span>            : #include &quot;nodes/readfuncs.h&quot;</a>
+<a name="27"><span class="lineNum">      27 </span>            : #include &quot;nodes/value.h&quot;</a>
+<a name="28"><span class="lineNum">      28 </span>            : </a>
+<a name="29"><span class="lineNum">      29 </span>            : </a>
+<a name="30"><span class="lineNum">      30 </span>            : /* Static state for pg_strtok */</a>
+<a name="31"><span class="lineNum">      31 </span>            : static const char *pg_strtok_ptr = NULL;</a>
+<a name="32"><span class="lineNum">      32 </span>            : </a>
+<a name="33"><span class="lineNum">      33 </span>            : /* State flag that determines how readfuncs.c should treat location fields */</a>
+<a name="34"><span class="lineNum">      34 </span>            : #ifdef WRITE_READ_PARSE_PLAN_TREES</a>
+<a name="35"><span class="lineNum">      35 </span>            : bool            restore_location_fields = false;</a>
+<a name="36"><span class="lineNum">      36 </span>            : #endif</a>
+<a name="37"><span class="lineNum">      37 </span>            : </a>
+<a name="38"><span class="lineNum">      38 </span>            : </a>
+<a name="39"><span class="lineNum">      39 </span>            : /*</a>
+<a name="40"><span class="lineNum">      40 </span>            :  * stringToNode -</a>
+<a name="41"><span class="lineNum">      41 </span>            :  *        builds a Node tree from its string representation (assumed valid)</a>
+<a name="42"><span class="lineNum">      42 </span>            :  *</a>
+<a name="43"><span class="lineNum">      43 </span>            :  * restore_loc_fields instructs readfuncs.c whether to restore location</a>
+<a name="44"><span class="lineNum">      44 </span>            :  * fields rather than set them to -1.  This is currently only supported</a>
+<a name="45"><span class="lineNum">      45 </span>            :  * in builds with the WRITE_READ_PARSE_PLAN_TREES debugging flag set.</a>
+<a name="46"><span class="lineNum">      46 </span>            :  */</a>
+<a name="47"><span class="lineNum">      47 </span>            : static void *</a>
+<a name="48"><span class="lineNum">      48 </span><span class="lineCov">        866 : stringToNodeInternal(const char *str, bool restore_loc_fields)</span></a>
+<a name="49"><span class="lineNum">      49 </span>            : {</a>
+<a name="50"><span class="lineNum">      50 </span>            :         void       *retval;</a>
+<a name="51"><span class="lineNum">      51 </span>            :         const char *save_strtok;</a>
+<a name="52"><span class="lineNum">      52 </span>            : #ifdef WRITE_READ_PARSE_PLAN_TREES</a>
+<a name="53"><span class="lineNum">      53 </span>            :         bool            save_restore_location_fields;</a>
+<a name="54"><span class="lineNum">      54 </span>            : #endif</a>
+<a name="55"><span class="lineNum">      55 </span>            : </a>
+<a name="56"><span class="lineNum">      56 </span>            :         /*</a>
+<a name="57"><span class="lineNum">      57 </span>            :          * We save and restore the pre-existing state of pg_strtok. This makes the</a>
+<a name="58"><span class="lineNum">      58 </span>            :          * world safe for re-entrant invocation of stringToNode, without incurring</a>
+<a name="59"><span class="lineNum">      59 </span>            :          * a lot of notational overhead by having to pass the next-character</a>
+<a name="60"><span class="lineNum">      60 </span>            :          * pointer around through all the readfuncs.c code.</a>
+<a name="61"><span class="lineNum">      61 </span>            :          */</a>
+<a name="62"><span class="lineNum">      62 </span><span class="lineCov">        866 :         save_strtok = pg_strtok_ptr;</span></a>
+<a name="63"><span class="lineNum">      63 </span>            : </a>
+<a name="64"><span class="lineNum">      64 </span><span class="lineCov">        866 :         pg_strtok_ptr = str;            /* point pg_strtok at the string to read */</span></a>
+<a name="65"><span class="lineNum">      65 </span>            : </a>
+<a name="66"><span class="lineNum">      66 </span>            :         /*</a>
+<a name="67"><span class="lineNum">      67 </span>            :          * If enabled, likewise save/restore the location field handling flag.</a>
+<a name="68"><span class="lineNum">      68 </span>            :          */</a>
+<a name="69"><span class="lineNum">      69 </span>            : #ifdef WRITE_READ_PARSE_PLAN_TREES</a>
+<a name="70"><span class="lineNum">      70 </span>            :         save_restore_location_fields = restore_location_fields;</a>
+<a name="71"><span class="lineNum">      71 </span>            :         restore_location_fields = restore_loc_fields;</a>
+<a name="72"><span class="lineNum">      72 </span>            : #endif</a>
+<a name="73"><span class="lineNum">      73 </span>            : </a>
+<a name="74"><span class="lineNum">      74 </span><span class="lineCov">        866 :         retval = nodeRead(NULL, 0); /* do the reading */</span></a>
+<a name="75"><span class="lineNum">      75 </span>            : </a>
+<a name="76"><span class="lineNum">      76 </span><span class="lineCov">        866 :         pg_strtok_ptr = save_strtok;</span></a>
+<a name="77"><span class="lineNum">      77 </span>            : </a>
+<a name="78"><span class="lineNum">      78 </span>            : #ifdef WRITE_READ_PARSE_PLAN_TREES</a>
+<a name="79"><span class="lineNum">      79 </span>            :         restore_location_fields = save_restore_location_fields;</a>
+<a name="80"><span class="lineNum">      80 </span>            : #endif</a>
+<a name="81"><span class="lineNum">      81 </span>            : </a>
+<a name="82"><span class="lineNum">      82 </span><span class="lineCov">        866 :         return retval;</span></a>
+<a name="83"><span class="lineNum">      83 </span>            : }</a>
+<a name="84"><span class="lineNum">      84 </span>            : </a>
+<a name="85"><span class="lineNum">      85 </span>            : /*</a>
+<a name="86"><span class="lineNum">      86 </span>            :  * Externally visible entry points</a>
+<a name="87"><span class="lineNum">      87 </span>            :  */</a>
+<a name="88"><span class="lineNum">      88 </span>            : void *</a>
+<a name="89"><span class="lineNum">      89 </span><span class="lineCov">        866 : stringToNode(const char *str)</span></a>
+<a name="90"><span class="lineNum">      90 </span>            : {</a>
+<a name="91"><span class="lineNum">      91 </span><span class="lineCov">        866 :         return stringToNodeInternal(str, false);</span></a>
+<a name="92"><span class="lineNum">      92 </span>            : }</a>
+<a name="93"><span class="lineNum">      93 </span>            : </a>
+<a name="94"><span class="lineNum">      94 </span>            : #ifdef WRITE_READ_PARSE_PLAN_TREES</a>
+<a name="95"><span class="lineNum">      95 </span>            : </a>
+<a name="96"><span class="lineNum">      96 </span>            : void *</a>
+<a name="97"><span class="lineNum">      97 </span>            : stringToNodeWithLocations(const char *str)</a>
+<a name="98"><span class="lineNum">      98 </span>            : {</a>
+<a name="99"><span class="lineNum">      99 </span>            :         return stringToNodeInternal(str, true);</a>
+<a name="100"><span class="lineNum">     100 </span>            : }</a>
+<a name="101"><span class="lineNum">     101 </span>            : </a>
+<a name="102"><span class="lineNum">     102 </span>            : #endif</a>
+<a name="103"><span class="lineNum">     103 </span>            : </a>
+<a name="104"><span class="lineNum">     104 </span>            : </a>
+<a name="105"><span class="lineNum">     105 </span>            : /*****************************************************************************</a>
+<a name="106"><span class="lineNum">     106 </span>            :  *</a>
+<a name="107"><span class="lineNum">     107 </span>            :  * the lisp token parser</a>
+<a name="108"><span class="lineNum">     108 </span>            :  *</a>
+<a name="109"><span class="lineNum">     109 </span>            :  *****************************************************************************/</a>
+<a name="110"><span class="lineNum">     110 </span>            : </a>
+<a name="111"><span class="lineNum">     111 </span>            : /*</a>
+<a name="112"><span class="lineNum">     112 </span>            :  * pg_strtok --- retrieve next &quot;token&quot; from a string.</a>
+<a name="113"><span class="lineNum">     113 </span>            :  *</a>
+<a name="114"><span class="lineNum">     114 </span>            :  * Works kinda like strtok, except it never modifies the source string.</a>
+<a name="115"><span class="lineNum">     115 </span>            :  * (Instead of storing nulls into the string, the length of the token</a>
+<a name="116"><span class="lineNum">     116 </span>            :  * is returned to the caller.)</a>
+<a name="117"><span class="lineNum">     117 </span>            :  * Also, the rules about what is a token are hard-wired rather than being</a>
+<a name="118"><span class="lineNum">     118 </span>            :  * configured by passing a set of terminating characters.</a>
+<a name="119"><span class="lineNum">     119 </span>            :  *</a>
+<a name="120"><span class="lineNum">     120 </span>            :  * The string is assumed to have been initialized already by stringToNode.</a>
+<a name="121"><span class="lineNum">     121 </span>            :  *</a>
+<a name="122"><span class="lineNum">     122 </span>            :  * The rules for tokens are:</a>
+<a name="123"><span class="lineNum">     123 </span>            :  *      * Whitespace (space, tab, newline) always separates tokens.</a>
+<a name="124"><span class="lineNum">     124 </span>            :  *      * The characters '(', ')', '{', '}' form individual tokens even</a>
+<a name="125"><span class="lineNum">     125 </span>            :  *        without any whitespace around them.</a>
+<a name="126"><span class="lineNum">     126 </span>            :  *      * Otherwise, a token is all the characters up to the next whitespace</a>
+<a name="127"><span class="lineNum">     127 </span>            :  *        or occurrence of one of the four special characters.</a>
+<a name="128"><span class="lineNum">     128 </span>            :  *      * A backslash '\' can be used to quote whitespace or one of the four</a>
+<a name="129"><span class="lineNum">     129 </span>            :  *        special characters, so that it is treated as a plain token character.</a>
+<a name="130"><span class="lineNum">     130 </span>            :  *        Backslashes themselves must also be backslashed for consistency.</a>
+<a name="131"><span class="lineNum">     131 </span>            :  *        Any other character can be, but need not be, backslashed as well.</a>
+<a name="132"><span class="lineNum">     132 </span>            :  *      * If the resulting token is '&lt;&gt;' (with no backslash), it is returned</a>
+<a name="133"><span class="lineNum">     133 </span>            :  *        as a non-NULL pointer to the token but with length == 0.  Note that</a>
+<a name="134"><span class="lineNum">     134 </span>            :  *        there is no other way to get a zero-length token.</a>
+<a name="135"><span class="lineNum">     135 </span>            :  *</a>
+<a name="136"><span class="lineNum">     136 </span>            :  * Returns a pointer to the start of the next token, and the length of the</a>
+<a name="137"><span class="lineNum">     137 </span>            :  * token (including any embedded backslashes!) in *length.  If there are</a>
+<a name="138"><span class="lineNum">     138 </span>            :  * no more tokens, NULL and 0 are returned.</a>
+<a name="139"><span class="lineNum">     139 </span>            :  *</a>
+<a name="140"><span class="lineNum">     140 </span>            :  * NOTE: this routine doesn't remove backslashes; the caller must do so</a>
+<a name="141"><span class="lineNum">     141 </span>            :  * if necessary (see &quot;debackslash&quot;).</a>
+<a name="142"><span class="lineNum">     142 </span>            :  *</a>
+<a name="143"><span class="lineNum">     143 </span>            :  * NOTE: prior to release 7.0, this routine also had a special case to treat</a>
+<a name="144"><span class="lineNum">     144 </span>            :  * a token starting with '&quot;' as extending to the next '&quot;'.  This code was</a>
+<a name="145"><span class="lineNum">     145 </span>            :  * broken, however, since it would fail to cope with a string containing an</a>
+<a name="146"><span class="lineNum">     146 </span>            :  * embedded '&quot;'.  I have therefore removed this special case, and instead</a>
+<a name="147"><span class="lineNum">     147 </span>            :  * introduced rules for using backslashes to quote characters.  Higher-level</a>
+<a name="148"><span class="lineNum">     148 </span>            :  * code should add backslashes to a string constant to ensure it is treated</a>
+<a name="149"><span class="lineNum">     149 </span>            :  * as a single token.</a>
+<a name="150"><span class="lineNum">     150 </span>            :  */</a>
+<a name="151"><span class="lineNum">     151 </span>            : const char *</a>
+<a name="152"><span class="lineNum">     152 </span><span class="lineCov">     677465 : pg_strtok(int *length)</span></a>
+<a name="153"><span class="lineNum">     153 </span>            : {</a>
+<a name="154"><span class="lineNum">     154 </span>            :         const char *local_str;          /* working pointer to string */</a>
+<a name="155"><span class="lineNum">     155 </span>            :         const char *ret_str;            /* start of token to return */</a>
+<a name="156"><span class="lineNum">     156 </span>            : </a>
+<a name="157"><span class="lineNum">     157 </span><span class="lineCov">     677465 :         local_str = pg_strtok_ptr;</span></a>
+<a name="158"><span class="lineNum">     158 </span>            : </a>
+<a name="159"><span class="lineNum">     159 </span><span class="lineCov">    1262196 :         while (*local_str == ' ' || *local_str == '\n' || *local_str == '\t')</span></a>
+<a name="160"><span class="lineNum">     160 </span><span class="lineCov">     584731 :                 local_str++;</span></a>
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<a name="162"><span class="lineNum">     162 </span><span class="lineCov">     677465 :         if (*local_str == '\0')</span></a>
+<a name="163"><span class="lineNum">     163 </span>            :         {</a>
+<a name="164"><span class="lineNum">     164 </span><span class="lineNoCov">          0 :                 *length = 0;</span></a>
+<a name="165"><span class="lineNum">     165 </span><span class="lineNoCov">          0 :                 pg_strtok_ptr = local_str;</span></a>
+<a name="166"><span class="lineNum">     166 </span><span class="lineNoCov">          0 :                 return NULL;                    /* no more tokens */</span></a>
+<a name="167"><span class="lineNum">     167 </span>            :         }</a>
+<a name="168"><span class="lineNum">     168 </span>            : </a>
+<a name="169"><span class="lineNum">     169 </span>            :         /*</a>
+<a name="170"><span class="lineNum">     170 </span>            :          * Now pointing at start of next token.</a>
+<a name="171"><span class="lineNum">     171 </span>            :          */</a>
+<a name="172"><span class="lineNum">     172 </span><span class="lineCov">     677465 :         ret_str = local_str;</span></a>
+<a name="173"><span class="lineNum">     173 </span>            : </a>
+<a name="174"><span class="lineNum">     174 </span><span class="lineCov">     677465 :         if (*local_str == '(' || *local_str == ')' ||</span></a>
+<a name="175"><span class="lineNum">     175 </span><span class="lineCov">     647483 :                 *local_str == '{' || *local_str == '}')</span></a>
+<a name="176"><span class="lineNum">     176 </span>            :         {</a>
+<a name="177"><span class="lineNum">     177 </span>            :                 /* special 1-character token */</a>
+<a name="178"><span class="lineNum">     178 </span><span class="lineCov">      91868 :                 local_str++;</span></a>
+<a name="179"><span class="lineNum">     179 </span>            :         }</a>
+<a name="180"><span class="lineNum">     180 </span>            :         else</a>
+<a name="181"><span class="lineNum">     181 </span>            :         {</a>
+<a name="182"><span class="lineNum">     182 </span>            :                 /* Normal token, possibly containing backslashes */</a>
+<a name="183"><span class="lineNum">     183 </span><span class="lineCov">     585597 :                 while (*local_str != '\0' &amp;&amp;</span></a>
+<a name="184"><span class="lineNum">     184 </span><span class="lineCov">    4095711 :                            *local_str != ' ' &amp;&amp; *local_str != '\n' &amp;&amp;</span></a>
+<a name="185"><span class="lineNum">     185 </span><span class="lineCov">    3549270 :                            *local_str != '\t' &amp;&amp;</span></a>
+<a name="186"><span class="lineNum">     186 </span><span class="lineCov">    3549270 :                            *local_str != '(' &amp;&amp; *local_str != ')' &amp;&amp;</span></a>
+<a name="187"><span class="lineNum">     187 </span><span class="lineCov">    7635261 :                            *local_str != '{' &amp;&amp; *local_str != '}')</span></a>
+<a name="188"><span class="lineNum">     188 </span>            :                 {</a>
+<a name="189"><span class="lineNum">     189 </span><span class="lineCov">    3510432 :                         if (*local_str == '\\' &amp;&amp; local_str[1] != '\0')</span></a>
+<a name="190"><span class="lineNum">     190 </span><span class="lineCov">        202 :                                 local_str += 2;</span></a>
+<a name="191"><span class="lineNum">     191 </span>            :                         else</a>
+<a name="192"><span class="lineNum">     192 </span><span class="lineCov">    3510230 :                                 local_str++;</span></a>
+<a name="193"><span class="lineNum">     193 </span>            :                 }</a>
+<a name="194"><span class="lineNum">     194 </span>            :         }</a>
+<a name="195"><span class="lineNum">     195 </span>            : </a>
+<a name="196"><span class="lineNum">     196 </span><span class="lineCov">     677465 :         *length = local_str - ret_str;</span></a>
+<a name="197"><span class="lineNum">     197 </span>            : </a>
+<a name="198"><span class="lineNum">     198 </span>            :         /* Recognize special case for &quot;empty&quot; token */</a>
+<a name="199"><span class="lineNum">     199 </span><span class="lineCov">     677465 :         if (*length == 2 &amp;&amp; ret_str[0] == '&lt;' &amp;&amp; ret_str[1] == '&gt;')</span></a>
+<a name="200"><span class="lineNum">     200 </span><span class="lineCov">      16483 :                 *length = 0;</span></a>
+<a name="201"><span class="lineNum">     201 </span>            : </a>
+<a name="202"><span class="lineNum">     202 </span><span class="lineCov">     677465 :         pg_strtok_ptr = local_str;</span></a>
+<a name="203"><span class="lineNum">     203 </span>            : </a>
+<a name="204"><span class="lineNum">     204 </span><span class="lineCov">     677465 :         return ret_str;</span></a>
+<a name="205"><span class="lineNum">     205 </span>            : }</a>
+<a name="206"><span class="lineNum">     206 </span>            : </a>
+<a name="207"><span class="lineNum">     207 </span>            : /*</a>
+<a name="208"><span class="lineNum">     208 </span>            :  * debackslash -</a>
+<a name="209"><span class="lineNum">     209 </span>            :  *        create a palloc'd string holding the given token.</a>
+<a name="210"><span class="lineNum">     210 </span>            :  *        any protective backslashes in the token are removed.</a>
+<a name="211"><span class="lineNum">     211 </span>            :  */</a>
+<a name="212"><span class="lineNum">     212 </span>            : char *</a>
+<a name="213"><span class="lineNum">     213 </span><span class="lineCov">      29659 : debackslash(const char *token, int length)</span></a>
+<a name="214"><span class="lineNum">     214 </span>            : {</a>
+<a name="215"><span class="lineNum">     215 </span><span class="lineCov">      29659 :         char       *result = palloc(length + 1);</span></a>
+<a name="216"><span class="lineNum">     216 </span><span class="lineCov">      29659 :         char       *ptr = result;</span></a>
+<a name="217"><span class="lineNum">     217 </span>            : </a>
+<a name="218"><span class="lineNum">     218 </span><span class="lineCov">     304772 :         while (length &gt; 0)</span></a>
+<a name="219"><span class="lineNum">     219 </span>            :         {</a>
+<a name="220"><span class="lineNum">     220 </span><span class="lineCov">     275113 :                 if (*token == '\\' &amp;&amp; length &gt; 1)</span></a>
+<a name="221"><span class="lineNum">     221 </span><span class="lineCov">        202 :                         token++, length--;</span></a>
+<a name="222"><span class="lineNum">     222 </span><span class="lineCov">     275113 :                 *ptr++ = *token++;</span></a>
+<a name="223"><span class="lineNum">     223 </span><span class="lineCov">     275113 :                 length--;</span></a>
+<a name="224"><span class="lineNum">     224 </span>            :         }</a>
+<a name="225"><span class="lineNum">     225 </span><span class="lineCov">      29659 :         *ptr = '\0';</span></a>
+<a name="226"><span class="lineNum">     226 </span><span class="lineCov">      29659 :         return result;</span></a>
+<a name="227"><span class="lineNum">     227 </span>            : }</a>
+<a name="228"><span class="lineNum">     228 </span>            : </a>
+<a name="229"><span class="lineNum">     229 </span>            : #define RIGHT_PAREN (1000000 + 1)</a>
+<a name="230"><span class="lineNum">     230 </span>            : #define LEFT_PAREN      (1000000 + 2)</a>
+<a name="231"><span class="lineNum">     231 </span>            : #define LEFT_BRACE      (1000000 + 3)</a>
+<a name="232"><span class="lineNum">     232 </span>            : #define OTHER_TOKEN (1000000 + 4)</a>
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<a name="234"><span class="lineNum">     234 </span>            : /*</a>
+<a name="235"><span class="lineNum">     235 </span>            :  * nodeTokenType -</a>
+<a name="236"><span class="lineNum">     236 </span>            :  *        returns the type of the node token contained in token.</a>
+<a name="237"><span class="lineNum">     237 </span>            :  *        It returns one of the following valid NodeTags:</a>
+<a name="238"><span class="lineNum">     238 </span>            :  *              T_Integer, T_Float, T_String, T_BitString</a>
+<a name="239"><span class="lineNum">     239 </span>            :  *        and some of its own:</a>
+<a name="240"><span class="lineNum">     240 </span>            :  *              RIGHT_PAREN, LEFT_PAREN, LEFT_BRACE, OTHER_TOKEN</a>
+<a name="241"><span class="lineNum">     241 </span>            :  *</a>
+<a name="242"><span class="lineNum">     242 </span>            :  *        Assumption: the ascii representation is legal</a>
+<a name="243"><span class="lineNum">     243 </span>            :  */</a>
+<a name="244"><span class="lineNum">     244 </span>            : static NodeTag</a>
+<a name="245"><span class="lineNum">     245 </span><span class="lineCov">      78282 : nodeTokenType(const char *token, int length)</span></a>
+<a name="246"><span class="lineNum">     246 </span>            : {</a>
+<a name="247"><span class="lineNum">     247 </span>            :         NodeTag         retval;</a>
+<a name="248"><span class="lineNum">     248 </span>            :         const char *numptr;</a>
+<a name="249"><span class="lineNum">     249 </span>            :         int                     numlen;</a>
+<a name="250"><span class="lineNum">     250 </span>            : </a>
+<a name="251"><span class="lineNum">     251 </span>            :         /*</a>
+<a name="252"><span class="lineNum">     252 </span>            :          * Check if the token is a number</a>
+<a name="253"><span class="lineNum">     253 </span>            :          */</a>
+<a name="254"><span class="lineNum">     254 </span><span class="lineCov">      78282 :         numptr = token;</span></a>
+<a name="255"><span class="lineNum">     255 </span><span class="lineCov">      78282 :         numlen = length;</span></a>
+<a name="256"><span class="lineNum">     256 </span><span class="lineCov">      78282 :         if (*numptr == '+' || *numptr == '-')</span></a>
+<a name="257"><span class="lineNum">     257 </span><span class="lineNoCov">          0 :                 numptr++, numlen--;</span></a>
+<a name="258"><span class="lineNum">     258 </span><span class="lineCov">      78282 :         if ((numlen &gt; 0 &amp;&amp; isdigit((unsigned char) *numptr)) ||</span></a>
+<a name="259"><span class="lineNum">     259 </span><span class="lineCov">      23645 :                 (numlen &gt; 1 &amp;&amp; *numptr == '.' &amp;&amp; isdigit((unsigned char) numptr[1])))</span></a>
+<a name="260"><span class="lineNum">     260 </span>            :         {</a>
+<a name="261"><span class="lineNum">     261 </span>            :                 /*</a>
+<a name="262"><span class="lineNum">     262 </span>            :                  * Yes.  Figure out whether it is integral or float; this requires</a>
+<a name="263"><span class="lineNum">     263 </span>            :                  * both a syntax check and a range check. strtoint() can do both for</a>
+<a name="264"><span class="lineNum">     264 </span>            :                  * us. We know the token will end at a character that strtoint will</a>
+<a name="265"><span class="lineNum">     265 </span>            :                  * stop at, so we do not need to modify the string.</a>
+<a name="266"><span class="lineNum">     266 </span>            :                  */</a>
+<a name="267"><span class="lineNum">     267 </span>            :                 char       *endptr;</a>
+<a name="268"><span class="lineNum">     268 </span>            : </a>
+<a name="269"><span class="lineNum">     269 </span><span class="lineNoCov">          0 :                 errno = 0;</span></a>
+<a name="270"><span class="lineNum">     270 </span><span class="lineNoCov">          0 :                 (void) strtoint(token, &amp;endptr, 10);</span></a>
+<a name="271"><span class="lineNum">     271 </span><span class="lineNoCov">          0 :                 if (endptr != token + length || errno == ERANGE)</span></a>
+<a name="272"><span class="lineNum">     272 </span><span class="lineNoCov">          0 :                         return T_Float;</span></a>
+<a name="273"><span class="lineNum">     273 </span><span class="lineNoCov">          0 :                 return T_Integer;</span></a>
+<a name="274"><span class="lineNum">     274 </span>            :         }</a>
+<a name="275"><span class="lineNum">     275 </span>            : </a>
+<a name="276"><span class="lineNum">     276 </span>            :         /*</a>
+<a name="277"><span class="lineNum">     277 </span>            :          * these three cases do not need length checks, since pg_strtok() will</a>
+<a name="278"><span class="lineNum">     278 </span>            :          * always treat them as single-byte tokens</a>
+<a name="279"><span class="lineNum">     279 </span>            :          */</a>
+<a name="280"><span class="lineNum">     280 </span><span class="lineCov">      78282 :         else if (*token == '(')</span></a>
+<a name="281"><span class="lineNum">     281 </span><span class="lineCov">       7594 :                 retval = LEFT_PAREN;</span></a>
+<a name="282"><span class="lineNum">     282 </span><span class="lineCov">      70688 :         else if (*token == ')')</span></a>
+<a name="283"><span class="lineNum">     283 </span><span class="lineNoCov">          0 :                 retval = RIGHT_PAREN;</span></a>
+<a name="284"><span class="lineNum">     284 </span><span class="lineCov">      70688 :         else if (*token == '{')</span></a>
+<a name="285"><span class="lineNum">     285 </span><span class="lineCov">      30943 :                 retval = LEFT_BRACE;</span></a>
+<a name="286"><span class="lineNum">     286 </span><span class="lineCov">      39745 :         else if (*token == '&quot;' &amp;&amp; length &gt; 1 &amp;&amp; token[length - 1] == '&quot;')</span></a>
+<a name="287"><span class="lineNum">     287 </span><span class="lineCov">      23645 :                 retval = T_String;</span></a>
+<a name="288"><span class="lineNum">     288 </span><span class="lineCov">      16100 :         else if (*token == 'b')</span></a>
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :                 retval = T_BitString;</span></a>
+<a name="290"><span class="lineNum">     290 </span>            :         else</a>
+<a name="291"><span class="lineNum">     291 </span><span class="lineCov">      16100 :                 retval = OTHER_TOKEN;</span></a>
+<a name="292"><span class="lineNum">     292 </span><span class="lineCov">      78282 :         return retval;</span></a>
+<a name="293"><span class="lineNum">     293 </span>            : }</a>
+<a name="294"><span class="lineNum">     294 </span>            : </a>
+<a name="295"><span class="lineNum">     295 </span>            : /*</a>
+<a name="296"><span class="lineNum">     296 </span>            :  * nodeRead -</a>
+<a name="297"><span class="lineNum">     297 </span>            :  *        Slightly higher-level reader.</a>
+<a name="298"><span class="lineNum">     298 </span>            :  *</a>
+<a name="299"><span class="lineNum">     299 </span>            :  * This routine applies some semantic knowledge on top of the purely</a>
+<a name="300"><span class="lineNum">     300 </span>            :  * lexical tokenizer pg_strtok().   It can read</a>
+<a name="301"><span class="lineNum">     301 </span>            :  *      * Value token nodes (integers, floats, or strings);</a>
+<a name="302"><span class="lineNum">     302 </span>            :  *      * General nodes (via parseNodeString() from readfuncs.c);</a>
+<a name="303"><span class="lineNum">     303 </span>            :  *      * Lists of the above;</a>
+<a name="304"><span class="lineNum">     304 </span>            :  *      * Lists of integers or OIDs.</a>
+<a name="305"><span class="lineNum">     305 </span>            :  * The return value is declared void *, not Node *, to avoid having to</a>
+<a name="306"><span class="lineNum">     306 </span>            :  * cast it explicitly in callers that assign to fields of different types.</a>
+<a name="307"><span class="lineNum">     307 </span>            :  *</a>
+<a name="308"><span class="lineNum">     308 </span>            :  * External callers should always pass NULL/0 for the arguments.  Internally</a>
+<a name="309"><span class="lineNum">     309 </span>            :  * a non-NULL token may be passed when the upper recursion level has already</a>
+<a name="310"><span class="lineNum">     310 </span>            :  * scanned the first token of a node's representation.</a>
+<a name="311"><span class="lineNum">     311 </span>            :  *</a>
+<a name="312"><span class="lineNum">     312 </span>            :  * We assume pg_strtok is already initialized with a string to read (hence</a>
+<a name="313"><span class="lineNum">     313 </span>            :  * this should only be invoked from within a stringToNode operation).</a>
+<a name="314"><span class="lineNum">     314 </span>            :  */</a>
+<a name="315"><span class="lineNum">     315 </span>            : void *</a>
+<a name="316"><span class="lineNum">     316 </span><span class="lineCov">      78282 : nodeRead(const char *token, int tok_len)</span></a>
+<a name="317"><span class="lineNum">     317 </span>            : {</a>
+<a name="318"><span class="lineNum">     318 </span>            :         Node       *result;</a>
+<a name="319"><span class="lineNum">     319 </span>            :         NodeTag         type;</a>
+<a name="320"><span class="lineNum">     320 </span>            : </a>
+<a name="321"><span class="lineNum">     321 </span><span class="lineCov">      78282 :         if (token == NULL)                      /* need to read a token? */</span></a>
+<a name="322"><span class="lineNum">     322 </span>            :         {</a>
+<a name="323"><span class="lineNum">     323 </span><span class="lineCov">      33851 :                 token = pg_strtok(&amp;tok_len);</span></a>
+<a name="324"><span class="lineNum">     324 </span>            : </a>
+<a name="325"><span class="lineNum">     325 </span><span class="lineCov">      33851 :                 if (token == NULL)              /* end of input */</span></a>
+<a name="326"><span class="lineNum">     326 </span><span class="lineNoCov">          0 :                         return NULL;</span></a>
+<a name="327"><span class="lineNum">     327 </span>            :         }</a>
+<a name="328"><span class="lineNum">     328 </span>            : </a>
+<a name="329"><span class="lineNum">     329 </span><span class="lineCov">      78282 :         type = nodeTokenType(token, tok_len);</span></a>
+<a name="330"><span class="lineNum">     330 </span>            : </a>
+<a name="331"><span class="lineNum">     331 </span><span class="lineCov">      78282 :         switch ((int) type)</span></a>
+<a name="332"><span class="lineNum">     332 </span>            :         {</a>
+<a name="333"><span class="lineNum">     333 </span><span class="lineCov">      30943 :                 case LEFT_BRACE:</span></a>
+<a name="334"><span class="lineNum">     334 </span><span class="lineCov">      30943 :                         result = parseNodeString();</span></a>
+<a name="335"><span class="lineNum">     335 </span><span class="lineCov">      30943 :                         token = pg_strtok(&amp;tok_len);</span></a>
+<a name="336"><span class="lineNum">     336 </span><span class="lineCov">      30943 :                         if (token == NULL || token[0] != '}')</span></a>
+<a name="337"><span class="lineNum">     337 </span><span class="lineNoCov">          0 :                                 elog(ERROR, &quot;did not find '}' at end of input node&quot;);</span></a>
+<a name="338"><span class="lineNum">     338 </span><span class="lineCov">      30943 :                         break;</span></a>
+<a name="339"><span class="lineNum">     339 </span><span class="lineCov">       7594 :                 case LEFT_PAREN:</span></a>
+<a name="340"><span class="lineNum">     340 </span>            :                         {</a>
+<a name="341"><span class="lineNum">     341 </span><span class="lineCov">       7594 :                                 List       *l = NIL;</span></a>
+<a name="342"><span class="lineNum">     342 </span>            : </a>
+<a name="343"><span class="lineNum">     343 </span>            :                                 /*----------</a>
+<a name="344"><span class="lineNum">     344 </span>            :                                  * Could be an integer list:    (i int int ...)</a>
+<a name="345"><span class="lineNum">     345 </span>            :                                  * or an OID list:                              (o int int ...)</a>
+<a name="346"><span class="lineNum">     346 </span>            :                                  * or a list of nodes/values:   (node node ...)</a>
+<a name="347"><span class="lineNum">     347 </span>            :                                  *----------</a>
+<a name="348"><span class="lineNum">     348 </span>            :                                  */</a>
+<a name="349"><span class="lineNum">     349 </span><span class="lineCov">       7594 :                                 token = pg_strtok(&amp;tok_len);</span></a>
+<a name="350"><span class="lineNum">     350 </span><span class="lineCov">       7594 :                                 if (token == NULL)</span></a>
+<a name="351"><span class="lineNum">     351 </span><span class="lineNoCov">          0 :                                         elog(ERROR, &quot;unterminated List structure&quot;);</span></a>
+<a name="352"><span class="lineNum">     352 </span><span class="lineCov">       7594 :                                 if (tok_len == 1 &amp;&amp; token[0] == 'i')</span></a>
+<a name="353"><span class="lineNum">     353 </span>            :                                 {</a>
+<a name="354"><span class="lineNum">     354 </span>            :                                         /* List of integers */</a>
+<a name="355"><span class="lineNum">     355 </span>            :                                         for (;;)</a>
+<a name="356"><span class="lineNum">     356 </span><span class="lineCov">      10098 :                                         {</span></a>
+<a name="357"><span class="lineNum">     357 </span>            :                                                 int                     val;</a>
+<a name="358"><span class="lineNum">     358 </span>            :                                                 char       *endptr;</a>
+<a name="359"><span class="lineNum">     359 </span>            : </a>
+<a name="360"><span class="lineNum">     360 </span><span class="lineCov">      10584 :                                                 token = pg_strtok(&amp;tok_len);</span></a>
+<a name="361"><span class="lineNum">     361 </span><span class="lineCov">      10584 :                                                 if (token == NULL)</span></a>
+<a name="362"><span class="lineNum">     362 </span><span class="lineNoCov">          0 :                                                         elog(ERROR, &quot;unterminated List structure&quot;);</span></a>
+<a name="363"><span class="lineNum">     363 </span><span class="lineCov">      10584 :                                                 if (token[0] == ')')</span></a>
+<a name="364"><span class="lineNum">     364 </span><span class="lineCov">        486 :                                                         break;</span></a>
+<a name="365"><span class="lineNum">     365 </span><span class="lineCov">      10098 :                                                 val = (int) strtol(token, &amp;endptr, 10);</span></a>
+<a name="366"><span class="lineNum">     366 </span><span class="lineCov">      10098 :                                                 if (endptr != token + tok_len)</span></a>
+<a name="367"><span class="lineNum">     367 </span><span class="lineNoCov">          0 :                                                         elog(ERROR, &quot;unrecognized integer: \&quot;%.*s\&quot;&quot;,</span></a>
+<a name="368"><span class="lineNum">     368 </span>            :                                                                  tok_len, token);</a>
+<a name="369"><span class="lineNum">     369 </span><span class="lineCov">      10098 :                                                 l = lappend_int(l, val);</span></a>
+<a name="370"><span class="lineNum">     370 </span>            :                                         }</a>
+<a name="371"><span class="lineNum">     371 </span>            :                                 }</a>
+<a name="372"><span class="lineNum">     372 </span><span class="lineCov">       7108 :                                 else if (tok_len == 1 &amp;&amp; token[0] == 'o')</span></a>
+<a name="373"><span class="lineNum">     373 </span>            :                                 {</a>
+<a name="374"><span class="lineNum">     374 </span>            :                                         /* List of OIDs */</a>
+<a name="375"><span class="lineNum">     375 </span>            :                                         for (;;)</a>
+<a name="376"><span class="lineNum">     376 </span><span class="lineCov">        737 :                                         {</span></a>
+<a name="377"><span class="lineNum">     377 </span>            :                                                 Oid                     val;</a>
+<a name="378"><span class="lineNum">     378 </span>            :                                                 char       *endptr;</a>
+<a name="379"><span class="lineNum">     379 </span>            : </a>
+<a name="380"><span class="lineNum">     380 </span><span class="lineCov">        979 :                                                 token = pg_strtok(&amp;tok_len);</span></a>
+<a name="381"><span class="lineNum">     381 </span><span class="lineCov">        979 :                                                 if (token == NULL)</span></a>
+<a name="382"><span class="lineNum">     382 </span><span class="lineNoCov">          0 :                                                         elog(ERROR, &quot;unterminated List structure&quot;);</span></a>
+<a name="383"><span class="lineNum">     383 </span><span class="lineCov">        979 :                                                 if (token[0] == ')')</span></a>
+<a name="384"><span class="lineNum">     384 </span><span class="lineCov">        242 :                                                         break;</span></a>
+<a name="385"><span class="lineNum">     385 </span><span class="lineCov">        737 :                                                 val = (Oid) strtoul(token, &amp;endptr, 10);</span></a>
+<a name="386"><span class="lineNum">     386 </span><span class="lineCov">        737 :                                                 if (endptr != token + tok_len)</span></a>
+<a name="387"><span class="lineNum">     387 </span><span class="lineNoCov">          0 :                                                         elog(ERROR, &quot;unrecognized OID: \&quot;%.*s\&quot;&quot;,</span></a>
+<a name="388"><span class="lineNum">     388 </span>            :                                                                  tok_len, token);</a>
+<a name="389"><span class="lineNum">     389 </span><span class="lineCov">        737 :                                                 l = lappend_oid(l, val);</span></a>
+<a name="390"><span class="lineNum">     390 </span>            :                                         }</a>
+<a name="391"><span class="lineNum">     391 </span>            :                                 }</a>
+<a name="392"><span class="lineNum">     392 </span>            :                                 else</a>
+<a name="393"><span class="lineNum">     393 </span>            :                                 {</a>
+<a name="394"><span class="lineNum">     394 </span>            :                                         /* List of other node types */</a>
+<a name="395"><span class="lineNum">     395 </span>            :                                         for (;;)</a>
+<a name="396"><span class="lineNum">     396 </span>            :                                         {</a>
+<a name="397"><span class="lineNum">     397 </span>            :                                                 /* We have already scanned next token... */</a>
+<a name="398"><span class="lineNum">     398 </span><span class="lineCov">      51297 :                                                 if (token[0] == ')')</span></a>
+<a name="399"><span class="lineNum">     399 </span><span class="lineCov">       6866 :                                                         break;</span></a>
+<a name="400"><span class="lineNum">     400 </span><span class="lineCov">      44431 :                                                 l = lappend(l, nodeRead(token, tok_len));</span></a>
+<a name="401"><span class="lineNum">     401 </span><span class="lineCov">      44431 :                                                 token = pg_strtok(&amp;tok_len);</span></a>
+<a name="402"><span class="lineNum">     402 </span><span class="lineCov">      44431 :                                                 if (token == NULL)</span></a>
+<a name="403"><span class="lineNum">     403 </span><span class="lineNoCov">          0 :                                                         elog(ERROR, &quot;unterminated List structure&quot;);</span></a>
+<a name="404"><span class="lineNum">     404 </span>            :                                         }</a>
+<a name="405"><span class="lineNum">     405 </span>            :                                 }</a>
+<a name="406"><span class="lineNum">     406 </span><span class="lineCov">       7594 :                                 result = (Node *) l;</span></a>
+<a name="407"><span class="lineNum">     407 </span><span class="lineCov">       7594 :                                 break;</span></a>
+<a name="408"><span class="lineNum">     408 </span>            :                         }</a>
+<a name="409"><span class="lineNum">     409 </span><span class="lineNoCov">          0 :                 case RIGHT_PAREN:</span></a>
+<a name="410"><span class="lineNum">     410 </span><span class="lineNoCov">          0 :                         elog(ERROR, &quot;unexpected right parenthesis&quot;);</span></a>
+<a name="411"><span class="lineNum">     411 </span>            :                         result = NULL;          /* keep compiler happy */</a>
+<a name="412"><span class="lineNum">     412 </span>            :                         break;</a>
+<a name="413"><span class="lineNum">     413 </span><span class="lineCov">      16100 :                 case OTHER_TOKEN:</span></a>
+<a name="414"><span class="lineNum">     414 </span><span class="lineCov">      16100 :                         if (tok_len == 0)</span></a>
+<a name="415"><span class="lineNum">     415 </span>            :                         {</a>
+<a name="416"><span class="lineNum">     416 </span>            :                                 /* must be &quot;&lt;&gt;&quot; --- represents a null pointer */</a>
+<a name="417"><span class="lineNum">     417 </span><span class="lineCov">      16100 :                                 result = NULL;</span></a>
+<a name="418"><span class="lineNum">     418 </span>            :                         }</a>
+<a name="419"><span class="lineNum">     419 </span>            :                         else</a>
+<a name="420"><span class="lineNum">     420 </span>            :                         {</a>
+<a name="421"><span class="lineNum">     421 </span><span class="lineNoCov">          0 :                                 elog(ERROR, &quot;unrecognized token: \&quot;%.*s\&quot;&quot;, tok_len, token);</span></a>
+<a name="422"><span class="lineNum">     422 </span>            :                                 result = NULL;  /* keep compiler happy */</a>
+<a name="423"><span class="lineNum">     423 </span>            :                         }</a>
+<a name="424"><span class="lineNum">     424 </span><span class="lineCov">      16100 :                         break;</span></a>
+<a name="425"><span class="lineNum">     425 </span><span class="lineNoCov">          0 :                 case T_Integer:</span></a>
+<a name="426"><span class="lineNum">     426 </span>            : </a>
+<a name="427"><span class="lineNum">     427 </span>            :                         /*</a>
+<a name="428"><span class="lineNum">     428 </span>            :                          * we know that the token terminates on a char atoi will stop at</a>
+<a name="429"><span class="lineNum">     429 </span>            :                          */</a>
+<a name="430"><span class="lineNum">     430 </span><span class="lineNoCov">          0 :                         result = (Node *) makeInteger(atoi(token));</span></a>
+<a name="431"><span class="lineNum">     431 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<a name="432"><span class="lineNum">     432 </span><span class="lineNoCov">          0 :                 case T_Float:</span></a>
+<a name="433"><span class="lineNum">     433 </span>            :                         {</a>
+<a name="434"><span class="lineNum">     434 </span><span class="lineNoCov">          0 :                                 char       *fval = (char *) palloc(tok_len + 1);</span></a>
+<a name="435"><span class="lineNum">     435 </span>            : </a>
+<a name="436"><span class="lineNum">     436 </span><span class="lineNoCov">          0 :                                 memcpy(fval, token, tok_len);</span></a>
+<a name="437"><span class="lineNum">     437 </span><span class="lineNoCov">          0 :                                 fval[tok_len] = '\0';</span></a>
+<a name="438"><span class="lineNum">     438 </span><span class="lineNoCov">          0 :                                 result = (Node *) makeFloat(fval);</span></a>
+<a name="439"><span class="lineNum">     439 </span>            :                         }</a>
+<a name="440"><span class="lineNum">     440 </span><span class="lineNoCov">          0 :                         break;</span></a>
+<a name="441"><span class="lineNum">     441 </span><span class="lineCov">      23645 :                 case T_String:</span></a>
+<a name="442"><span class="lineNum">     442 </span>            :                         /* need to remove leading and trailing quotes, and backslashes */</a>
+<a name="443"><span class="lineNum">     443 </span><span class="lineCov">      23645 :                         result = (Node *) makeString(debackslash(token + 1, tok_len - 2));</span></a>
+<a name="444"><span class="lineNum">     444 </span><span class="lineCov">      23645 :                         break;</span></a>
+<a name="445"><span class="lineNum">     445 </span><span class="lineNoCov">          0 :                 case T_BitString:</span></a>
+<a name="446"><span class="lineNum">     446 </span>            :                         {</a>
+<a name="447"><span class="lineNum">     447 </span><span class="lineNoCov">          0 :                                 char       *val = palloc(tok_len);</span></a>
+<a name="448"><span class="lineNum">     448 </span>            : </a>
+<a name="449"><span class="lineNum">     449 </span>            :                                 /* skip leading 'b' */</a>
+<a name="450"><span class="lineNum">     450 </span><span class="lineNoCov">          0 :                                 memcpy(val, token + 1, tok_len - 1);</span></a>
+<a name="451"><span class="lineNum">     451 </span><span class="lineNoCov">          0 :                                 val[tok_len - 1] = '\0';</span></a>
+<a name="452"><span class="lineNum">     452 </span><span class="lineNoCov">          0 :                                 result = (Node *) makeBitString(val);</span></a>
+<a name="453"><span class="lineNum">     453 </span><span class="lineNoCov">          0 :                                 break;</span></a>
+<a name="454"><span class="lineNum">     454 </span>            :                         }</a>
+<a name="455"><span class="lineNum">     455 </span><span class="lineNoCov">          0 :                 default:</span></a>
+<a name="456"><span class="lineNum">     456 </span><span class="lineNoCov">          0 :                         elog(ERROR, &quot;unrecognized node type: %d&quot;, (int) type);</span></a>
+<a name="457"><span class="lineNum">     457 </span>            :                         result = NULL;          /* keep compiler happy */</a>
+<a name="458"><span class="lineNum">     458 </span>            :                         break;</a>
+<a name="459"><span class="lineNum">     459 </span>            :         }</a>
+<a name="460"><span class="lineNum">     460 </span>            : </a>
+<a name="461"><span class="lineNum">     461 </span><span class="lineCov">      78282 :         return (void *) result;</span></a>
+<a name="462"><span class="lineNum">     462 </span>            : }</a>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="https://github.com/linux-test-project/lcov" target="_parent">LCOV version 1.16</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
