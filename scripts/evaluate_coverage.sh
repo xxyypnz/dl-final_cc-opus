@@ -353,7 +353,14 @@ else
 fi
 log "使用 lcov: $("$LCOV_BIN" --version 2>&1 | head -1) (major=${LCOV_MAJOR})"
 
-"$LCOV_BIN" --capture $LCOV_OPTS \
+# 允许指定 gcov 版本(必须与编译 PG 的 gcc 版本匹配,否则 gcno 格式不兼容)
+GCOV_OPT=""
+if [ -n "${GCOV_TOOL:-}" ]; then
+    GCOV_OPT="--gcov-tool ${GCOV_TOOL}"
+    log "使用 gcov: $(${GCOV_TOOL} --version 2>&1 | head -1)"
+fi
+
+"$LCOV_BIN" --capture $LCOV_OPTS $GCOV_OPT \
     --ignore-errors "$LCOV_CAP_IGNORE" \
     --directory "$PG_SOURCE_DIR" \
     --output-file "$WORKSPACE_DIR/coverage.info"

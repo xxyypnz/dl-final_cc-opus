@@ -37,7 +37,7 @@ sleep 1
 SRC_DIR="$(dirname "$PG_SRC/$SRC_REL")"
 SRC_BASE="$(basename "$SRC_REL")"
 cd "$SRC_DIR"
-gcov -o . "$SRC_BASE" >/dev/null 2>&1 || true
+gcov-11 -o . "$SRC_BASE" >/dev/null 2>&1 || true
 GCOV_OUT="$SRC_DIR/${SRC_BASE}.gcov"
 
 echo "=== probe: $SRC_REL  (SQL errors: ${ERRS:-0}) ==="

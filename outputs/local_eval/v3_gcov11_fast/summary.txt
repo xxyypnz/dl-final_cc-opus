@@ -1,0 +1,11 @@
+Local evaluation summary
+result_file: /workspaces/dl-final_cc-opus/outputs/local_eval/v3_gcov11_fast/eval_result.json
+n_items: 50
+total_meaningful_added: 460
+total_matched: 200
+total_not_found: 2
+total_covered: 127
+global_recall: 0.4348
+global_precision: 0.635
+global_precision_excl_ctrl: 0.6561
+global_precision_excl_not_found: 0.6414

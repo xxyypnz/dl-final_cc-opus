@@ -1,0 +1,69 @@
+[0;32m[INFO][0m === Step 1: 全量编译 PostgreSQL (coverage) ===
+[0;32m[INFO][0m 跳过编译 (--skip-build)
+[0;32m[INFO][0m === Step 2: 设置环境变量 ===
+postgres path: /workspaces/dl-final_cc-opus/postgresql-13.23/install_coverage/bin/postgres
+psql path: /workspaces/dl-final_cc-opus/postgresql-13.23/install_coverage/bin/psql
+[0;32m[INFO][0m === Step 3: 初始化数据库 ===
+The files belonging to this database system will be owned by user "codespace".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "C.UTF-8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+creating directory /workspaces/dl-final_cc-opus/outputs/local_eval/v3_gcc11/coverage_workspace/data ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default max_connections ... 100
+selecting default shared_buffers ... 128MB
+selecting default time zone ... Etc/UTC
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+initdb: warning: enabling "trust" authentication for local connections
+You can change this by editing pg_hba.conf or using the option -A, or
+--auth-local and --auth-host, the next time you run initdb.
+
+Success. You can now start the database server using:
+
+    pg_ctl -D /workspaces/dl-final_cc-opus/outputs/local_eval/v3_gcc11/coverage_workspace/data -l logfile start
+
+[0;32m[INFO][0m === Step 4: 启动 PostgreSQL ===
+waiting for server to start.... done
+server started
+[0;32m[INFO][0m 检查 postgres 进程
+codespa+   55345  0.3  0.3 172472 28992 ?        Ss   02:26   0:00 /workspaces/dl-final_cc-opus/postgresql-13.23/install_coverage/bin/postgres -D /workspaces/dl-final_cc-opus/outputs/local_eval/v3_gcc11/coverage_workspace/data -k /tmp/pgcov-55432 -p 55432
+codespa+   55348  0.0  0.0 172472  7188 ?        Ss   02:26   0:00 postgres: checkpointer 
+codespa+   55349  0.0  0.0 172472  7196 ?        Ss   02:26   0:00 postgres: background writer 
+codespa+   55350  0.0  0.0 172472  7136 ?        Ss   02:26   0:00 postgres: walwriter 
+codespa+   55351  0.0  0.1 173024 10684 ?        Ss   02:26   0:00 postgres: autovacuum launcher 
+codespa+   55352  0.0  0.0  26876  6404 ?        Ss   02:26   0:00 postgres: stats collector 
+codespa+   55353  0.0  0.1 172904  9628 ?        Ss   02:26   0:00 postgres: logical replication launcher 
+[0;32m[INFO][0m 验证 PostgreSQL 实例版本
+                                                   version                                                   
+-------------------------------------------------------------------------------------------------------------
+ PostgreSQL 13.23 on x86_64-pc-linux-gnu, compiled by gcc-11 (Ubuntu 11.5.0-1ubuntu1~24.04.1) 11.5.0, 64-bit
+(1 row)
+
+[0;32m[INFO][0m === Step 5: 创建数据库 ===
+[0;32m[INFO][0m === Step 6: 执行 SQL workload ===
+[0;32m[INFO][0m 总 Test Case 数(预): 187
+[0;32m[INFO][0m ========== SQL 执行统计 ==========
+[0;32m[INFO][0m [Case 级] 总计: 187 case, 成功: 163, 失败: 24, 成功率: 87.1600%
+[0;32m[INFO][0m [SQL 级]  总计: 1464 条, 成功: 1436, 失败: 28, 成功率: 98.0800%
+[0;32m[INFO][0m === Step 7: 停止 PostgreSQL（写入 gcda）===
+waiting for server to shut down.... done
+server stopped
+[0;32m[INFO][0m === Step 8: 检查覆盖率数据 ===
+总 gcda 文件数: 859
+backend gcda 文件数: 700
+backend gcno 文件数: 743
+[0;32m[INFO][0m === Step 9: 生成覆盖率报告 ===
+[0;32m[INFO][0m 使用 lcov: /workspaces/dl-final_cc-opus/scripts/evaluate_coverage.sh: line 354: /tmp/lcov116/bin/lcov: No such file or directory (major=)
+[0;32m[INFO][0m 使用 gcov: gcov (Ubuntu 11.5.0-1ubuntu1~24.04.1) 11.5.0
+/workspaces/dl-final_cc-opus/scripts/evaluate_coverage.sh: line 363: /tmp/lcov116/bin/lcov: No such file or directory
+[INFO] 日志已保存: /workspaces/dl-final_cc-opus/outputs/local_eval/v3_gcc11/coverage_workspace/logs/run_20260610_022624.log
