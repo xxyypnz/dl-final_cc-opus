@@ -1,0 +1,1 @@
+/workspaces/dl-final_cc-opus/postgresql-13.23/install_coverage/bin/postgres "-D" "/workspaces/dl-final_cc-opus/outputs/local_eval/v15_gcc11/coverage_workspace/data" "-k" "/tmp/pgcov-55432" "-p" "55432"
