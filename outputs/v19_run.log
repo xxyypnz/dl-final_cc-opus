@@ -1,0 +1,27 @@
+[INFO] 从 submission 提取 SQL: /workspaces/dl-final_cc-opus/outputs/submission_v19.json
+{
+  "input_records": 50,
+  "sql_cases": 179,
+  "sql_statements": 1357,
+  "output_dir": "/workspaces/dl-final_cc-opus/outputs/local_eval/v19/parsed_sql/submission_v19",
+  "merged_sql": "/workspaces/dl-final_cc-opus/outputs/local_eval/v19/all_gen_sql.sql"
+}
+[INFO] 开始本地评测: v19
+[0;32m[INFO][0m === Step 0: 清理环境 ===
+[0;32m[INFO][0m 删除旧 gcda（不要删 gcno！）
+[INFO] 详细日志写入: /workspaces/dl-final_cc-opus/outputs/local_eval/v19/coverage_workspace/run.log
+Local evaluation summary
+result_file: /workspaces/dl-final_cc-opus/outputs/local_eval/v19/eval_result.json
+n_items: 50
+total_meaningful_added: 460
+total_matched: 200
+total_not_found: 2
+total_covered: 148
+global_recall: 0.4348
+global_precision: 0.74
+global_precision_excl_ctrl: 0.7619
+global_precision_excl_not_found: 0.7475
+
+[INFO] 覆盖率 HTML: /workspaces/dl-final_cc-opus/outputs/local_eval/v19/coverage_workspace/report/index.html
+[INFO] SQL 输出日志: /workspaces/dl-final_cc-opus/outputs/local_eval/v19/coverage_workspace/psql_output.log
+[INFO] 运行日志: /workspaces/dl-final_cc-opus/outputs/local_eval/v19/coverage_workspace/run.log
