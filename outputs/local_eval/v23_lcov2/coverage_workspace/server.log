@@ -1,0 +1,8 @@
+2026-06-17 11:08:18.939 UTC [26740] LOG:  starting PostgreSQL 13.23 on x86_64-pc-linux-gnu, compiled by gcc-11 (Ubuntu 11.5.0-1ubuntu1~24.04.1) 11.5.0, 64-bit
+2026-06-17 11:08:18.939 UTC [26740] LOG:  could not bind IPv6 address "::1": Address already in use
+2026-06-17 11:08:18.939 UTC [26740] HINT:  Is another postmaster already running on port 55432? If not, wait a few seconds and retry.
+2026-06-17 11:08:18.939 UTC [26740] LOG:  could not bind IPv4 address "127.0.0.1": Address already in use
+2026-06-17 11:08:18.939 UTC [26740] HINT:  Is another postmaster already running on port 55432? If not, wait a few seconds and retry.
+2026-06-17 11:08:18.939 UTC [26740] WARNING:  could not create listen socket for "localhost"
+2026-06-17 11:08:18.939 UTC [26740] FATAL:  could not create any TCP/IP sockets
+2026-06-17 11:08:18.943 UTC [26740] LOG:  database system is shut down

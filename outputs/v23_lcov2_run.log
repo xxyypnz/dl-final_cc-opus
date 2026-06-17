@@ -1,0 +1,12 @@
+[INFO] 从 submission 提取 SQL: /workspaces/dl-final_cc-opus/outputs/submission_v23.json
+{
+  "input_records": 50,
+  "sql_cases": 218,
+  "sql_statements": 1658,
+  "output_dir": "/workspaces/dl-final_cc-opus/outputs/local_eval/v23_lcov2/parsed_sql/submission_v23",
+  "merged_sql": "/workspaces/dl-final_cc-opus/outputs/local_eval/v23_lcov2/all_gen_sql.sql"
+}
+[INFO] 开始本地评测: v23_lcov2
+[0;32m[INFO][0m === Step 0: 清理环境 ===
+[0;32m[INFO][0m 删除旧 gcda（不要删 gcno！）
+[INFO] 详细日志写入: /workspaces/dl-final_cc-opus/outputs/local_eval/v23_lcov2/coverage_workspace/run.log
