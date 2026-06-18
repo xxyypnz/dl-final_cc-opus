@@ -1,0 +1,23 @@
+2026-06-17 13:19:20.771 UTC [34654] LOG:  starting PostgreSQL 13.23 on x86_64-pc-linux-gnu, compiled by gcc-11 (Ubuntu 11.5.0-1ubuntu1~24.04.1) 11.5.0, 64-bit
+2026-06-17 13:19:20.771 UTC [34654] LOG:  listening on IPv6 address "::1", port 55440
+2026-06-17 13:19:20.771 UTC [34654] LOG:  listening on IPv4 address "127.0.0.1", port 55440
+2026-06-17 13:19:20.773 UTC [34654] LOG:  listening on Unix socket "/tmp/pgcov-55432/.s.PGSQL.55440"
+2026-06-17 13:19:20.778 UTC [34655] LOG:  database system was shut down at 2026-06-17 13:19:19 UTC
+2026-06-17 13:19:20.832 UTC [34654] LOG:  database system is ready to accept connections
+2026-06-17 13:19:24.351 UTC [34708] ERROR:  logical decoding requires wal_level >= logical
+2026-06-17 13:19:24.351 UTC [34708] STATEMENT:  SELECT pg_create_logical_replication_slot('test_slot', 'pgoutput');
+2026-06-17 13:19:24.354 UTC [34708] ERROR:  replication slot "test_slot" does not exist
+2026-06-17 13:19:24.354 UTC [34708] STATEMENT:  SELECT pg_drop_replication_slot('test_slot');
+2026-06-17 13:19:24.382 UTC [34708] ERROR:  logical decoding requires wal_level >= logical
+2026-06-17 13:19:24.382 UTC [34708] STATEMENT:  SELECT pg_create_logical_replication_slot('test_slot2', 'pgoutput');
+2026-06-17 13:19:24.383 UTC [34708] ERROR:  replication slot "test_slot2" does not exist
+2026-06-17 13:19:24.383 UTC [34708] STATEMENT:  SELECT pg_drop_replication_slot('test_slot2');
+2026-06-17 13:19:24.389 UTC [34708] ERROR:  logical decoding requires wal_level >= logical
+2026-06-17 13:19:24.389 UTC [34708] STATEMENT:  SELECT pg_create_logical_replication_slot('test_slot3', 'pgoutput');
+2026-06-17 13:19:24.390 UTC [34708] ERROR:  replication slot "test_slot3" does not exist
+2026-06-17 13:19:24.390 UTC [34708] STATEMENT:  SELECT pg_drop_replication_slot('test_slot3');
+2026-06-17 13:19:24.635 UTC [34654] LOG:  received fast shutdown request
+2026-06-17 13:19:24.650 UTC [34654] LOG:  aborting any active transactions
+2026-06-17 13:19:24.816 UTC [34654] LOG:  background worker "logical replication launcher" (PID 34661) exited with exit code 1
+2026-06-17 13:19:24.859 UTC [34656] LOG:  shutting down
+2026-06-17 13:19:25.103 UTC [34654] LOG:  database system is shut down

@@ -1,0 +1,67 @@
+\pset pager off
+Pager usage is off.
+SET statement_timeout = 5000;
+SET
+SET lock_timeout = 1000;
+SET
+SET idle_in_transaction_session_timeout = 5000;
+SET
+-- ===== Test Case 1 (commit 133) =====
+-- Setup: create a table that uses a TransactionId list internally (e.g., via logical replication)
+CREATE TABLE test_xid_list (id INT);
+CREATE TABLE
+-- Insert a row to trigger logical replication tracking (if enabled)
+INSERT INTO test_xid_list VALUES (1);
+INSERT 0 1
+-- Force use of lappend_xid by creating a logical replication slot (requires wal_level=logical)
+SELECT pg_create_logical_replication_slot('test_slot', 'pgoutput');
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/test133/all_gen_sql.sql:12: ERROR:  logical decoding requires wal_level >= logical
+-- Execution: the slot creation will internally use lappend_xid for streamed_txns
+SELECT slot_name, active FROM pg_replication_slots WHERE slot_name = 'test_slot';
+ slot_name | active 
+-----------+--------
+(0 rows)
+
+-- Teardown
+SELECT pg_drop_replication_slot('test_slot');
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/test133/all_gen_sql.sql:16: ERROR:  replication slot "test_slot" does not exist
+DROP TABLE IF EXISTS test_xid_list CASCADE;
+DROP TABLE
+-- ===== Test Case 2 (commit 133) =====
+-- Setup: create a table and a replication slot to generate an XidList
+CREATE TABLE test_xid_member (id INT);
+CREATE TABLE
+INSERT INTO test_xid_member VALUES (1);
+INSERT 0 1
+SELECT pg_create_logical_replication_slot('test_slot2', 'pgoutput');
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/test133/all_gen_sql.sql:23: ERROR:  logical decoding requires wal_level >= logical
+-- Execution: query pg_replication_slots which internally calls list_member_xid
+SELECT slot_name, active FROM pg_replication_slots WHERE slot_name = 'test_slot2';
+ slot_name | active 
+-----------+--------
+(0 rows)
+
+-- Teardown
+SELECT pg_drop_replication_slot('test_slot2');
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/test133/all_gen_sql.sql:27: ERROR:  replication slot "test_slot2" does not exist
+DROP TABLE IF EXISTS test_xid_member CASCADE;
+DROP TABLE
+-- ===== Test Case 3 (commit 133) =====
+-- Setup: create a table and a replication slot to trigger initial XidList creation
+CREATE TABLE test_xid_empty (id INT);
+CREATE TABLE
+INSERT INTO test_xid_empty VALUES (1);
+INSERT 0 1
+SELECT pg_create_logical_replication_slot('test_slot3', 'pgoutput');
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/test133/all_gen_sql.sql:34: ERROR:  logical decoding requires wal_level >= logical
+-- Execution: the first transaction tracked will create a new XidList via new_list
+SELECT slot_name, active FROM pg_replication_slots WHERE slot_name = 'test_slot3';
+ slot_name | active 
+-----------+--------
+(0 rows)
+
+-- Teardown
+SELECT pg_drop_replication_slot('test_slot3');
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/test133/all_gen_sql.sql:38: ERROR:  replication slot "test_slot3" does not exist
+DROP TABLE IF EXISTS test_xid_empty CASCADE;
+DROP TABLE

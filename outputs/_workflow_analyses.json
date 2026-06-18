@@ -1,0 +1,252 @@
+{
+  "101": [
+    {
+      "line": 466,
+      "verdict": "UNREACHABLE_STRUCTURAL",
+      "reason": "Forward declaration continuation line. Function signatures are not executable code from gcov's perspective and do not receive individual execution counters.",
+      "trigger_condition": "N/A"
+    },
+    {
+      "line": 10510,
+      "verdict": "UNREACHABLE_STRUCTURAL",
+      "reason": "Function definition signature line 'static void'. Gcov does not assign execution counters to function signatures; only the function body is counted.",
+      "trigger_condition": "N/A"
+    },
+    {
+      "line": 10512,
+      "verdict": "UNREACHABLE_CONTINUATION",
+      "reason": "Function signature continuation. Part of the function parameter list, which is non-executable from gcov's perspective.",
+      "trigger_condition": "N/A"
+    },
+    {
+      "line": 10547,
+      "verdict": "UNCERTAIN",
+      "reason": "Assignment statement 'printalias = true;' inside 'else if (rte->rtekind == RTE_FUNCTION)' block. This branch requires the RTE kind to be RTE_FUNCTION. However, DML statements (INSERT/UPDATE/DELETE) with get_rte_alias called from lines 6229, 6416, 6625 have Assert checks (lines 6218, 6405, 6614) confirming target must be RTE_RELATION. Cannot determine if Asserts were removed by this commit or if there's an alternate code path without reading the actual commit diff.",
+      "trigger_condition": "Requires rte->rtekind == RTE_FUNCTION as target of DML statement"
+    },
+    {
+      "line": 10553,
+      "verdict": "UNCERTAIN",
+      "reason": "Assignment statement 'printalias = true;' inside 'else if (rte->rtekind == RTE_SUBQUERY || rte->rtekind == RTE_VALUES)' block. Same issue as line 10547: Assert checks at DML call sites require RTE_RELATION targets. Cannot confirm reachability without commit diff.",
+      "trigger_condition": "Requires rte->rtekind == RTE_SUBQUERY or RTE_VALUES as target of DML statement"
+    },
+    {
+      "line": 10568,
+      "verdict": "UNCERTAIN",
+      "reason": "Expression 'use_as ? \" AS \" : \" \",' inside multi-line appendStringInfo call within 'if (printalias)' block. Reachability depends on whether printalias is true, which requires one of the earlier conditions to set it. For basic INSERT/UPDATE/DELETE on a relation without special naming, printalias may not be set to true, making this line unreachable. Verification requires knowing the specific test SQL.",
+      "trigger_condition": "Requires printalias=true AND rte->alias != NULL OR colinfo->printaliases OR (rte->rtekind==RTE_RELATION AND refname differs from relation name) OR rte->rtekind==RTE_FUNCTION OR rte->rtekind==RTE_SUBQUERY OR rte->rtekind==RTE_VALUES OR rte->rtekind==RTE_CTE"
+    },
+    {
+      "line": 10569,
+      "verdict": "UNCERTAIN",
+      "reason": "Continuation of appendStringInfo call 'quote_identifier(refname));'. Same dependency as line 10568 - requires printalias=true and execution of the if(printalias) block.",
+      "trigger_condition": "Same as line 10568"
+    }
+  ],
+  "108": [
+    {
+      "line": 3543,
+      "proposed_sql": "DROP TABLE IF EXISTS c108_t CASCADE;\nCREATE TABLE c108_t (id INT, val INT);\nINSERT INTO c108_t VALUES (1, 10), (2, 20);\nSELECT * FROM (\n  SELECT id, val FROM c108_t\n  UNION ALL\n  SELECT id, val FROM c108_t\n  UNION ALL\n  SELECT id, val FROM c108_t\n) AS u;",
+      "reason": "Line 3543 is the continuation of a substitute_phv_relids() call inside foreach loop over append_rel_list within fix_append_rel_relids(). The function is called with non-empty append_rel_list only when processing UNION ALL or partitioned queries. The commit message mentions 'pulling up lots of UNION ALL subqueries', indicating this path handles UNION ALL pullup. During UNION ALL subquery flattening, root->append_rel_list contains AppendRelInfo nodes, and fix_append_rel_relids is called at line 1175 to fix placeholder variable references within these append relations. A multi-level UNION ALL query triggers this code path.",
+      "trigger_condition": "Query with UNION ALL subqueries that get pulled up during query planning",
+      "verdict": "REACHABLE"
+    }
+  ],
+  "109": [
+    {
+      "line": 3858,
+      "code": "required_outer,",
+      "verdict": "REACHABLE",
+      "reason": "This line is a parameter in a recursive reparameterize_path() call within the T_Append case's foreach loop. It will execute when an Append path (from UNION ALL or partitioned table) with multiple subpaths is reparameterized during query planning for a parameterized join.",
+      "trigger_condition": "A query with UNION ALL or multiple sub-relations joined with a parameterized join condition that requires reparameterization of the Append path's child paths",
+      "proposed_sql": "DROP TABLE IF EXISTS c109_t1, c109_t2, c109_t3;\nCREATE TABLE c109_t1(id int, val int);\nCREATE TABLE c109_t2(id int, val int);\nCREATE TABLE c109_t3(id int, val int);\nINSERT INTO c109_t1 VALUES (1, 10), (2, 20);\nINSERT INTO c109_t2 VALUES (3, 30), (4, 40);\nINSERT INTO c109_t3 VALUES (1, 100), (2, 200);\nSELECT c109_t3.id, combined.val\nFROM c109_t3\nJOIN (\n    SELECT id, val FROM c109_t1\n    UNION ALL\n    SELECT id, val FROM c109_t2\n) AS combined(id, val)\nON c109_t3.id = combined.id;\nDROP TABLE c109_t1, c109_t2, c109_t3;"
+    },
+    {
+      "line": 3859,
+      "code": "loop_count);",
+      "verdict": "REACHABLE",
+      "reason": "This line is the closing of the recursive reparameterize_path() function call within the T_Append case's foreach loop. It executes alongside line 3858 as part of the same reparameterization operation for each subpath in an Append node.",
+      "trigger_condition": "Same as line 3858: A query with UNION ALL in a parameterized join context where the Append path requires child path reparameterization",
+      "proposed_sql": "DROP TABLE IF EXISTS c109_t1, c109_t2, c109_t3;\nCREATE TABLE c109_t1(id int, val int);\nCREATE TABLE c109_t2(id int, val int);\nCREATE TABLE c109_t3(id int, val int);\nINSERT INTO c109_t1 VALUES (1, 10), (2, 20);\nINSERT INTO c109_t2 VALUES (3, 30), (4, 40);\nINSERT INTO c109_t3 VALUES (1, 100), (2, 200);\nSELECT c109_t3.id, combined.val\nFROM c109_t3\nJOIN (\n    SELECT id, val FROM c109_t1\n    UNION ALL\n    SELECT id, val FROM c109_t2\n) AS combined(id, val)\nON c109_t3.id = combined.id;\nDROP TABLE c109_t1, c109_t2, c109_t3;"
+    }
+  ],
+  "111": [
+    {
+      "line": 785,
+      "verdict": "UNREACHABLE_STRUCTURAL",
+      "reason": "Line 785 is the mxid_to_string() call in an elog(ERROR) triggered when MultiXactIdCreateFromMembers() detects a MultiXactId with 2+ update members. This validation enforces an internal consistency invariant that requires at most one update member per MultiXactId. Under PostgreSQL's transaction isolation and code logic (line 395 Assert in MultiXactIdCreate, filtering in MultiXactIdExpand lines 516-524), this invariant cannot be violated by a single-session sequential SQL script. Violating the invariant requires true concurrent transactions in multiple sessions modifying the same tuple—precisely the scenario excluded by the single-session constraint. Therefore, the elog(ERROR) at line 784 and thus line 785 cannot be executed without multi-session concurrency.",
+      "trigger_condition": "N/A - requires true concurrent multi-session transactions",
+      "proposed_sql": "N/A"
+    }
+  ],
+  "114": [
+    {
+      "line": 356,
+      "proposed_sql": "",
+      "reason": "Line 356 (&newbuf);) is the closing continuation of XLogReadBufferForRedoExtended() call at lines 355-356, located within hash_xlog_split_allocate_page(), which is a WAL replay function. This function is only called during WAL replay (crash recovery or streaming replication), not during normal transaction execution. A single-session sequential SQL script executed via psql -f cannot trigger WAL replay without an explicit server restart with crash recovery. The surrounding code (_hash_initbuf at line 357 onwards) confirms this is pure replay machinery with no normal-operation code path.",
+      "trigger_condition": "None - requires server crash recovery or streaming replication",
+      "verdict": "UNREACHABLE_STRUCTURAL"
+    }
+  ],
+  "112": [
+    {
+      "line": 571,
+      "verdict": "REACHABLE",
+      "reason": "When a non-superuser executes VACUUM without specifying a table, get_all_vacuum_rels() scans all relations in pg_class. For each shared relation like pg_database, vacuum_is_relation_owner() is called. Since the user is not table owner/superuser/database-owner and the relation is shared (relisshared=true), the function reaches line 568's if-condition which evaluates to true. This triggers the ereport(WARNING) block at lines 569-571, executing the exact line 571 with the relation name (e.g., 'pg_database').",
+      "trigger_condition": "Non-superuser executing VACUUM on a database containing shared relations (pg_database, pg_authid, pg_tablespace, etc.) with VACOPT_VACUUM flag set and relation->relisshared=true",
+      "proposed_sql": "DROP USER IF EXISTS c112_vacuser CASCADE;\nCREATE USER c112_vacuser WITH PASSWORD 'c112_test';\nSET ROLE c112_vacuser;\nVACUUM;\nRESET ROLE;\nDROP USER c112_vacuser;"
+    }
+  ],
+  "116": [
+    {
+      "line": 998,
+      "verdict": "UNREACHABLE_CONTINUATION",
+      "reason": "Line 998 contains 'origerrposition);' which is the final argument continuation of the match_prosrc_to_query() function call that begins on line 997. In gcov-11 without optimization, continuation lines of multi-line function calls typically do not receive their own counter - the counter is assigned to the first line of the statement (line 997). This is a structural pattern in how gcov assigns counters to continuation lines within a single logical statement.",
+      "trigger_condition": "N/A - continuation line"
+    },
+    {
+      "line": 1000,
+      "verdict": "UNREACHABLE_STRUCTURAL",
+      "reason": "Line 1000 contains 'else' which represents the false branch of the condition 'ActivePortal && ActivePortal->status == PORTAL_ACTIVE' on line 992. For this branch to execute, either ActivePortal must be NULL or its status must not be PORTAL_ACTIVE. The code comment (line 1003-1004) indicates this path is designed for non-standard scenarios like 'logical replication workers' where ActivePortal may be unavailable. In a standard single-session psql execution (the specified constraint), a CREATE FUNCTION command has an active portal associated with it throughout its execution, including error handling callbacks. Reaching this branch requires either: (1) execution context outside normal portal-driven command execution, or (2) multi-process scenarios like logical replication (excluded by 'no multi-session concurrency' constraint). Therefore, this line is unreachable within the specified single-session, default-config execution model.",
+      "trigger_condition": "Would require ActivePortal to be NULL or PORTAL_INACTIVE during CREATE FUNCTION error handling, which does not occur in standard psql single-session execution"
+    }
+  ],
+  "126": [
+    {
+      "line": 757,
+      "verdict": "REACHABLE",
+      "reason": "Line 757 is the function signature 'static bool' for ExecShutdownNode_walker(). This function is called from ExecShutdownNode() at line 754, which is invoked during normal query execution in ExecutePlan() when EXEC_FLAG_BACKWARD is not set (line 1704 of execMain.c). The gcov counter on this function signature line will be incremented when the function is entered. A simple SELECT statement will cause ExecShutdownNode() to be called, which calls ExecShutdownNode_walker(), incrementing the counter.",
+      "trigger_condition": "Executing any query (e.g., SELECT) that is not a scrollable cursor, which causes ExecutePlan() to call ExecShutdownNode() at the end of query execution when not running in backward-scan mode.",
+      "proposed_sql": "DROP TABLE IF EXISTS c126_test;\nCREATE TABLE c126_test (id INT);\nINSERT INTO c126_test VALUES (1), (2), (3);\nSELECT * FROM c126_test WHERE id > 0;"
+    }
+  ],
+  "127": [
+    {
+      "line": 9922,
+      "verdict": "UNREACHABLE_CONTINUATION",
+      "reason": "Line 9922 is a pure function argument continuation (RelationGetRelid(partRel),) within the multi-line ConstraintNameIsUsed() call. In gcov-11, such continuation lines of function arguments do not receive their own instrumentation counter; the counter is attributed to the line containing the opening parenthesis. Executing the code containing this line does not result in a non-zero count for this specific line."
+    },
+    {
+      "line": 9927,
+      "verdict": "UNREACHABLE_CONTINUATION",
+      "reason": "Line 9927 is a pure function argument continuation (\"fkey\",) within the multi-line ChooseConstraintName() call spanning lines 9925-9928. In gcov-11, continuation lines of function arguments do not receive independent counters. The counter for this code section is assigned to line 9925 (where ChooseConstraintName( begins), not to the argument continuation on line 9927."
+    },
+    {
+      "line": 9929,
+      "verdict": "UNREACHABLE_STRUCTURAL",
+      "reason": "Line 9929 contains only the 'else' keyword. In standard gcov-11 instrumentation, else keywords themselves do not receive independent execution counters. The counter for branch coverage is assigned to the opening statement of the if condition (line 9921) and the first statement in the else block (line 9930), not to the else keyword itself. While the else branch is taken 18 times (evidenced by line 9930 count), gcov does not assign a separate counter to the else keyword."
+    }
+  ],
+  "120": [
+    {
+      "line": 1316,
+      "verdict": "UNREACHABLE_STRUCTURAL",
+      "reason": "Assert() macro expands to ((void)true) in release builds (USE_ASSERT_CHECKING not defined in config). Produces no executable code; optimized away by compiler. Assert statements don't consume gcov counters.",
+      "trigger_condition": "N/A - not executable code"
+    },
+    {
+      "line": 1317,
+      "verdict": "UNREACHABLE_STRUCTURAL",
+      "reason": "Assert() macro expands to ((void)true) in release builds (USE_ASSERT_CHECKING not defined in config). Produces no executable code; optimized away by compiler. Assert statements don't consume gcov counters.",
+      "trigger_condition": "N/A - not executable code"
+    },
+    {
+      "line": 1504,
+      "verdict": "UNREACHABLE_CONTINUATION",
+      "reason": "Line 1504 is a continuation of the function call to makeNullConst() that starts at line 1503. Arguments spanning multiple lines typically share the gcov counter with the statement line (1503). The argument 'def->typeMod' on line 1504 doesn't get a separate counter.",
+      "trigger_condition": "N/A - continuation line shares counter with line 1503"
+    },
+    {
+      "line": 1505,
+      "verdict": "UNREACHABLE_CONTINUATION",
+      "reason": "Line 1505 is a continuation of the function call to makeNullConst() that starts at line 1503 and continues on line 1504. The closing argument 'def->collation));' doesn't get a separate gcov counter; it shares with line 1503.",
+      "trigger_condition": "N/A - continuation line shares counter with line 1503"
+    },
+    {
+      "line": 1507,
+      "verdict": "REACHABLE",
+      "reason": "The else clause at line 1507 is executed when a column in the VALUES RTE is NOT a SetToDefault node. This occurs in rewriteValuesRTEToNulls() when processing product queries generated by rules on an auto-updatable view. The function iterates through each column of each row in values_lists; non-DEFAULT columns take the else branch.",
+      "trigger_condition": "INSERT into auto-updatable view with DO ALSO rules; multi-row VALUES with mixed DEFAULT and explicit values; rewriteValuesRTE returns false so product queries are generated and rewriteValuesRTEToNulls is called.",
+      "proposed_sql": "CREATE TABLE c120_base (id int PRIMARY KEY, name text DEFAULT 'default');\nCREATE VIEW c120_view AS SELECT id, name FROM c120_base;\nCREATE RULE c120_rule AS ON INSERT TO c120_view DO ALSO INSERT INTO c120_base (id, name) SELECT NEW.id, NEW.name WHERE NEW.id IS NOT NULL;\nINSERT INTO c120_view (id, name) VALUES (1, DEFAULT), (2, 'value2'), (3, DEFAULT);"
+    }
+  ],
+  "129": [
+    {
+      "line": 844,
+      "verdict": "REACHABLE",
+      "reason": "This 'else' keyword is reached when hash_table_bytes > bucket_size, which occurs during hash join execution when the inner relation requires multiple batches but the hash_table_bytes allocation is still larger than a single bucket size. This is a normal code path triggered by hash joins with moderately large inner relations.",
+      "trigger_condition": "Hash join execution where: (1) inner_rel_bytes + bucket_bytes > hash_table_bytes (triggering the if block at line 812), (2) try_combined_hash_mem is FALSE (non-parallel, single-session hash join), and (3) hash_table_bytes > bucket_size (the normal case, not the edge case this commit fixes).",
+      "proposed_sql": "DROP TABLE IF EXISTS c129_t1 CASCADE;\nDROP TABLE IF EXISTS c129_t2 CASCADE;\nCREATE TABLE c129_t1 AS SELECT generate_series(1, 100000) AS id, repeat('x', 100) AS data;\nCREATE TABLE c129_t2 AS SELECT generate_series(1, 50000) AS id, repeat('y', 100) AS data;\nSET hash_mem = '1MB';\nEXPLAIN ANALYZE SELECT COUNT(*) FROM c129_t1 JOIN c129_t2 ON c129_t1.id = c129_t2.id;\nDROP TABLE c129_t1 CASCADE;\nDROP TABLE c129_t2 CASCADE;"
+    }
+  ],
+  "135": [
+    {
+      "line": 5270,
+      "verdict": "REACHABLE",
+      "reason": "This line is the continuation of the get_setop_query() function call on lines 5269-5270, inside the 'if (query->setOperations)' block of get_select_query_def(). It executes when a view with UNION/INTERSECT/EXCEPT is deparsed via pg_get_viewdef(). Gcov-11 assigns a separate counter to this line because it contains the closing parenthesis and semicolon of the function call statement. A simple UNION view deparsed with pg_get_viewdef() will execute this exact line.",
+      "trigger_condition": "Call pg_get_viewdef() on a view containing UNION, INTERSECT, or EXCEPT set operations with colNamesVisible=true parameter",
+      "proposed_sql": "DROP VIEW IF EXISTS c135_test_view CASCADE;\nCREATE VIEW c135_test_view AS SELECT 1 AS col UNION ALL SELECT 2;\nSELECT pg_get_viewdef('c135_test_view'::regclass, true);\nDROP VIEW IF EXISTS c135_test_view CASCADE;"
+    }
+  ],
+  "138": [
+    {
+      "line": 179,
+      "verdict": "REACHABLE",
+      "reason": "Line 179 is the second argument to SetUserIdAndSecContext() on lines 178-179. This call is unconditional in ExecRefreshMatView(), which is the sole entry point for REFRESH MATERIALIZED VIEW commands. There are no branches, error handlers, or conditions between function entry and lines 177-179. Any execution of REFRESH MATERIALIZED VIEW on a valid materialized view will reach this line.",
+      "trigger_condition": "Execute REFRESH MATERIALIZED VIEW on any valid materialized view.",
+      "proposed_sql": "DROP MATERIALIZED VIEW IF EXISTS c138_test_mv;\nCREATE MATERIALIZED VIEW c138_test_mv AS\n  SELECT 1 AS id WITH NO DATA;\nREFRESH MATERIALIZED VIEW c138_test_mv;"
+    }
+  ],
+  "136": [
+    {
+      "line": 322,
+      "code": "(Node *) stmt);",
+      "verdict": "REACHABLE",
+      "reason": "Line 322 is the argument continuation of EventTriggerCollectSimpleCommand() called unconditionally in CreateOpFamily() function. After successfully passing the duplicate-name check (line 265-272) and completing catalog insertion (line 289-293) plus dependency setup (line 306-318), the code reaches line 321-322 without any intervening conditions or early returns. The EventTriggerCollectSimpleCommand function is a no-op when currentEventTriggerState is NULL (default on initdb with no event triggers), so it executes and returns normally. The function call is always made when CreateOpFamily executes successfully.",
+      "trigger_condition": "Execute CREATE OPERATOR FAMILY statement with a non-duplicate family name, triggering DefineOpFamily() → CreateOpFamily() code path",
+      "proposed_sql": "DROP OPERATOR FAMILY IF EXISTS c136_opfam USING btree;\nCREATE OPERATOR FAMILY c136_opfam USING btree;"
+    }
+  ],
+  "140": [
+    {
+      "line": 1418,
+      "proposed_sql": "",
+      "reason": "Function return type declaration ('bool') is not an executable statement. Gcov may assign a counter to the line, but the counter reflects the function definition itself, not executable code. Function signatures and their components (return type keyword, parameter declarations) are structural artifacts that don't represent runtime execution and will never record a non-zero execution count in gcov-11 output.",
+      "trigger_condition": "",
+      "verdict": "UNREACHABLE_STRUCTURAL"
+    },
+    {
+      "line": 1509,
+      "proposed_sql": "",
+      "reason": "This else branch executes when: (1) a tuple exists and passes ItemIdIsNormal check, (2) its visibility check fails (HeapTupleSatisfiesVisibility returns false), and (3) keep_buf=false (always true for heap_fetch caller). While theoretically possible, the practical trigger condition is unclear: heap_fetch uses SnapshotAny which should make tuples visible. The commit ('Prevent access to no-longer-pinned buffer') suggests this branch may be part of edge-case error handling that doesn't trigger in standard SQL, or may be unreachable due to the fix itself. Cannot determine without running gcov on actual SQL workload.",
+      "trigger_condition": "A tuple exists but fails visibility check with SnapshotAny snapshot, triggering the else release path",
+      "verdict": "UNCERTAIN"
+    }
+  ],
+  "146": [
+    {
+      "line": 898,
+      "verdict": "REACHABLE",
+      "reason": "The 'else' keyword is in a mergejoin comparison branch that handles compareResult > 0. This occurs when mergestate->mj_ConstFalseJoin is true (set for FULL/RIGHT JOINs with constant-false extra join conditions) and merge columns match. MJCompare() at line 391-445 returns 1 when result==0 && mj_ConstFalseJoin==true. The code path is: (1) MJEvalInnerValues returns MJEVAL_MATCHABLE, (2) MJCompare returns > 0 due to ConstFalseJoin logic, (3) compareResult falls into else branch at line 898.",
+      "trigger_condition": "FULL JOIN or RIGHT JOIN with merge-compatible equality condition (for mergejoin executor) AND a constant-false additional condition in the ON clause that sets mj_ConstFalseJoin=true, with merge key columns that match between tables.",
+      "proposed_sql": "CREATE TEMP TABLE c146_left (id INT, val INT) WITH (autovacuum_enabled=false);\nCREATE TEMP TABLE c146_right (id INT, val INT) WITH (autovacuum_enabled=false);\nINSERT INTO c146_left VALUES (1, 10), (2, 20), (3, 30);\nINSERT INTO c146_right VALUES (1, 10), (2, 20), (3, 30);\nSELECT * FROM c146_left l FULL OUTER JOIN c146_right r ON l.id = r.id AND FALSE;"
+    }
+  ],
+  "148": [
+    {
+      "line": 189,
+      "verdict": "UNREACHABLE_STRUCTURAL",
+      "reason": "The for(;;) loop at line 189 is only reached if commitTsShared->commitTsActive is true (see guard at line 161). With default initdb config, track_commit_timestamp is OFF (default=off per postgresql.conf.sample), which means commitTsActive is initialized to false and never activated during normal operation. The function returns early at line 162 before the loop is reached. The loop can only execute if track_commit_timestamp is enabled at server startup (which is PGC_POSTMASTER and cannot be changed in a running session) or via WAL recovery with parameter change (requires crash recovery / standby replication). Neither condition is met in a single-session default-config SQL script.",
+      "trigger_condition": "Requires either: (1) Server started with track_commit_timestamp=on (non-default), OR (2) Crash recovery with XLOG_PARAMETER_CHANGE record (standby/replication scenario)"
+    }
+  ],
+  "149": [
+    {
+      "line": 9231,
+      "verdict": "REACHABLE",
+      "reason": "This is the function definition entry point for get_rule_list_toplevel(). The function is called from get_rule_expr() when deparsing RowCompareExpr nodes (lines 8665, 8678) and when handling INSERT VALUES (line 6302). The test SQL with ROW() comparisons will trigger the RowCompareExpr deparse path, causing this function to be called and the entry counter to be recorded.",
+      "trigger_condition": "Deparse a view definition containing ROW() comparison expressions, which internally calls get_rule_expr() on the RowCompareExpr node, triggering the call to get_rule_list_toplevel() at lines 8665 or 8678.",
+      "proposed_sql": "DROP VIEW IF EXISTS c149_rowcmp_v CASCADE;\nDROP TABLE IF EXISTS c149_rowcmp_t CASCADE;\nCREATE TABLE c149_rowcmp_t (a int, b int);\nCREATE VIEW c149_rowcmp_v AS SELECT * FROM c149_rowcmp_t t WHERE ROW(t.a, t.b) < ROW(t.b, t.a);\nSELECT pg_get_viewdef('c149_rowcmp_v'::regclass, true);\nDROP VIEW c149_rowcmp_v CASCADE;\nDROP TABLE c149_rowcmp_t CASCADE;"
+    }
+  ]
+}
