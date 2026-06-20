@@ -44,7 +44,7 @@
 #define BLCKSZ 8192
 
 /* Saved arguments from configure */
-#define CONFIGURE_ARGS " 'CC=gcc-11' '--enable-coverage' '--prefix=/workspaces/dl-final_cc-opus/postgresql-13.23/install_coverage'"
+#define CONFIGURE_ARGS " '--enable-coverage' '--prefix=/workspaces/dl-final_cc-opus/postgresql-13.23/install_coverage'"
 
 /* Define to the default TCP port number on which the server listens and to
    which clients will try to connect. This can be overridden at run-time, but
@@ -809,7 +809,7 @@
 #define PG_VERSION_NUM 130023
 
 /* A string containing the version number, platform, and C compiler */
-#define PG_VERSION_STR "PostgreSQL 13.23 on x86_64-pc-linux-gnu, compiled by gcc-11 (Ubuntu 11.5.0-1ubuntu1~24.04.1) 11.5.0, 64-bit"
+#define PG_VERSION_STR "PostgreSQL 13.23 on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit"
 
 /* Define to 1 to allow profiling output to be saved separately for each
    process. */
