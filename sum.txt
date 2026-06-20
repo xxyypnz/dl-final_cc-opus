@@ -3,70 +3,50 @@ PostgreSQL 代码覆盖率测试用例生成项目总结
 一、任务目标
 针对 PostgreSQL 13.23 的 50 个 commit（200 个目标代码行），通过生成 SQL 测试用例最大化代码覆盖率。
 评测指标：PrecNF = covered / (matched - not_found)，兼顾 Recall 和 Efficiency。
-平台榜一：0.7727，我方提交：本地 0.7525 (149/198 covered)。
+本提交为合规版本：仅使用标准 SQL 语句，不含任何 \!、\i、base64、COPY PROGRAM、server-file COPY、
+LANGUAGE C/internal、文件读取/lo_export、gcc/pg_config/.so 等非常规手段。
 
-二、核心方法
+二、合规性处理（本版本重点）
+依据助教要求，移除所有"奇技淫巧"。原始版本中 3 个 commit 含违规构造：
+  - commit 104（Perl 风格检查）：\! 调用 perl + COPY 读文件 —— 该 commit 覆盖贡献为 0，直接移除
+  - commit 125（heap_delete 竞态）：\gset/\setenv + \! 后台 psql 制造并发 —— 移除并发块，保留 3 段纯 SQL
+  - commit 150（分区 rowtype）：base64 内联崩溃恢复脚本 —— 该 commit 覆盖贡献为 0，直接移除
+移除后用合法 SQL 替换占位，确保 50 个 commit 格式完整、零违规。
+代价：覆盖从 149 降至 131 行（PrecNF 0.7525 -> 0.6616），主要损失来自原本靠崩溃恢复/并发触发的
+commit 144（StartupXLOG 启动恢复，9 行）等——这些行在单会话标准 SQL 下无法触达。
+
+三、核心方法
 
 1. 热路径识别与隔离实验
-通过构造单 commit SQL 隔离实验（commit 133-only），发现 9 个"热路径" commit（list.c、nodeAgg.c、
-heapam.c 等）即使只跑 4 段 SQL 也能附带覆盖 23 行，横跨 9 个 commit。这证实：
-  - 覆盖是全套件累积效应，非单 commit 独立
-  - 热路径 commit 覆盖稳定，无需针对性优化
-  - 剩余 18 个 COLD commit 才是真正战场
+通过单 commit SQL 隔离实验，发现 9 个"热路径" commit（list.c、nodeAgg.c、heapam.c 等）即使少量
+SQL 也能附带覆盖。证实覆盖是全套件累积效应，热路径 commit 覆盖稳定，剩余 COLD commit 是优化重点。
 
 2. 未覆盖行的对抗性可达性验证
-对 18 个 COLD commit 的 33 个 gap 行，部署 Workflow（18 个 analyze agent + 对抗性验证）：
-  - 方法：每个 agent 读 PG-13.23 源码，判定该行是否能通过单会话 SQL 驱动 gcov-11 产生非零计数
-  - 对抗：用 v23 套件（225 段 SQL，重度命中所有路径）的实际 gcov 数据逐一驳回
-  - 结果：全部 33 行均为结构不可达（参数续行、else 关键字、函数签名、Assert 宏等）
+对 COLD commit 的 gap 行部署 Workflow（多 agent 分析 + 对抗性验证）：每个 agent 读 PG 源码判定该行
+能否经单会话 SQL 驱动 gcov-11 产生非零计数，再用实际 gcov 数据逐一驳回。结论：gap 行多为结构不可达。
 
-3. gcov 计数机制的确定性验证
-通过分析 gcov-11 在 -O0 编译下的行为模式：
-  - 参数续行（函数调用的第 2/3 行参数）：计数归到调用首行，续行永远 count=0
-  - else 关键字：计数归到 else-body 首行，else 行本身无独立计数器
-  - Assert()/check_list_invariants：本 build 未开 USE_ASSERT_CHECKING，宏编译成 ((void)0)
-  - 函数签名（static void/bool）：无可执行代码，无计数器
-该机制在 GCC 11.2.1 和 11.5.0 间一致，证实本地 149 covered 是真实硬上限。
+3. gcov 计数机制确认
+确认 gcov-11（-O0）的计数规则：函数参数续行计数归到调用首行；else 关键字归到 else-body；
+Assert()/check_list_invariants 在非 assert build 下编译成空；函数签名行无计数器。
 
 4. SQL 设计策略
-针对每个 COLD commit 的已覆盖行（count>0）和未覆盖但可达行，设计针对性 SQL：
-  - commit 101（ruleutils DML aliases）：INSERT/UPDATE/DELETE AS tgt ... RETURNING tgt.*
-  - commit 120（VALUES rewrite）：多行 VALUES + DO ALSO rule 触发 rewriteValuesRTE 路径
-  - commit 127（FK partition）：ATTACH PARTITION + 外键约束同时创建
-  - commit 117（DETACH 初始化）：DETACH PARTITION 触发 FK 重建（L17749-17759）
-  - 热路径 commit：精简 SQL（反正被附带覆盖，减少 statement count 提升 efficiency）
-最终：225 SQL blocks，1763 statements，efficiency = 0.1818。
+针对每个 COLD commit 设计标准 SQL：DML aliases（INSERT/UPDATE/DELETE AS tgt RETURNING）、
+多行 VALUES + DO ALSO rule、ATTACH/DETACH PARTITION 触发外键重建、materialized view refresh 等。
 
-5. 分支覆盖最大化
-对 6 个 else gap 行（L1507/L1000/L9929/L844/L1509/L898），验证其 else-body 均已执行（count=13/26/6/2/1），
-证实我们已驱动所有 else 分支。虽然 else 关键字行在 GCC 11.5.0 上 count=0，但若平台 GCC 11.2.1
-对少数 else 行给予独立计数器，我们的 SQL 已最大化其命中次数。
+四、合规版指标
 
-三、关键发现
+submission_201.json：222 SQL blocks，1745 statements，本地 PrecNF=0.6616（131/198 covered）。
+对标：去除非常规手段后榜一为 0.6919；本版本 0.6616，差距约 6 行，后续可通过合法 SQL 重新设计
+commit 109/111/116/125/148 的触发条件进一步逼近。
 
-1. 平台 vs 本地差距的根本原因
-  - 本地 gcov-11.5.0：149/198 covered (PrecNF=0.7525)
-  - 平台估算（PrecNF=0.7374）：~146/198 covered（丢失 3 行，可能是平台 SQL 执行不完整或 GCC 差异）
-  - 榜一 0.7727 = 153/198（比本地多 4 行）—— 但 33 个 gap 行经 gcov 实测全部不可达
+五、产出文件
+  - outputs/submission_201.json：合规最终提交
+  - scripts/_build_v201.py：从 v23 生成合规版本的脚本（含违规模式过滤逻辑）
+  - outputs/_improved_sql_v21.json：SQL 模板库（核心贡献）
+  - outputs/_cold_gaps.json + _workflow_analyses.json：可达性分析数据（方法论佐证）
+  - scripts/evaluate.py + evaluate_coverage.sh + run_local_eval.sh：评测脚本
 
-2. 上限的证据链
-  - 理论分析：33 个 gap 行的结构特征（续行/else/签名/Assert）
-  - 实验验证：v23 套件（225 blocks）重度命中所有代码路径，gap 行仍全部 count=0
-  - 机制确认：gcov-11 HTML 报告显示 43 处"counted continuation"全是赋值语句首行，非纯参数续行
-  - 结论：本地 149 是经对抗性验证的真实硬上限
-
-3. 榜一差距的可能来源（无法本地验证）
-  - GCC 11.2.1 vs 11.5.0 的极少数 basic-block 布局差异（个位数 else 行可能翻转）
-  - 平台 SQL 执行更完整（我们丢失的 3 行回升）
-
-四、最终产出
-
-outputs/submission_v23.json：225 SQL blocks，覆盖 50 个 commit，本地 PrecNF=0.7525。
-outputs/_improved_sql_v21.json：21 个 commit 的 SQL 模板库（核心贡献）。
-outputs/_cold_gaps.json + _workflow_analyses.json：完整的可达性分析数据（方法论佐证）。
-
-五、方法论价值
-
-本项目通过"隔离实验 + 对抗性验证 + gcov 机制确认"三重证据链，将代码覆盖问题从"试错式 SQL 堆积"
-转化为"确定性上限验证"。证明了在单会话默认配置约束下，gcov 计数机制决定了 SQL 层面的理论上限，
-而非所有"未覆盖行"都能通过更巧妙的 SQL 触达。这一结论对类似的覆盖率优化任务具有普适性。
+六、方法论价值
+本项目通过"隔离实验 + 对抗性验证 + gcov 机制确认"三重证据链，将覆盖率优化从试错式 SQL 堆积转化为
+确定性上限分析。合规版本证明：在仅使用标准 SQL 的约束下，gcov 计数机制与单会话执行模型共同决定了
+覆盖率的理论上限，崩溃恢复/并发竞态相关代码行无法通过合法手段触达。
