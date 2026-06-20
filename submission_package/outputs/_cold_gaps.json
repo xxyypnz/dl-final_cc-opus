@@ -1,0 +1,365 @@
+{
+  "101": {
+    "subject": "pgsql: Print the correct aliases for DML target tables in ruleutils.",
+    "gap": 7,
+    "covered": 20,
+    "denom": 27,
+    "files": [
+      "src/backend/utils/adt/ruleutils.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/utils/adt/ruleutils.c",
+        "line": 466,
+        "code": "deparse_context *context);"
+      },
+      {
+        "file": "src/backend/utils/adt/ruleutils.c",
+        "line": 10510,
+        "code": "static void"
+      },
+      {
+        "file": "src/backend/utils/adt/ruleutils.c",
+        "line": 10512,
+        "code": "deparse_context *context)"
+      },
+      {
+        "file": "src/backend/utils/adt/ruleutils.c",
+        "line": 10547,
+        "code": "printalias = true;"
+      },
+      {
+        "file": "src/backend/utils/adt/ruleutils.c",
+        "line": 10553,
+        "code": "printalias = true;"
+      },
+      {
+        "file": "src/backend/utils/adt/ruleutils.c",
+        "line": 10568,
+        "code": "use_as ? \" AS \" : \" \","
+      },
+      {
+        "file": "src/backend/utils/adt/ruleutils.c",
+        "line": 10569,
+        "code": "quote_identifier(refname));"
+      }
+    ]
+  },
+  "108": {
+    "subject": "pgsql: Avoid O(N^2) cost when pulling up lots of UNION ALL subqueries.",
+    "gap": 1,
+    "covered": 1,
+    "denom": 2,
+    "files": [
+      "src/backend/optimizer/prep/prepjointree.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/optimizer/prep/prepjointree.c",
+        "line": 3543,
+        "code": "varno, subrelids);"
+      }
+    ]
+  },
+  "109": {
+    "subject": "pgsql: Fix broken MemoizePath support in reparameterize_path().",
+    "gap": 2,
+    "covered": 2,
+    "denom": 4,
+    "files": [
+      "src/backend/optimizer/util/pathnode.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/optimizer/util/pathnode.c",
+        "line": 3858,
+        "code": "required_outer,"
+      },
+      {
+        "file": "src/backend/optimizer/util/pathnode.c",
+        "line": 3859,
+        "code": "loop_count);"
+      }
+    ]
+  },
+  "111": {
+    "subject": "pgsql: Make multixact error message more explicit",
+    "gap": 1,
+    "covered": 1,
+    "denom": 2,
+    "files": [
+      "src/backend/access/transam/multixact.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/access/transam/multixact.c",
+        "line": 785,
+        "code": "mxid_to_string(InvalidMultiXactId, nmembers, members));"
+      }
+    ]
+  },
+  "112": {
+    "subject": "pgsql: Simplify WARNING messages from skipped vacuum/analyze on a table",
+    "gap": 1,
+    "covered": 1,
+    "denom": 2,
+    "files": [
+      "src/backend/commands/vacuum.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/commands/vacuum.c",
+        "line": 571,
+        "code": "relname)));"
+      }
+    ]
+  },
+  "114": {
+    "subject": "pgsql: Fix cleanup lock acquisition in SPLIT_ALLOCATE_PAGE replay.",
+    "gap": 1,
+    "covered": 0,
+    "denom": 1,
+    "files": [
+      "src/backend/access/hash/hash_xlog.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/access/hash/hash_xlog.c",
+        "line": 356,
+        "code": "&newbuf);"
+      }
+    ]
+  },
+  "116": {
+    "subject": "pgsql: Avoid crash after function syntax error in a replication worker.",
+    "gap": 2,
+    "covered": 3,
+    "denom": 5,
+    "files": [
+      "src/backend/catalog/pg_proc.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/catalog/pg_proc.c",
+        "line": 998,
+        "code": "origerrposition);"
+      },
+      {
+        "file": "src/backend/catalog/pg_proc.c",
+        "line": 1000,
+        "code": "else"
+      }
+    ]
+  },
+  "120": {
+    "subject": "pgsql: Yet further fixes for multi-row VALUES lists for updatable views",
+    "gap": 5,
+    "covered": 9,
+    "denom": 14,
+    "files": [
+      "src/backend/rewrite/rewriteHandler.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/rewrite/rewriteHandler.c",
+        "line": 1316,
+        "code": "Assert(parsetree->commandType == CMD_INSERT);"
+      },
+      {
+        "file": "src/backend/rewrite/rewriteHandler.c",
+        "line": 1317,
+        "code": "Assert(rte->rtekind == RTE_VALUES);"
+      },
+      {
+        "file": "src/backend/rewrite/rewriteHandler.c",
+        "line": 1504,
+        "code": "def->typeMod,"
+      },
+      {
+        "file": "src/backend/rewrite/rewriteHandler.c",
+        "line": 1505,
+        "code": "def->collation));"
+      },
+      {
+        "file": "src/backend/rewrite/rewriteHandler.c",
+        "line": 1507,
+        "code": "else"
+      }
+    ]
+  },
+  "126": {
+    "subject": "pgsql: Future-proof the recursion inside ExecShutdownNode().",
+    "gap": 1,
+    "covered": 0,
+    "denom": 1,
+    "files": [
+      "src/backend/executor/execProcnode.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/executor/execProcnode.c",
+        "line": 757,
+        "code": "static bool"
+      }
+    ]
+  },
+  "127": {
+    "subject": "pgsql: Choose FK name correctly during partition attachment",
+    "gap": 3,
+    "covered": 6,
+    "denom": 9,
+    "files": [
+      "src/backend/commands/tablecmds.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/commands/tablecmds.c",
+        "line": 9922,
+        "code": "RelationGetRelid(partRel),"
+      },
+      {
+        "file": "src/backend/commands/tablecmds.c",
+        "line": 9927,
+        "code": "\"fkey\","
+      },
+      {
+        "file": "src/backend/commands/tablecmds.c",
+        "line": 9929,
+        "code": "else"
+      }
+    ]
+  },
+  "129": {
+    "subject": "pgsql: Avoid misbehavior when hash_table_bytes < bucket_size.",
+    "gap": 1,
+    "covered": 3,
+    "denom": 4,
+    "files": [
+      "src/backend/executor/nodeHash.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/executor/nodeHash.c",
+        "line": 844,
+        "code": "else"
+      }
+    ]
+  },
+  "135": {
+    "subject": "pgsql: Show 'AS \"?column?\"' explicitly when it's important.",
+    "gap": 1,
+    "covered": 4,
+    "denom": 5,
+    "files": [
+      "src/backend/utils/adt/ruleutils.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/utils/adt/ruleutils.c",
+        "line": 5270,
+        "code": "colNamesVisible);"
+      }
+    ]
+  },
+  "136": {
+    "subject": "pgsql: Fix DDL deparse of CREATE OPERATOR CLASS",
+    "gap": 1,
+    "covered": 4,
+    "denom": 5,
+    "files": [
+      "src/backend/commands/opclasscmds.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/commands/opclasscmds.c",
+        "line": 322,
+        "code": "(Node *) stmt);"
+      }
+    ]
+  },
+  "138": {
+    "subject": "pgsql: In REFRESH MATERIALIZED VIEW, set user ID before running user co",
+    "gap": 1,
+    "covered": 3,
+    "denom": 4,
+    "files": [
+      "src/backend/commands/matview.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/commands/matview.c",
+        "line": 179,
+        "code": "save_sec_context | SECURITY_RESTRICTED_OPERATION);"
+      }
+    ]
+  },
+  "140": {
+    "subject": "pgsql: Prevent access to no-longer-pinned buffer in heapam_tuple_lock()",
+    "gap": 2,
+    "covered": 3,
+    "denom": 5,
+    "files": [
+      "src/backend/access/heap/heapam.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/access/heap/heapam.c",
+        "line": 1418,
+        "code": "bool"
+      },
+      {
+        "file": "src/backend/access/heap/heapam.c",
+        "line": 1509,
+        "code": "else"
+      }
+    ]
+  },
+  "146": {
+    "subject": "pgsql: Test, don't just Assert, that mergejoin's inputs are in order.",
+    "gap": 1,
+    "covered": 1,
+    "denom": 2,
+    "files": [
+      "src/backend/executor/nodeMergejoin.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/executor/nodeMergejoin.c",
+        "line": 898,
+        "code": "else"
+      }
+    ]
+  },
+  "148": {
+    "subject": "pgsql: Fix one-off bug causing missing commit timestamps for subtransac",
+    "gap": 1,
+    "covered": 2,
+    "denom": 3,
+    "files": [
+      "src/backend/access/transam/commit_ts.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/access/transam/commit_ts.c",
+        "line": 189,
+        "code": "for (;;)"
+      }
+    ]
+  },
+  "149": {
+    "subject": "pgsql: Fix ruleutils.c's dumping of whole-row Vars in more contexts.",
+    "gap": 1,
+    "covered": 6,
+    "denom": 7,
+    "files": [
+      "src/backend/utils/adt/ruleutils.c"
+    ],
+    "uncovered": [
+      {
+        "file": "src/backend/utils/adt/ruleutils.c",
+        "line": 9231,
+        "code": "static void"
+      }
+    ]
+  }
+}

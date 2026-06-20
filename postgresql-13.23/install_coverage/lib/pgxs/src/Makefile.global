@@ -238,7 +238,7 @@ BITCODE_CXXFLAGS =  -O2
 
 # Compilers
 
-CPP = gcc -E
+CPP = gcc-11 -E
 CPPFLAGS =  -D_GNU_SOURCE 
 PG_SYSROOT = 
 
@@ -253,7 +253,7 @@ override CPPFLAGS := -I$(top_builddir)/src/include $(CPPFLAGS)
 endif
 endif # not PGXS
 
-CC = gcc
+CC = gcc-11
 GCC = yes
 SUN_STUDIO_CC = no
 CXX = g++
