@@ -1,0 +1,11 @@
+2026-06-20 08:26:41.623 UTC [97809] LOG:  starting PostgreSQL 13.23 on x86_64-pc-linux-gnu, compiled by gcc-11 (Ubuntu 11.5.0-1ubuntu1~24.04.1) 11.5.0, 64-bit
+2026-06-20 08:26:41.624 UTC [97809] LOG:  listening on IPv6 address "::1", port 55444
+2026-06-20 08:26:41.624 UTC [97809] LOG:  listening on IPv4 address "127.0.0.1", port 55444
+2026-06-20 08:26:41.626 UTC [97809] LOG:  listening on Unix socket "/tmp/pgcov-55432/.s.PGSQL.55444"
+2026-06-20 08:26:41.631 UTC [97810] LOG:  database system was shut down at 2026-06-20 08:26:39 UTC
+2026-06-20 08:26:41.667 UTC [97809] LOG:  database system is ready to accept connections
+2026-06-20 08:26:45.480 UTC [97809] LOG:  received fast shutdown request
+2026-06-20 08:26:45.490 UTC [97809] LOG:  aborting any active transactions
+2026-06-20 08:26:45.620 UTC [97809] LOG:  background worker "logical replication launcher" (PID 97816) exited with exit code 1
+2026-06-20 08:26:45.623 UTC [97811] LOG:  shutting down
+2026-06-20 08:26:45.767 UTC [97809] LOG:  database system is shut down
