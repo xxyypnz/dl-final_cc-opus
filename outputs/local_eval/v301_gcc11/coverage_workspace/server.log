@@ -1,0 +1,40 @@
+2026-06-21 02:54:08.763 UTC [133534] LOG:  starting PostgreSQL 13.23 on x86_64-pc-linux-gnu, compiled by gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0, 64-bit
+2026-06-21 02:54:08.763 UTC [133534] LOG:  listening on IPv6 address "::1", port 55432
+2026-06-21 02:54:08.763 UTC [133534] LOG:  listening on IPv4 address "127.0.0.1", port 55432
+2026-06-21 02:54:08.765 UTC [133534] LOG:  listening on Unix socket "/tmp/pgcov-55432/.s.PGSQL.55432"
+2026-06-21 02:54:08.772 UTC [133535] LOG:  database system was shut down at 2026-06-21 02:54:07 UTC
+2026-06-21 02:54:08.838 UTC [133534] LOG:  database system is ready to accept connections
+2026-06-21 02:54:14.164 UTC [133617] ERROR:  syntax error at end of input at character 73
+2026-06-21 02:54:14.164 UTC [133617] STATEMENT:  CREATE FUNCTION c116_bad3() RETURNS int LANGUAGE sql AS $$ SELECT 1 +++ $$;
+2026-06-21 02:54:14.167 UTC [133617] ERROR:  missing expression at or near "THEN" at character 79
+2026-06-21 02:54:14.167 UTC [133617] STATEMENT:  CREATE FUNCTION c116_bad_plpg2() RETURNS void LANGUAGE plpgsql AS $$ BEGIN IF THEN END IF; END $$;
+2026-06-21 02:54:14.168 UTC [133617] ERROR:  return type mismatch in function declared to return integer
+2026-06-21 02:54:14.168 UTC [133617] DETAIL:  Final statement must return exactly one column.
+2026-06-21 02:54:14.168 UTC [133617] CONTEXT:  SQL function "c116_bad_body"
+2026-06-21 02:54:14.168 UTC [133617] STATEMENT:  CREATE FUNCTION c116_bad_body() RETURNS int LANGUAGE sql AS $$ SELECT ; $$;
+2026-06-21 02:54:14.238 UTC [133617] ERROR:  non-view rule for "c118_t3" must not be named "_RETURN"
+2026-06-21 02:54:14.238 UTC [133617] STATEMENT:  CREATE RULE "_RETURN" AS ON UPDATE TO c118_t3 DO INSTEAD NOTHING;
+2026-06-21 02:54:14.244 UTC [133617] ERROR:  non-view rule for "c118_t4" must not be named "_RETURN"
+2026-06-21 02:54:14.244 UTC [133617] STATEMENT:  CREATE RULE "_RETURN" AS ON DELETE TO c118_t4 DO ALSO SELECT 1;
+2026-06-21 02:54:14.257 UTC [133617] ERROR:  non-view rule for "c118_t5" must not be named "_RETURN"
+2026-06-21 02:54:14.257 UTC [133617] STATEMENT:  CREATE RULE "_RETURN" AS ON INSERT TO c118_t5 WHERE (NEW.id > 0) DO INSTEAD NOTHING;
+2026-06-21 02:54:14.957 UTC [133617] ERROR:  syntax error at or near "91595" at character 82
+2026-06-21 02:54:14.957 UTC [133617] STATEMENT:  CREATE FUNCTION c146cmp2(a int, b int) RETURNS int LANGUAGE plpgsql IMMUTABLE AS 91595 BEGIN RETURN CASE WHEN a > b THEN -1 WHEN a < b THEN 1 ELSE 0 END;
+2026-06-21 02:54:14.957 UTC [133617] ERROR:  syntax error at or near "91595" at character 5
+2026-06-21 02:54:14.957 UTC [133617] STATEMENT:  END 91595;
+2026-06-21 02:54:14.958 UTC [133617] ERROR:  function c146cmp2(integer, integer) does not exist
+2026-06-21 02:54:14.958 UTC [133617] STATEMENT:  CREATE OPERATOR CLASS c146oc2 FOR TYPE int4 USING btree AS
+	  OPERATOR 1 < (int4,int4), OPERATOR 2 <= (int4,int4),
+	  OPERATOR 3 = (int4,int4), OPERATOR 4 >= (int4,int4),
+	  OPERATOR 5 > (int4,int4), FUNCTION 1 c146cmp2(int,int);
+2026-06-21 02:54:14.965 UTC [133617] ERROR:  operator class "c146oc2" does not exist for access method "btree"
+2026-06-21 02:54:14.965 UTC [133617] STATEMENT:  CREATE INDEX c146_idx3 ON c146_t3 USING btree (id c146oc2);
+2026-06-21 02:54:14.965 UTC [133617] ERROR:  operator class "c146oc2" does not exist for access method "btree"
+2026-06-21 02:54:14.965 UTC [133617] STATEMENT:  CREATE INDEX c146_idx4 ON c146_t4 USING btree (id c146oc2);
+2026-06-21 02:54:14.971 UTC [133617] ERROR:  parameter "track_commit_timestamp" cannot be changed without restarting the server
+2026-06-21 02:54:14.971 UTC [133617] STATEMENT:  SET track_commit_timestamp = off;
+2026-06-21 02:54:15.093 UTC [133534] LOG:  received fast shutdown request
+2026-06-21 02:54:15.100 UTC [133534] LOG:  aborting any active transactions
+2026-06-21 02:54:15.404 UTC [133534] LOG:  background worker "logical replication launcher" (PID 133541) exited with exit code 1
+2026-06-21 02:54:15.407 UTC [133536] LOG:  shutting down
+2026-06-21 02:54:15.608 UTC [133534] LOG:  database system is shut down

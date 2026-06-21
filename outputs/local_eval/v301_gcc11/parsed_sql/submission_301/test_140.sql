@@ -1,0 +1,24 @@
+-- ===== Commit 140 =====
+-- Source:  - 
+
+-- --- Test Case 1 ---
+DROP TABLE IF EXISTS c140_t1 CASCADE;
+CREATE TABLE c140_t1 (id int PRIMARY KEY, val text);
+INSERT INTO c140_t1 SELECT i, 'val'||i FROM generate_series(1,100) i;
+VACUUM c140_t1;
+SELECT * FROM c140_t1 WHERE id = 1;
+SELECT * FROM c140_t1 WHERE id = 50;
+SELECT COUNT(*) FROM c140_t1;
+DROP TABLE IF EXISTS c140_t1 CASCADE;
+
+-- --- Test Case 2 ---
+DROP TABLE IF EXISTS c140_t2 CASCADE;
+CREATE TABLE c140_t2 (id int, v text);
+INSERT INTO c140_t2 VALUES (1,'a'),(2,'b'),(3,'c');
+BEGIN;
+DELETE FROM c140_t2 WHERE id=2;
+SELECT * FROM c140_t2;
+ROLLBACK;
+SELECT COUNT(*) FROM c140_t2;
+DROP TABLE IF EXISTS c140_t2 CASCADE;
+

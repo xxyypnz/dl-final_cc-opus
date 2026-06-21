@@ -1,0 +1,1584 @@
+\pset pager off
+Pager usage is off.
+SET statement_timeout = 5000;
+SET
+SET lock_timeout = 1000;
+SET
+SET idle_in_transaction_session_timeout = 5000;
+SET
+-- ===== Test Case 1 (commit 101) =====
+DROP TABLE IF EXISTS c101_ins2_t CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:7: NOTICE:  table "c101_ins2_t" does not exist, skipping
+DROP TABLE
+CREATE TABLE c101_ins2_t (id int, val text);
+CREATE TABLE
+INSERT INTO c101_ins2_t AS tgt VALUES (1,'a') RETURNING tgt.*;
+ id | val 
+----+-----
+  1 | a
+(1 row)
+
+INSERT 0 1
+INSERT INTO c101_ins2_t AS tgt VALUES (2,'b') RETURNING tgt.id;
+ id 
+----
+  2
+(1 row)
+
+INSERT 0 1
+SELECT pg_get_viewdef(oid) FROM pg_class WHERE relname='c101_ins2_t' LIMIT 1;
+ pg_get_viewdef 
+----------------
+ 
+(1 row)
+
+DROP TABLE IF EXISTS c101_ins2_t CASCADE;
+DROP TABLE
+-- ===== Test Case 2 (commit 101) =====
+DROP VIEW IF EXISTS c101_rule_fn_v CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:15: NOTICE:  view "c101_rule_fn_v" does not exist, skipping
+DROP VIEW
+DROP TABLE IF EXISTS c101_rule_fn_t CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:16: NOTICE:  table "c101_rule_fn_t" does not exist, skipping
+DROP TABLE
+DROP FUNCTION IF EXISTS c101_rule_fn() CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:17: NOTICE:  function c101_rule_fn() does not exist, skipping
+DROP FUNCTION
+CREATE TABLE c101_rule_fn_t (id int, val text);
+CREATE TABLE
+CREATE FUNCTION c101_rule_fn() RETURNS TABLE(id int, val text) LANGUAGE sql AS $$ SELECT 1::int, 'x'::text $$;
+CREATE FUNCTION
+CREATE VIEW c101_rule_fn_v AS SELECT * FROM c101_rule_fn_t;
+CREATE VIEW
+CREATE RULE c101_rule_fn_r AS ON INSERT TO c101_rule_fn_v DO INSTEAD
+  INSERT INTO c101_rule_fn_t SELECT * FROM c101_rule_fn();
+CREATE RULE
+SELECT pg_get_ruledef(oid, true) FROM pg_rewrite WHERE ev_class='c101_rule_fn_v'::regclass AND rulename='c101_rule_fn_r';
+                                              pg_get_ruledef                                               
+-----------------------------------------------------------------------------------------------------------
+ CREATE RULE c101_rule_fn_r AS                                                                            +
+     ON INSERT TO c101_rule_fn_v DO INSTEAD  INSERT INTO c101_rule_fn_t (id, val)  SELECT c101_rule_fn.id,+
+             c101_rule_fn.val                                                                             +
+            FROM c101_rule_fn() c101_rule_fn(id, val);
+(1 row)
+
+DROP VIEW IF EXISTS c101_rule_fn_v CASCADE;
+DROP VIEW
+DROP TABLE IF EXISTS c101_rule_fn_t CASCADE;
+DROP TABLE
+DROP FUNCTION IF EXISTS c101_rule_fn() CASCADE;
+DROP FUNCTION
+-- ===== Test Case 3 (commit 101) =====
+DROP TABLE IF EXISTS c101_upd2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:29: NOTICE:  table "c101_upd2" does not exist, skipping
+DROP TABLE
+CREATE TABLE c101_upd2 (id int, v text);
+CREATE TABLE
+INSERT INTO c101_upd2 VALUES (1,'a'),(2,'b');
+INSERT 0 2
+UPDATE c101_upd2 AS u SET v='x' WHERE u.id=1 RETURNING u.*;
+ id | v 
+----+---
+  1 | x
+(1 row)
+
+UPDATE 1
+SELECT * FROM c101_upd2 ORDER BY id;
+ id | v 
+----+---
+  1 | x
+  2 | b
+(2 rows)
+
+DROP TABLE IF EXISTS c101_upd2 CASCADE;
+DROP TABLE
+-- ===== Test Case 4 (commit 101) =====
+DROP VIEW IF EXISTS c101_vals_v CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:37: NOTICE:  view "c101_vals_v" does not exist, skipping
+DROP VIEW
+DROP TABLE IF EXISTS c101_vals_t CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:38: NOTICE:  table "c101_vals_t" does not exist, skipping
+DROP TABLE
+CREATE TABLE c101_vals_t (a int, b text);
+CREATE TABLE
+CREATE VIEW c101_vals_v AS SELECT a, b FROM c101_vals_t;
+CREATE VIEW
+CREATE RULE c101_vals_r AS ON INSERT TO c101_vals_v DO INSTEAD
+  INSERT INTO c101_vals_t AS t VALUES (NEW.a, NEW.b) RETURNING t.*;
+CREATE RULE
+INSERT INTO c101_vals_v VALUES (1,'x'),(2,'y');
+INSERT 0 2
+SELECT pg_get_ruledef(oid, true) FROM pg_rewrite WHERE ev_class='c101_vals_v'::regclass AND rulename='c101_vals_r';
+                                pg_get_ruledef                                
+------------------------------------------------------------------------------
+ CREATE RULE c101_vals_r AS                                                  +
+     ON INSERT TO c101_vals_v DO INSTEAD  INSERT INTO c101_vals_t AS t (a, b)+
+   VALUES (new.a, new.b)                                                     +
+   RETURNING t.a,                                                            +
+     t.b;
+(1 row)
+
+DROP VIEW IF EXISTS c101_vals_v CASCADE;
+DROP VIEW
+DROP TABLE IF EXISTS c101_vals_t CASCADE;
+DROP TABLE
+-- ===== Test Case 5 (commit 101) =====
+DROP TABLE IF EXISTS c101_del2_t CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:49: NOTICE:  table "c101_del2_t" does not exist, skipping
+DROP TABLE
+CREATE TABLE c101_del2_t (id int PRIMARY KEY, v text);
+CREATE TABLE
+INSERT INTO c101_del2_t VALUES (1,'a'),(2,'b'),(3,'c');
+INSERT 0 3
+DELETE FROM c101_del2_t AS d WHERE d.id > 1 RETURNING d.id;
+ id 
+----
+  2
+  3
+(2 rows)
+
+DELETE 2
+SELECT * FROM c101_del2_t;
+ id | v 
+----+---
+  1 | a
+(1 row)
+
+DROP TABLE IF EXISTS c101_del2_t CASCADE;
+DROP TABLE
+-- ===== Test Case 6 (commit 101) =====
+DROP SCHEMA IF EXISTS s101c CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:57: NOTICE:  schema "s101c" does not exist, skipping
+DROP SCHEMA
+DROP SCHEMA IF EXISTS s101d CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:58: NOTICE:  schema "s101d" does not exist, skipping
+DROP SCHEMA
+CREATE SCHEMA s101c;
+CREATE SCHEMA
+CREATE SCHEMA s101d;
+CREATE SCHEMA
+CREATE TABLE s101c.tbl (a int, b text);
+CREATE TABLE
+CREATE TABLE s101d.tbl (x int, y float);
+CREATE TABLE
+INSERT INTO s101c.tbl VALUES (1,'a'),(2,'b');
+INSERT 0 2
+INSERT INTO s101d.tbl VALUES (1,1.5),(2,2.5);
+INSERT 0 2
+DROP VIEW IF EXISTS c101_conflict2_v CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:65: NOTICE:  view "c101_conflict2_v" does not exist, skipping
+DROP VIEW
+CREATE VIEW c101_conflict2_v AS
+  SELECT t1.a, t2.x FROM s101c.tbl t1, s101d.tbl t2 WHERE t1.a = t2.x;
+CREATE VIEW
+SELECT pg_get_viewdef('c101_conflict2_v'::regclass, true);
+    pg_get_viewdef     
+-----------------------
+  SELECT t1.a,        +
+     t2.x             +
+    FROM s101c.tbl t1,+
+     s101d.tbl t2     +
+   WHERE t1.a = t2.x;
+(1 row)
+
+DROP VIEW IF EXISTS c101_conflict2_v CASCADE;
+DROP VIEW
+DROP SCHEMA IF EXISTS s101c CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:70: NOTICE:  drop cascades to table s101c.tbl
+DROP SCHEMA
+DROP SCHEMA IF EXISTS s101d CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:71: NOTICE:  drop cascades to table s101d.tbl
+DROP SCHEMA
+-- ===== Test Case 7 (commit 101) =====
+DROP VIEW IF EXISTS c101_cte_conflict_v CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:74: NOTICE:  view "c101_cte_conflict_v" does not exist, skipping
+DROP VIEW
+CREATE VIEW c101_cte_conflict_v AS
+  WITH cte AS (SELECT 1 AS id), cte2 AS (SELECT 2 AS id)
+  SELECT cte.id AS a, cte2.id AS b FROM cte, cte2;
+CREATE VIEW
+SELECT pg_get_viewdef('c101_cte_conflict_v'::regclass, true);
+     pg_get_viewdef      
+-------------------------
+  WITH cte AS (         +
+          SELECT 1 AS id+
+         ), cte2 AS (   +
+          SELECT 2 AS id+
+         )              +
+  SELECT cte.id AS a,   +
+     cte2.id AS b       +
+    FROM cte,           +
+     cte2;
+(1 row)
+
+DROP VIEW IF EXISTS c101_cte_conflict_v CASCADE;
+DROP VIEW
+-- ===== Test Case 8 (commit 102) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 9 (commit 103) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 10 (commit 104) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 11 (commit 105) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 12 (commit 106) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 13 (commit 107) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 14 (commit 108) =====
+DROP TABLE IF EXISTS c108_base CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:100: NOTICE:  table "c108_base" does not exist, skipping
+DROP TABLE
+CREATE TABLE c108_base (id INT, val INT);
+CREATE TABLE
+INSERT INTO c108_base VALUES (1, 10), (2, 20), (3, 30);
+INSERT 0 3
+SELECT * FROM (
+  SELECT id, val FROM c108_base
+  UNION ALL
+  SELECT id, val FROM c108_base
+  UNION ALL
+  SELECT id, val FROM c108_base
+) AS u WHERE id > 1;
+ id | val 
+----+-----
+  2 |  20
+  3 |  30
+  2 |  20
+  3 |  30
+  2 |  20
+  3 |  30
+(6 rows)
+
+DROP TABLE c108_base CASCADE;
+DROP TABLE
+-- ===== Test Case 15 (commit 108) =====
+DROP TABLE IF EXISTS c108_t1, c108_t2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:113: NOTICE:  table "c108_t1" does not exist, skipping
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:113: NOTICE:  table "c108_t2" does not exist, skipping
+DROP TABLE
+CREATE TABLE c108_t1 (a int, b text);
+CREATE TABLE
+CREATE TABLE c108_t2 (a int, b text);
+CREATE TABLE
+INSERT INTO c108_t1 VALUES (1, 'x'), (2, 'y');
+INSERT 0 2
+INSERT INTO c108_t2 VALUES (3, 'z'), (4, 'w');
+INSERT 0 2
+SELECT a, COUNT(*) FROM (
+  SELECT a, b FROM c108_t1
+  UNION ALL
+  SELECT a, b FROM c108_t2
+) sub GROUP BY a ORDER BY a;
+ a | count 
+---+-------
+ 1 |     1
+ 2 |     1
+ 3 |     1
+ 4 |     1
+(4 rows)
+
+DROP TABLE c108_t1, c108_t2 CASCADE;
+DROP TABLE
+-- ===== Test Case 16 (commit 109) =====
+DROP TABLE IF EXISTS c109_t1, c109_t2, c109_outer CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:126: NOTICE:  table "c109_t1" does not exist, skipping
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:126: NOTICE:  table "c109_t2" does not exist, skipping
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:126: NOTICE:  table "c109_outer" does not exist, skipping
+DROP TABLE
+CREATE TABLE c109_t1(id int, val int);
+CREATE TABLE
+CREATE TABLE c109_t2(id int, val int);
+CREATE TABLE
+CREATE TABLE c109_outer(id int, data text);
+CREATE TABLE
+INSERT INTO c109_t1 VALUES (1, 10), (2, 20), (3, 30);
+INSERT 0 3
+INSERT INTO c109_t2 VALUES (2, 200), (3, 300), (4, 400);
+INSERT 0 3
+INSERT INTO c109_outer VALUES (1, 'a'), (2, 'b'), (3, 'c');
+INSERT 0 3
+ANALYZE c109_t1, c109_t2, c109_outer;
+ANALYZE
+SELECT c109_outer.id, c109_outer.data, combined.val
+FROM c109_outer
+JOIN (
+    SELECT id, val FROM c109_t1
+    UNION ALL
+    SELECT id, val FROM c109_t2
+) AS combined(id, val)
+ON c109_outer.id = combined.id
+ORDER BY c109_outer.id;
+ id | data | val 
+----+------+-----
+  1 | a    |  10
+  2 | b    |  20
+  2 | b    | 200
+  3 | c    |  30
+  3 | c    | 300
+(5 rows)
+
+DROP TABLE c109_t1, c109_t2, c109_outer CASCADE;
+DROP TABLE
+-- ===== Test Case 17 (commit 109) =====
+DROP TABLE IF EXISTS c109_a, c109_b, c109_c CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:146: NOTICE:  table "c109_a" does not exist, skipping
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:146: NOTICE:  table "c109_b" does not exist, skipping
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:146: NOTICE:  table "c109_c" does not exist, skipping
+DROP TABLE
+CREATE TABLE c109_a(x int, y int);
+CREATE TABLE
+CREATE TABLE c109_b(x int, y int);
+CREATE TABLE
+CREATE TABLE c109_c(x int, z text);
+CREATE TABLE
+INSERT INTO c109_a SELECT i, i*2 FROM generate_series(1,50) i;
+INSERT 0 50
+INSERT INTO c109_b SELECT i, i*3 FROM generate_series(1,50) i;
+INSERT 0 50
+INSERT INTO c109_c SELECT i, 'val'||i FROM generate_series(1,20) i;
+INSERT 0 20
+ANALYZE c109_a, c109_b, c109_c;
+ANALYZE
+SELECT c.x, c.z, u.y
+FROM c109_c c
+JOIN (
+    SELECT x, y FROM c109_a WHERE y > 10
+    UNION ALL
+    SELECT x, y FROM c109_b WHERE y < 100
+) u ON c.x = u.x
+WHERE c.x < 15;
+ x  |   z   | y  
+----+-------+----
+  6 | val6  | 12
+  7 | val7  | 14
+  8 | val8  | 16
+  9 | val9  | 18
+ 10 | val10 | 20
+ 11 | val11 | 22
+ 12 | val12 | 24
+ 13 | val13 | 26
+ 14 | val14 | 28
+  1 | val1  |  3
+  2 | val2  |  6
+  3 | val3  |  9
+  4 | val4  | 12
+  5 | val5  | 15
+  6 | val6  | 18
+  7 | val7  | 21
+  8 | val8  | 24
+  9 | val9  | 27
+ 10 | val10 | 30
+ 11 | val11 | 33
+ 12 | val12 | 36
+ 13 | val13 | 39
+ 14 | val14 | 42
+(23 rows)
+
+DROP TABLE c109_a, c109_b, c109_c CASCADE;
+DROP TABLE
+-- ===== Test Case 18 (commit 109) =====
+DROP TABLE IF EXISTS c109_p, c109_q, c109_r, c109_main CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:165: NOTICE:  table "c109_p" does not exist, skipping
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:165: NOTICE:  table "c109_q" does not exist, skipping
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:165: NOTICE:  table "c109_r" does not exist, skipping
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:165: NOTICE:  table "c109_main" does not exist, skipping
+DROP TABLE
+CREATE TABLE c109_p(k int, v int);
+CREATE TABLE
+CREATE TABLE c109_q(k int, v int);
+CREATE TABLE
+CREATE TABLE c109_r(k int, v int);
+CREATE TABLE
+CREATE TABLE c109_main(k int, descr text);
+CREATE TABLE
+INSERT INTO c109_p VALUES (1, 100), (2, 200);
+INSERT 0 2
+INSERT INTO c109_q VALUES (2, 250), (3, 300);
+INSERT 0 2
+INSERT INTO c109_r VALUES (3, 350), (4, 400);
+INSERT 0 2
+INSERT INTO c109_main VALUES (1, 'alpha'), (2, 'beta'), (3, 'gamma');
+INSERT 0 3
+ANALYZE c109_p, c109_q, c109_r, c109_main;
+ANALYZE
+SELECT m.k, m.descr, combined.v
+FROM c109_main m
+JOIN (
+    SELECT k, v FROM c109_p
+    UNION ALL
+    SELECT k, v FROM c109_q
+    UNION ALL
+    SELECT k, v FROM c109_r
+) AS combined ON m.k = combined.k;
+ k | descr |  v  
+---+-------+-----
+ 1 | alpha | 100
+ 2 | beta  | 200
+ 2 | beta  | 250
+ 3 | gamma | 300
+ 3 | gamma | 350
+(5 rows)
+
+DROP TABLE c109_p, c109_q, c109_r, c109_main CASCADE;
+DROP TABLE
+-- ===== Test Case 19 (commit 110) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 20 (commit 111) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 21 (commit 112) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 22 (commit 113) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 23 (commit 114) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 24 (commit 115) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 25 (commit 116) =====
+DROP FUNCTION IF EXISTS c116_bad3() CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:205: NOTICE:  function c116_bad3() does not exist, skipping
+DROP FUNCTION
+CREATE FUNCTION c116_bad3() RETURNS int LANGUAGE sql AS $$ SELECT 1 +++ $$;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:206: ERROR:  syntax error at end of input
+LINE 1: ... c116_bad3() RETURNS int LANGUAGE sql AS $$ SELECT 1 +++ $$;
+                                                                    ^
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 26 (commit 116) =====
+DROP FUNCTION IF EXISTS c116_bad_plpg2() CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:210: NOTICE:  function c116_bad_plpg2() does not exist, skipping
+DROP FUNCTION
+CREATE FUNCTION c116_bad_plpg2() RETURNS void LANGUAGE plpgsql AS $$ BEGIN IF THEN END IF; END $$;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:211: ERROR:  missing expression at or near "THEN"
+LINE 1: ...g2() RETURNS void LANGUAGE plpgsql AS $$ BEGIN IF THEN END I...
+                                                             ^
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 27 (commit 116) =====
+DROP FUNCTION IF EXISTS c116_bad_body() CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:215: NOTICE:  function c116_bad_body() does not exist, skipping
+DROP FUNCTION
+CREATE FUNCTION c116_bad_body() RETURNS int LANGUAGE sql AS $$ SELECT ; $$;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:216: ERROR:  return type mismatch in function declared to return integer
+DETAIL:  Final statement must return exactly one column.
+CONTEXT:  SQL function "c116_bad_body"
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 28 (commit 117) =====
+DROP TABLE IF EXISTS c117_refD CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:220: NOTICE:  table "c117_refd" does not exist, skipping
+DROP TABLE
+DROP TABLE IF EXISTS c117_parD CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:221: NOTICE:  table "c117_pard" does not exist, skipping
+DROP TABLE
+CREATE TABLE c117_refD (id int PRIMARY KEY);
+CREATE TABLE
+CREATE TABLE c117_parD (id int NOT NULL REFERENCES c117_refD(id)) PARTITION BY RANGE (id);
+CREATE TABLE
+CREATE TABLE c117_parD_a PARTITION OF c117_parD FOR VALUES FROM (1) TO (50);
+CREATE TABLE
+CREATE TABLE c117_parD_b PARTITION OF c117_parD FOR VALUES FROM (50) TO (100);
+CREATE TABLE
+INSERT INTO c117_refD SELECT generate_series(1,30);
+INSERT 0 30
+INSERT INTO c117_parD SELECT generate_series(1,30);
+INSERT 0 30
+ALTER TABLE c117_parD DETACH PARTITION c117_parD_a;
+ALTER TABLE
+SELECT conname FROM pg_constraint WHERE conrelid='c117_parD_a'::regclass AND contype='f';
+      conname      
+-------------------
+ c117_pard_id_fkey
+(1 row)
+
+DROP TABLE IF EXISTS c117_parD_a CASCADE;
+DROP TABLE
+DROP TABLE IF EXISTS c117_parD CASCADE;
+DROP TABLE
+DROP TABLE IF EXISTS c117_refD CASCADE;
+DROP TABLE
+-- ===== Test Case 29 (commit 117) =====
+DROP TABLE IF EXISTS c117_refD2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:235: NOTICE:  table "c117_refd2" does not exist, skipping
+DROP TABLE
+DROP TABLE IF EXISTS c117_parD2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:236: NOTICE:  table "c117_pard2" does not exist, skipping
+DROP TABLE
+CREATE TABLE c117_refD2 (k int PRIMARY KEY);
+CREATE TABLE
+CREATE TABLE c117_parD2 (k int NOT NULL REFERENCES c117_refD2(k)) PARTITION BY LIST (k);
+CREATE TABLE
+CREATE TABLE c117_parD2_x PARTITION OF c117_parD2 FOR VALUES IN (1,2,3);
+CREATE TABLE
+CREATE TABLE c117_parD2_y PARTITION OF c117_parD2 FOR VALUES IN (4,5,6);
+CREATE TABLE
+INSERT INTO c117_refD2 VALUES (1),(2),(4),(5);
+INSERT 0 4
+INSERT INTO c117_parD2 VALUES (1),(4);
+INSERT 0 2
+ALTER TABLE c117_parD2 DETACH PARTITION c117_parD2_x;
+ALTER TABLE
+ALTER TABLE c117_parD2 DETACH PARTITION c117_parD2_y;
+ALTER TABLE
+SELECT conname, contype FROM pg_constraint WHERE conrelid='c117_parD2_x'::regclass;
+      conname      | contype 
+-------------------+---------
+ c117_pard2_k_fkey | f
+(1 row)
+
+DROP TABLE IF EXISTS c117_parD2_x CASCADE;
+DROP TABLE
+DROP TABLE IF EXISTS c117_parD2_y CASCADE;
+DROP TABLE
+DROP TABLE IF EXISTS c117_parD2 CASCADE;
+DROP TABLE
+DROP TABLE IF EXISTS c117_refD2 CASCADE;
+DROP TABLE
+-- ===== Test Case 30 (commit 118) =====
+DROP TABLE IF EXISTS c118_t3 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:252: NOTICE:  table "c118_t3" does not exist, skipping
+DROP TABLE
+CREATE TABLE c118_t3 (id int);
+CREATE TABLE
+CREATE RULE "_RETURN" AS ON UPDATE TO c118_t3 DO INSTEAD NOTHING;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:254: ERROR:  non-view rule for "c118_t3" must not be named "_RETURN"
+DROP TABLE IF EXISTS c118_t3 CASCADE;
+DROP TABLE
+-- ===== Test Case 31 (commit 118) =====
+DROP TABLE IF EXISTS c118_t4 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:258: NOTICE:  table "c118_t4" does not exist, skipping
+DROP TABLE
+CREATE TABLE c118_t4 (id int);
+CREATE TABLE
+CREATE RULE "_RETURN" AS ON DELETE TO c118_t4 DO ALSO SELECT 1;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:260: ERROR:  non-view rule for "c118_t4" must not be named "_RETURN"
+DROP TABLE IF EXISTS c118_t4 CASCADE;
+DROP TABLE
+-- ===== Test Case 32 (commit 118) =====
+DROP TABLE IF EXISTS c118_t5 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:264: NOTICE:  table "c118_t5" does not exist, skipping
+DROP TABLE
+CREATE TABLE c118_t5 (id int, val text);
+CREATE TABLE
+CREATE RULE "_RETURN" AS ON INSERT TO c118_t5 WHERE (NEW.id > 0) DO INSTEAD NOTHING;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:266: ERROR:  non-view rule for "c118_t5" must not be named "_RETURN"
+DROP TABLE IF EXISTS c118_t5 CASCADE;
+DROP TABLE
+-- ===== Test Case 33 (commit 119) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 34 (commit 120) =====
+DROP VIEW IF EXISTS c120_v3 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:273: NOTICE:  view "c120_v3" does not exist, skipping
+DROP VIEW
+DROP TABLE IF EXISTS c120_base3 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:274: NOTICE:  table "c120_base3" does not exist, skipping
+DROP TABLE
+CREATE TABLE c120_base3 (a int DEFAULT 1, b text DEFAULT 'hello', c float DEFAULT 9.9);
+CREATE TABLE
+CREATE VIEW c120_v3 AS SELECT a,b,c FROM c120_base3;
+CREATE VIEW
+CREATE RULE c120_r3 AS ON INSERT TO c120_v3 DO ALSO
+  INSERT INTO c120_base3(a,b,c) VALUES (1, 'hello', 9.9);
+CREATE RULE
+INSERT INTO c120_v3 VALUES (2, 'x', 1.5), (3, 'y', 2.5);
+INSERT 0 2
+SELECT * FROM c120_base3 ORDER BY a;
+ a |   b   |  c  
+---+-------+-----
+ 1 | hello | 9.9
+ 1 | hello | 9.9
+ 2 | x     | 1.5
+ 3 | y     | 2.5
+(4 rows)
+
+DROP VIEW IF EXISTS c120_v3 CASCADE;
+DROP VIEW
+DROP TABLE IF EXISTS c120_base3 CASCADE;
+DROP TABLE
+-- ===== Test Case 35 (commit 120) =====
+DROP VIEW IF EXISTS c120_v4 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:285: NOTICE:  view "c120_v4" does not exist, skipping
+DROP VIEW
+DROP TABLE IF EXISTS c120_base4 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:286: NOTICE:  table "c120_base4" does not exist, skipping
+DROP TABLE
+CREATE TABLE c120_base4 (x int DEFAULT 42, y int DEFAULT 0);
+CREATE TABLE
+CREATE VIEW c120_v4 AS SELECT x,y FROM c120_base4;
+CREATE VIEW
+CREATE RULE c120_r4a AS ON INSERT TO c120_v4 DO ALSO UPDATE c120_base4 SET y = y+1 WHERE x = 42;
+CREATE RULE
+CREATE RULE c120_r4b AS ON INSERT TO c120_v4 DO ALSO INSERT INTO c120_base4(x,y) VALUES (42, 0);
+CREATE RULE
+INSERT INTO c120_v4 VALUES (1,1),(2,2),(3,3);
+INSERT 0 3
+SELECT COUNT(*) FROM c120_base4;
+ count 
+-------
+     6
+(1 row)
+
+DROP VIEW IF EXISTS c120_v4 CASCADE;
+DROP VIEW
+DROP TABLE IF EXISTS c120_base4 CASCADE;
+DROP TABLE
+-- ===== Test Case 36 (commit 120) =====
+DROP VIEW IF EXISTS c120_v5 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:297: NOTICE:  view "c120_v5" does not exist, skipping
+DROP VIEW
+DROP TABLE IF EXISTS c120_base5 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:298: NOTICE:  table "c120_base5" does not exist, skipping
+DROP TABLE
+DROP TABLE IF EXISTS c120_log5 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:299: NOTICE:  table "c120_log5" does not exist, skipping
+DROP TABLE
+CREATE TABLE c120_base5 (id serial, val text DEFAULT 'default_val');
+CREATE TABLE
+CREATE TABLE c120_log5 (id int, val text, logged_at timestamp DEFAULT now());
+CREATE TABLE
+CREATE VIEW c120_v5 AS SELECT id, val FROM c120_base5;
+CREATE VIEW
+CREATE RULE c120_r5 AS ON INSERT TO c120_v5 DO ALSO
+  INSERT INTO c120_log5(id, val) VALUES (DEFAULT, DEFAULT);
+CREATE RULE
+INSERT INTO c120_v5(id, val) VALUES (DEFAULT, DEFAULT), (DEFAULT, 'x'), (DEFAULT, DEFAULT);
+INSERT 0 3
+SELECT count(*) FROM c120_log5;
+ count 
+-------
+     3
+(1 row)
+
+DROP VIEW IF EXISTS c120_v5 CASCADE;
+DROP VIEW
+DROP TABLE IF EXISTS c120_base5 CASCADE;
+DROP TABLE
+DROP TABLE IF EXISTS c120_log5 CASCADE;
+DROP TABLE
+-- ===== Test Case 37 (commit 121) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 38 (commit 122) =====
+DROP TABLE IF EXISTS c122_agg1 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:315: NOTICE:  table "c122_agg1" does not exist, skipping
+DROP TABLE
+CREATE TABLE c122_agg1 (id int, arr int[]);
+CREATE TABLE
+INSERT INTO c122_agg1 SELECT i, ARRAY[i, i+1, i+2] FROM generate_series(1,20) i;
+INSERT 0 20
+SELECT id, array_agg(arr) FROM c122_agg1 GROUP BY id ORDER BY id LIMIT 5;
+ id | array_agg 
+----+-----------
+  1 | {{1,2,3}}
+  2 | {{2,3,4}}
+  3 | {{3,4,5}}
+  4 | {{4,5,6}}
+  5 | {{5,6,7}}
+(5 rows)
+
+DROP TABLE IF EXISTS c122_agg1 CASCADE;
+DROP TABLE
+-- ===== Test Case 39 (commit 122) =====
+DROP TABLE IF EXISTS c122_agg2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:322: NOTICE:  table "c122_agg2" does not exist, skipping
+DROP TABLE
+CREATE TABLE c122_agg2 (grp int, val jsonb);
+CREATE TABLE
+INSERT INTO c122_agg2 SELECT i%5, jsonb_build_object('k', i) FROM generate_series(1,50) i;
+INSERT 0 50
+SELECT grp, jsonb_agg(val ORDER BY (val->>'k')::int) FROM c122_agg2 GROUP BY grp ORDER BY grp;
+ grp |                                                   jsonb_agg                                                   
+-----+---------------------------------------------------------------------------------------------------------------
+   0 | [{"k": 5}, {"k": 10}, {"k": 15}, {"k": 20}, {"k": 25}, {"k": 30}, {"k": 35}, {"k": 40}, {"k": 45}, {"k": 50}]
+   1 | [{"k": 1}, {"k": 6}, {"k": 11}, {"k": 16}, {"k": 21}, {"k": 26}, {"k": 31}, {"k": 36}, {"k": 41}, {"k": 46}]
+   2 | [{"k": 2}, {"k": 7}, {"k": 12}, {"k": 17}, {"k": 22}, {"k": 27}, {"k": 32}, {"k": 37}, {"k": 42}, {"k": 47}]
+   3 | [{"k": 3}, {"k": 8}, {"k": 13}, {"k": 18}, {"k": 23}, {"k": 28}, {"k": 33}, {"k": 38}, {"k": 43}, {"k": 48}]
+   4 | [{"k": 4}, {"k": 9}, {"k": 14}, {"k": 19}, {"k": 24}, {"k": 29}, {"k": 34}, {"k": 39}, {"k": 44}, {"k": 49}]
+(5 rows)
+
+DROP TABLE IF EXISTS c122_agg2 CASCADE;
+DROP TABLE
+-- ===== Test Case 40 (commit 122) =====
+DROP TYPE IF EXISTS c122_comp CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:329: NOTICE:  type "c122_comp" does not exist, skipping
+DROP TYPE
+CREATE TYPE c122_comp AS (x int, y text);
+CREATE TYPE
+DROP TABLE IF EXISTS c122_agg3 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:331: NOTICE:  table "c122_agg3" does not exist, skipping
+DROP TABLE
+CREATE TABLE c122_agg3 (grp int, v c122_comp);
+CREATE TABLE
+INSERT INTO c122_agg3 SELECT i%3, ROW(i, i::text)::c122_comp FROM generate_series(1,30) i;
+INSERT 0 30
+SELECT grp, count(*), array_agg(v) FROM c122_agg3 GROUP BY grp ORDER BY grp;
+ grp | count |                                            array_agg                                            
+-----+-------+-------------------------------------------------------------------------------------------------
+   0 |    10 | {"(3,3)","(6,6)","(9,9)","(12,12)","(15,15)","(18,18)","(21,21)","(24,24)","(27,27)","(30,30)"}
+   1 |    10 | {"(1,1)","(4,4)","(7,7)","(10,10)","(13,13)","(16,16)","(19,19)","(22,22)","(25,25)","(28,28)"}
+   2 |    10 | {"(2,2)","(5,5)","(8,8)","(11,11)","(14,14)","(17,17)","(20,20)","(23,23)","(26,26)","(29,29)"}
+(3 rows)
+
+DROP TABLE IF EXISTS c122_agg3 CASCADE;
+DROP TABLE
+DROP TYPE IF EXISTS c122_comp CASCADE;
+DROP TYPE
+-- ===== Test Case 41 (commit 123) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 42 (commit 124) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 43 (commit 125) =====
+DROP TABLE IF EXISTS c125_heap CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:345: NOTICE:  table "c125_heap" does not exist, skipping
+DROP TABLE
+CREATE TABLE c125_heap (id int, val text);
+CREATE TABLE
+INSERT INTO c125_heap SELECT i, repeat('x', 50) FROM generate_series(1, 500) i;
+INSERT 0 500
+VACUUM c125_heap;
+VACUUM
+UPDATE c125_heap SET val = repeat('y', 50) WHERE id BETWEEN 1 AND 100;
+UPDATE 100
+UPDATE c125_heap SET val = repeat('z', 50) WHERE id BETWEEN 101 AND 200;
+UPDATE 100
+SELECT COUNT(*) FROM c125_heap WHERE val LIKE 'y%';
+ count 
+-------
+   100
+(1 row)
+
+DROP TABLE IF EXISTS c125_heap CASCADE;
+DROP TABLE
+-- ===== Test Case 44 (commit 125) =====
+DROP TABLE IF EXISTS c125_del CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:355: NOTICE:  table "c125_del" does not exist, skipping
+DROP TABLE
+CREATE TABLE c125_del (id int PRIMARY KEY, v text);
+CREATE TABLE
+INSERT INTO c125_del SELECT i, 'v'||i FROM generate_series(1,200) i;
+INSERT 0 200
+VACUUM c125_del;
+VACUUM
+DELETE FROM c125_del WHERE id % 3 = 0;
+DELETE 66
+SELECT COUNT(*) FROM c125_del;
+ count 
+-------
+   134
+(1 row)
+
+DROP TABLE IF EXISTS c125_del CASCADE;
+DROP TABLE
+-- ===== Test Case 45 (commit 125) =====
+DROP TABLE IF EXISTS c125_upd CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:364: NOTICE:  table "c125_upd" does not exist, skipping
+DROP TABLE
+CREATE TABLE c125_upd (id int, val text);
+CREATE TABLE
+INSERT INTO c125_upd SELECT i, 'v'||i FROM generate_series(1,300) i;
+INSERT 0 300
+VACUUM ANALYZE c125_upd;
+VACUUM
+UPDATE c125_upd SET val = 'updated_'||id WHERE id BETWEEN 1 AND 100;
+UPDATE 100
+UPDATE c125_upd SET val = 'pass2_'||id WHERE id BETWEEN 50 AND 150;
+UPDATE 101
+DELETE FROM c125_upd WHERE id BETWEEN 200 AND 300;
+DELETE 101
+VACUUM c125_upd;
+VACUUM
+SELECT COUNT(*) FROM c125_upd;
+ count 
+-------
+   199
+(1 row)
+
+DROP TABLE IF EXISTS c125_upd CASCADE;
+DROP TABLE
+-- ===== Test Case 46 (commit 126) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 47 (commit 127) =====
+DROP TABLE IF EXISTS c127_ref2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:379: NOTICE:  table "c127_ref2" does not exist, skipping
+DROP TABLE
+DROP TABLE IF EXISTS c127_part2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:380: NOTICE:  table "c127_part2" does not exist, skipping
+DROP TABLE
+CREATE TABLE c127_ref2 (id int PRIMARY KEY);
+CREATE TABLE
+CREATE TABLE c127_part2 (id int NOT NULL REFERENCES c127_ref2(id)) PARTITION BY LIST (id);
+CREATE TABLE
+CREATE TABLE c127_new_part (LIKE c127_part2);
+CREATE TABLE
+INSERT INTO c127_ref2 VALUES (1),(2),(4);
+INSERT 0 3
+ALTER TABLE c127_part2 ATTACH PARTITION c127_new_part FOR VALUES IN (1,2,3,4);
+ALTER TABLE
+INSERT INTO c127_part2 VALUES (1),(2),(4);
+INSERT 0 3
+DROP TABLE IF EXISTS c127_part2 CASCADE;
+DROP TABLE
+DROP TABLE IF EXISTS c127_ref2 CASCADE;
+DROP TABLE
+-- ===== Test Case 48 (commit 127) =====
+DROP TABLE IF EXISTS c127_ref3 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:391: NOTICE:  table "c127_ref3" does not exist, skipping
+DROP TABLE
+DROP TABLE IF EXISTS c127_par3 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:392: NOTICE:  table "c127_par3" does not exist, skipping
+DROP TABLE
+CREATE TABLE c127_ref3 (k int PRIMARY KEY);
+CREATE TABLE
+CREATE TABLE c127_par3 (k int NOT NULL REFERENCES c127_ref3(k)) PARTITION BY RANGE (k);
+CREATE TABLE
+CREATE TABLE c127_par3_p1 (LIKE c127_par3);
+CREATE TABLE
+CREATE TABLE c127_par3_p2 (LIKE c127_par3);
+CREATE TABLE
+INSERT INTO c127_ref3 SELECT generate_series(1,10);
+INSERT 0 10
+ALTER TABLE c127_par3 ATTACH PARTITION c127_par3_p1 FOR VALUES FROM (1) TO (5);
+ALTER TABLE
+ALTER TABLE c127_par3 ATTACH PARTITION c127_par3_p2 FOR VALUES FROM (5) TO (100);
+ALTER TABLE
+INSERT INTO c127_par3 SELECT generate_series(1,8);
+INSERT 0 8
+DROP TABLE IF EXISTS c127_par3 CASCADE;
+DROP TABLE
+DROP TABLE IF EXISTS c127_ref3 CASCADE;
+DROP TABLE
+-- ===== Test Case 49 (commit 127) =====
+DROP TABLE IF EXISTS c127_ref4 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:405: NOTICE:  table "c127_ref4" does not exist, skipping
+DROP TABLE
+DROP TABLE IF EXISTS c127_par4 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:406: NOTICE:  table "c127_par4" does not exist, skipping
+DROP TABLE
+DROP TABLE IF EXISTS c127_par4_p1 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:407: NOTICE:  table "c127_par4_p1" does not exist, skipping
+DROP TABLE
+CREATE TABLE c127_ref4 (id int PRIMARY KEY);
+CREATE TABLE
+CREATE TABLE c127_par4 (id int NOT NULL REFERENCES c127_ref4(id)) PARTITION BY RANGE (id);
+CREATE TABLE
+CREATE TABLE c127_par4_p1 (LIKE c127_par4);
+CREATE TABLE
+INSERT INTO c127_ref4 VALUES (1),(5),(10);
+INSERT 0 3
+ALTER TABLE c127_par4 ATTACH PARTITION c127_par4_p1 FOR VALUES FROM (1) TO (20);
+ALTER TABLE
+INSERT INTO c127_par4 VALUES (1),(5),(10);
+INSERT 0 3
+SELECT COUNT(*) FROM c127_par4;
+ count 
+-------
+     3
+(1 row)
+
+DROP TABLE IF EXISTS c127_par4 CASCADE;
+DROP TABLE
+DROP TABLE IF EXISTS c127_ref4 CASCADE;
+DROP TABLE
+-- ===== Test Case 50 (commit 128) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 51 (commit 129) =====
+DROP TABLE IF EXISTS c129_large, c129_small CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:422: NOTICE:  table "c129_large" does not exist, skipping
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:422: NOTICE:  table "c129_small" does not exist, skipping
+DROP TABLE
+CREATE TABLE c129_large AS SELECT i AS id, md5(i::text) AS data FROM generate_series(1, 5000) i;
+SELECT 5000
+CREATE TABLE c129_small AS SELECT i AS id, md5(i::text) AS data FROM generate_series(1, 2500) i;
+SELECT 2500
+ANALYZE c129_large, c129_small;
+ANALYZE
+SET work_mem = '1MB';
+SET
+SET enable_hashjoin = on;
+SET
+SET enable_mergejoin = off;
+SET
+SET enable_nestloop = off;
+SET
+SELECT COUNT(*) FROM c129_large JOIN c129_small ON c129_large.id = c129_small.id;
+ count 
+-------
+  2500
+(1 row)
+
+RESET work_mem;
+RESET
+RESET enable_hashjoin;
+RESET
+RESET enable_mergejoin;
+RESET
+RESET enable_nestloop;
+RESET
+DROP TABLE c129_large, c129_small CASCADE;
+DROP TABLE
+-- ===== Test Case 52 (commit 129) =====
+DROP TABLE IF EXISTS c129_h1, c129_h2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:438: NOTICE:  table "c129_h1" does not exist, skipping
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:438: NOTICE:  table "c129_h2" does not exist, skipping
+DROP TABLE
+CREATE TABLE c129_h1(x int, y text);
+CREATE TABLE
+CREATE TABLE c129_h2(x int, z text);
+CREATE TABLE
+INSERT INTO c129_h1 SELECT i, 'row'||i FROM generate_series(1,1000) i;
+INSERT 0 1000
+INSERT INTO c129_h2 SELECT i, 'col'||i FROM generate_series(1,800) i;
+INSERT 0 800
+ANALYZE c129_h1, c129_h2;
+ANALYZE
+SET enable_hashjoin = on;
+SET
+SELECT COUNT(*) FROM c129_h1 JOIN c129_h2 ON c129_h1.x = c129_h2.x;
+ count 
+-------
+   800
+(1 row)
+
+RESET enable_hashjoin;
+RESET
+DROP TABLE c129_h1, c129_h2 CASCADE;
+DROP TABLE
+-- ===== Test Case 53 (commit 130) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 54 (commit 131) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 55 (commit 132) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 56 (commit 133) =====
+SELECT COUNT(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='pg_catalog';
+ count 
+-------
+   245
+(1 row)
+
+SELECT COUNT(*) FROM pg_proc WHERE pronamespace='pg_catalog'::regnamespace;
+ count 
+-------
+  3023
+(1 row)
+
+SELECT COUNT(*) FROM pg_type WHERE typnamespace='pg_catalog'::regnamespace;
+ count 
+-------
+   298
+(1 row)
+
+-- ===== Test Case 57 (commit 133) =====
+DROP TABLE IF EXISTS c133_t1 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:464: NOTICE:  table "c133_t1" does not exist, skipping
+DROP TABLE
+CREATE TABLE c133_t1 (id oid, val text);
+CREATE TABLE
+INSERT INTO c133_t1 SELECT oid, relname FROM pg_class WHERE relkind='r' LIMIT 20;
+INSERT 0 20
+SELECT COUNT(DISTINCT id) FROM c133_t1;
+ count 
+-------
+    20
+(1 row)
+
+SELECT * FROM c133_t1 WHERE id = (SELECT min(oid) FROM pg_class WHERE relkind='r');
+ id | val 
+----+-----
+(0 rows)
+
+DROP TABLE IF EXISTS c133_t1 CASCADE;
+DROP TABLE
+-- ===== Test Case 58 (commit 134) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 59 (commit 135) =====
+DROP TABLE IF EXISTS c135_noname CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:475: NOTICE:  table "c135_noname" does not exist, skipping
+DROP TABLE
+CREATE TABLE c135_noname (id int, val text);
+CREATE TABLE
+INSERT INTO c135_noname VALUES (1,'a'),(2,'b');
+INSERT 0 2
+SELECT id+0, val||'' FROM c135_noname ORDER BY 1;
+ ?column? | ?column? 
+----------+----------
+        1 | a
+        2 | b
+(2 rows)
+
+SELECT 1+1, 'hello'||' '||'world';
+ ?column? |  ?column?   
+----------+-------------
+        2 | hello world
+(1 row)
+
+SELECT CASE WHEN id > 1 THEN 'big' ELSE 'small' END FROM c135_noname;
+ case  
+-------
+ small
+ big
+(2 rows)
+
+DROP TABLE IF EXISTS c135_noname CASCADE;
+DROP TABLE
+-- ===== Test Case 60 (commit 135) =====
+DROP VIEW IF EXISTS c135_v1 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:484: NOTICE:  view "c135_v1" does not exist, skipping
+DROP VIEW
+CREATE VIEW c135_v1 AS SELECT 1+1 AS result, now() AS ts, 'str'||'cat' AS s;
+CREATE VIEW
+SELECT pg_get_viewdef('c135_v1'::regclass, true);
+            pg_get_viewdef            
+--------------------------------------
+  SELECT 1 + 1 AS result,            +
+     now() AS ts,                    +
+     'str'::text || 'cat'::text AS s;
+(1 row)
+
+DROP VIEW IF EXISTS c135_v1 CASCADE;
+DROP VIEW
+-- ===== Test Case 61 (commit 135) =====
+SELECT 1+2, 'a'||'b', length('test'), upper('hello');
+ ?column? | ?column? | length | upper 
+----------+----------+--------+-------
+        3 | ab       |      4 | HELLO
+(1 row)
+
+SELECT COALESCE(NULL, 1), NULLIF(1,1), GREATEST(1,2,3);
+ coalesce | nullif | greatest 
+----------+--------+----------
+        1 |        |        3
+(1 row)
+
+SELECT array_length(ARRAY[1,2,3], 1), cardinality(ARRAY[1,2,3]);
+ array_length | cardinality 
+--------------+-------------
+            3 |           3
+(1 row)
+
+-- ===== Test Case 62 (commit 136) =====
+DROP OPERATOR CLASS IF EXISTS c136_oc2 USING btree CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:495: NOTICE:  operator class "c136_oc2" does not exist for access method "btree", skipping
+DROP OPERATOR CLASS
+CREATE OPERATOR CLASS c136_oc2 FOR TYPE int4 USING btree AS
+  OPERATOR 1 < ,
+  OPERATOR 2 <= ,
+  OPERATOR 3 = ,
+  OPERATOR 4 >= ,
+  OPERATOR 5 > ;
+CREATE OPERATOR CLASS
+SELECT opcname, opcintype::regtype FROM pg_opclass WHERE opcname='c136_oc2';
+ opcname  | opcintype 
+----------+-----------
+ c136_oc2 | integer
+(1 row)
+
+DROP OPERATOR CLASS IF EXISTS c136_oc2 USING btree CASCADE;
+DROP OPERATOR CLASS
+-- ===== Test Case 63 (commit 136) =====
+DROP OPERATOR CLASS IF EXISTS c136_oc3 USING hash CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:506: NOTICE:  operator class "c136_oc3" does not exist for access method "hash", skipping
+DROP OPERATOR CLASS
+CREATE OPERATOR CLASS c136_oc3 FOR TYPE int4 USING hash AS
+  FUNCTION 1 hashint4(int4);
+CREATE OPERATOR CLASS
+SELECT opcname FROM pg_opclass WHERE opcname='c136_oc3';
+ opcname  
+----------
+ c136_oc3
+(1 row)
+
+DROP OPERATOR CLASS IF EXISTS c136_oc3 USING hash CASCADE;
+DROP OPERATOR CLASS
+-- ===== Test Case 64 (commit 137) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 65 (commit 138) =====
+DROP TABLE IF EXISTS c138_mv_t CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:516: NOTICE:  table "c138_mv_t" does not exist, skipping
+DROP TABLE
+CREATE TABLE c138_mv_t (id int, val text);
+CREATE TABLE
+INSERT INTO c138_mv_t SELECT i, 'v'||i FROM generate_series(1,50) i;
+INSERT 0 50
+DROP MATERIALIZED VIEW IF EXISTS c138_mv1;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:519: NOTICE:  materialized view "c138_mv1" does not exist, skipping
+DROP MATERIALIZED VIEW
+CREATE MATERIALIZED VIEW c138_mv1 AS SELECT id, upper(val) AS uval FROM c138_mv_t;
+SELECT 50
+REFRESH MATERIALIZED VIEW c138_mv1;
+REFRESH MATERIALIZED VIEW
+SELECT COUNT(*) FROM c138_mv1;
+ count 
+-------
+    50
+(1 row)
+
+CREATE UNIQUE INDEX ON c138_mv1(id);
+CREATE INDEX
+REFRESH MATERIALIZED VIEW CONCURRENTLY c138_mv1;
+REFRESH MATERIALIZED VIEW
+SELECT COUNT(*) FROM c138_mv1 WHERE id > 25;
+ count 
+-------
+    25
+(1 row)
+
+DROP MATERIALIZED VIEW IF EXISTS c138_mv1;
+DROP MATERIALIZED VIEW
+DROP TABLE IF EXISTS c138_mv_t CASCADE;
+DROP TABLE
+-- ===== Test Case 66 (commit 139) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 67 (commit 140) =====
+DROP TABLE IF EXISTS c140_t1 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:533: NOTICE:  table "c140_t1" does not exist, skipping
+DROP TABLE
+CREATE TABLE c140_t1 (id int PRIMARY KEY, val text);
+CREATE TABLE
+INSERT INTO c140_t1 SELECT i, 'val'||i FROM generate_series(1,100) i;
+INSERT 0 100
+VACUUM c140_t1;
+VACUUM
+SELECT * FROM c140_t1 WHERE id = 1;
+ id | val  
+----+------
+  1 | val1
+(1 row)
+
+SELECT * FROM c140_t1 WHERE id = 50;
+ id |  val  
+----+-------
+ 50 | val50
+(1 row)
+
+SELECT COUNT(*) FROM c140_t1;
+ count 
+-------
+   100
+(1 row)
+
+DROP TABLE IF EXISTS c140_t1 CASCADE;
+DROP TABLE
+-- ===== Test Case 68 (commit 140) =====
+DROP TABLE IF EXISTS c140_t2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:543: NOTICE:  table "c140_t2" does not exist, skipping
+DROP TABLE
+CREATE TABLE c140_t2 (id int, v text);
+CREATE TABLE
+INSERT INTO c140_t2 VALUES (1,'a'),(2,'b'),(3,'c');
+INSERT 0 3
+BEGIN;
+BEGIN
+DELETE FROM c140_t2 WHERE id=2;
+DELETE 1
+SELECT * FROM c140_t2;
+ id | v 
+----+---
+  1 | a
+  3 | c
+(2 rows)
+
+ROLLBACK;
+ROLLBACK
+SELECT COUNT(*) FROM c140_t2;
+ count 
+-------
+     3
+(1 row)
+
+DROP TABLE IF EXISTS c140_t2 CASCADE;
+DROP TABLE
+-- ===== Test Case 69 (commit 141) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 70 (commit 142) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 71 (commit 143) =====
+DROP TABLE IF EXISTS c143_idx_t CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:560: NOTICE:  table "c143_idx_t" does not exist, skipping
+DROP TABLE
+CREATE TABLE c143_idx_t (id int, val text) PARTITION BY RANGE (id);
+CREATE TABLE
+CREATE TABLE c143_idx_child1 PARTITION OF c143_idx_t FOR VALUES FROM (1) TO (100);
+CREATE TABLE
+CREATE TABLE c143_idx_child2 PARTITION OF c143_idx_t FOR VALUES FROM (100) TO (200);
+CREATE TABLE
+CREATE INDEX c143_pidx ON c143_idx_t (id);
+CREATE INDEX
+INSERT INTO c143_idx_t SELECT i, 'v'||i FROM generate_series(1,150) i;
+INSERT 0 150
+DROP INDEX IF EXISTS c143_pidx;
+DROP INDEX
+DROP TABLE IF EXISTS c143_idx_t CASCADE;
+DROP TABLE
+-- ===== Test Case 72 (commit 143) =====
+DROP TABLE IF EXISTS c143_t2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:570: NOTICE:  table "c143_t2" does not exist, skipping
+DROP TABLE
+CREATE TABLE c143_t2 (x int, y int) PARTITION BY HASH (x);
+CREATE TABLE
+CREATE TABLE c143_t2_p0 PARTITION OF c143_t2 FOR VALUES WITH (MODULUS 3, REMAINDER 0);
+CREATE TABLE
+CREATE TABLE c143_t2_p1 PARTITION OF c143_t2 FOR VALUES WITH (MODULUS 3, REMAINDER 1);
+CREATE TABLE
+CREATE TABLE c143_t2_p2 PARTITION OF c143_t2 FOR VALUES WITH (MODULUS 3, REMAINDER 2);
+CREATE TABLE
+CREATE INDEX ON c143_t2 (x);
+CREATE INDEX
+INSERT INTO c143_t2 SELECT i, i*2 FROM generate_series(1,30) i;
+INSERT 0 30
+DROP TABLE IF EXISTS c143_t2 CASCADE;
+DROP TABLE
+-- ===== Test Case 73 (commit 143) =====
+DROP TABLE IF EXISTS c143_t3 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:580: NOTICE:  table "c143_t3" does not exist, skipping
+DROP TABLE
+CREATE TABLE c143_t3 (a int) PARTITION BY LIST (a);
+CREATE TABLE
+CREATE TABLE c143_t3_odd PARTITION OF c143_t3 FOR VALUES IN (1,3,5,7,9);
+CREATE TABLE
+CREATE TABLE c143_t3_even PARTITION OF c143_t3 FOR VALUES IN (2,4,6,8,10);
+CREATE TABLE
+CREATE INDEX c143_idx3 ON c143_t3 (a);
+CREATE INDEX
+INSERT INTO c143_t3 SELECT (i%10)+1 FROM generate_series(1,50) i;
+INSERT 0 50
+DROP INDEX IF EXISTS c143_idx3;
+DROP INDEX
+DROP TABLE IF EXISTS c143_t3 CASCADE;
+DROP TABLE
+-- ===== Test Case 74 (commit 144) =====
+DROP TABLE IF EXISTS c144_base CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:590: NOTICE:  table "c144_base" does not exist, skipping
+DROP TABLE
+CREATE TABLE c144_base (id int, v text);
+CREATE TABLE
+INSERT INTO c144_base SELECT i, 'val'||i FROM generate_series(1,100) i;
+INSERT 0 100
+CHECKPOINT;
+CHECKPOINT
+SELECT pg_current_wal_lsn();
+ pg_current_wal_lsn 
+--------------------
+ 0/17BAC18
+(1 row)
+
+SELECT * FROM c144_base WHERE id = 42;
+ id |   v   
+----+-------
+ 42 | val42
+(1 row)
+
+CHECKPOINT;
+CHECKPOINT
+DROP TABLE IF EXISTS c144_base CASCADE;
+DROP TABLE
+-- ===== Test Case 75 (commit 145) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 76 (commit 146) =====
+SET enable_hashjoin=off; SET enable_nestloop=off; SET enable_mergejoin=on; SET enable_sort=off; SET enable_seqscan=off;
+SET
+SET
+SET
+SET
+SET
+DROP FUNCTION IF EXISTS c146cmp2(int,int) CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:604: NOTICE:  function c146cmp2(pg_catalog.int4,pg_catalog.int4) does not exist, skipping
+DROP FUNCTION
+CREATE FUNCTION c146cmp2(a int, b int) RETURNS int LANGUAGE plpgsql IMMUTABLE AS 91595 BEGIN RETURN CASE WHEN a > b THEN -1 WHEN a < b THEN 1 ELSE 0 END; END 91595;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:605: ERROR:  syntax error at or near "91595"
+LINE 1: ... b int) RETURNS int LANGUAGE plpgsql IMMUTABLE AS 91595 BEGI...
+                                                             ^
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:605: ERROR:  syntax error at or near "91595"
+LINE 1: END 91595;
+            ^
+CREATE OPERATOR CLASS c146oc2 FOR TYPE int4 USING btree AS
+  OPERATOR 1 < (int4,int4), OPERATOR 2 <= (int4,int4),
+  OPERATOR 3 = (int4,int4), OPERATOR 4 >= (int4,int4),
+  OPERATOR 5 > (int4,int4), FUNCTION 1 c146cmp2(int,int);
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:609: ERROR:  function c146cmp2(integer, integer) does not exist
+DROP TABLE IF EXISTS c146_t3 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:610: NOTICE:  table "c146_t3" does not exist, skipping
+DROP TABLE
+DROP TABLE IF EXISTS c146_t4 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:611: NOTICE:  table "c146_t4" does not exist, skipping
+DROP TABLE
+CREATE TABLE c146_t3 (id int);
+CREATE TABLE
+CREATE TABLE c146_t4 (id int);
+CREATE TABLE
+INSERT INTO c146_t3 VALUES (3),(1),(2);
+INSERT 0 3
+INSERT INTO c146_t4 VALUES (1),(2),(3);
+INSERT 0 3
+CREATE INDEX c146_idx3 ON c146_t3 USING btree (id c146oc2);
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:616: ERROR:  operator class "c146oc2" does not exist for access method "btree"
+CREATE INDEX c146_idx4 ON c146_t4 USING btree (id c146oc2);
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:617: ERROR:  operator class "c146oc2" does not exist for access method "btree"
+SELECT * FROM c146_t3, c146_t4 WHERE c146_t3.id = c146_t4.id;
+ id | id 
+----+----
+  3 |  3
+  1 |  1
+  2 |  2
+(3 rows)
+
+DROP TABLE IF EXISTS c146_t3 CASCADE; DROP TABLE IF EXISTS c146_t4 CASCADE;
+DROP TABLE
+DROP TABLE
+DROP OPERATOR CLASS IF EXISTS c146oc2 USING btree CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:620: NOTICE:  operator class "c146oc2" does not exist for access method "btree", skipping
+DROP OPERATOR CLASS
+DROP FUNCTION IF EXISTS c146cmp2(int,int) CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:621: NOTICE:  function c146cmp2(pg_catalog.int4,pg_catalog.int4) does not exist, skipping
+DROP FUNCTION
+RESET enable_hashjoin; RESET enable_nestloop; RESET enable_mergejoin; RESET enable_sort; RESET enable_seqscan;
+RESET
+RESET
+RESET
+RESET
+RESET
+-- ===== Test Case 77 (commit 147) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
+-- ===== Test Case 78 (commit 148) =====
+SET track_commit_timestamp = off;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:628: ERROR:  parameter "track_commit_timestamp" cannot be changed without restarting the server
+DROP TABLE IF EXISTS c148_t CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:629: NOTICE:  table "c148_t" does not exist, skipping
+DROP TABLE
+CREATE TABLE c148_t (id int);
+CREATE TABLE
+INSERT INTO c148_t SELECT generate_series(1, 10);
+INSERT 0 10
+BEGIN;
+BEGIN
+SAVEPOINT sp1;
+SAVEPOINT
+INSERT INTO c148_t VALUES (100);
+INSERT 0 1
+SAVEPOINT sp2;
+SAVEPOINT
+INSERT INTO c148_t VALUES (200);
+INSERT 0 1
+RELEASE SAVEPOINT sp2;
+RELEASE
+COMMIT;
+COMMIT
+SELECT COUNT(*) FROM c148_t;
+ count 
+-------
+    12
+(1 row)
+
+DROP TABLE IF EXISTS c148_t CASCADE;
+DROP TABLE
+-- ===== Test Case 79 (commit 149) =====
+DROP VIEW IF EXISTS c149_vw1 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:643: NOTICE:  view "c149_vw1" does not exist, skipping
+DROP VIEW
+CREATE VIEW c149_vw1 AS SELECT t.* FROM (SELECT 1 AS id, 'x'::text AS val) t;
+CREATE VIEW
+SELECT pg_get_viewdef('c149_vw1'::regclass, true);
+          pg_get_viewdef          
+----------------------------------
+  SELECT t.id,                   +
+     t.val                       +
+    FROM ( SELECT 1 AS id,       +
+             'x'::text AS val) t;
+(1 row)
+
+DROP VIEW IF EXISTS c149_vw1 CASCADE;
+DROP VIEW
+-- ===== Test Case 80 (commit 149) =====
+DROP TABLE IF EXISTS c149_t1 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:649: NOTICE:  table "c149_t1" does not exist, skipping
+DROP TABLE
+DROP TABLE IF EXISTS c149_t2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:650: NOTICE:  table "c149_t2" does not exist, skipping
+DROP TABLE
+CREATE TABLE c149_t1 (id int, v text);
+CREATE TABLE
+CREATE TABLE c149_t2 (id int, w int);
+CREATE TABLE
+INSERT INTO c149_t1 VALUES (1,'a'),(2,'b');
+INSERT 0 2
+INSERT INTO c149_t2 VALUES (1,10),(2,20);
+INSERT 0 2
+DROP VIEW IF EXISTS c149_vw2 CASCADE;
+psql:/workspaces/dl-final_cc-opus/outputs/local_eval/v301_gcc11/all_gen_sql.sql:655: NOTICE:  view "c149_vw2" does not exist, skipping
+DROP VIEW
+CREATE VIEW c149_vw2 AS SELECT t1.*, t2.w FROM c149_t1 t1 JOIN c149_t2 t2 ON t1.id=t2.id;
+CREATE VIEW
+SELECT pg_get_viewdef('c149_vw2'::regclass, true);
+             pg_get_viewdef             
+----------------------------------------
+  SELECT t1.id,                        +
+     t1.v,                             +
+     t2.w                              +
+    FROM c149_t1 t1                    +
+      JOIN c149_t2 t2 ON t1.id = t2.id;
+(1 row)
+
+DROP VIEW IF EXISTS c149_vw2 CASCADE;
+DROP VIEW
+DROP TABLE IF EXISTS c149_t1 CASCADE;
+DROP TABLE
+DROP TABLE IF EXISTS c149_t2 CASCADE;
+DROP TABLE
+-- ===== Test Case 81 (commit 150) =====
+SELECT 1;
+ ?column? 
+----------
+        1
+(1 row)
+
