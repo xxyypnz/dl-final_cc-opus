@@ -1,0 +1,1 @@
+genhtml --ignore-errors unmapped,inconsistent,corrupt,category,empty,source --keep-going /workspaces/dl-final_cc-opus/outputs/local_eval/probe109_gcc11/coverage_workspace/coverage_filtered.info --output-directory /workspaces/dl-final_cc-opus/outputs/local_eval/probe109_gcc11/coverage_workspace/report
