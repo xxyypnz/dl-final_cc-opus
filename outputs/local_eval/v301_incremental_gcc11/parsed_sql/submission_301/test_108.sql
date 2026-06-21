@@ -1,0 +1,109 @@
+-- ===== Commit 108 =====
+-- Source:  - 
+
+-- --- Test Case 1 ---
+-- Setup
+DROP TABLE IF EXISTS t1 CASCADE;
+DROP TABLE IF EXISTS t2 CASCADE;
+CREATE TABLE t1 (a int);
+CREATE TABLE t2 (a int);
+INSERT INTO t1 VALUES (1), (2);
+INSERT INTO t2 VALUES (3), (4);
+
+-- Execution: UNION ALL query that triggers pull-up of leaf subqueries
+SELECT * FROM (SELECT a FROM t1 UNION ALL SELECT a FROM t2) AS u;
+
+-- Teardown
+DROP TABLE IF EXISTS t1 CASCADE;
+DROP TABLE IF EXISTS t2 CASCADE;
+
+-- --- Test Case 2 ---
+-- Setup
+DROP TABLE IF EXISTS t1 CASCADE;
+DROP TABLE IF EXISTS t2 CASCADE;
+CREATE TABLE t1 (a int);
+CREATE TABLE t2 (a int);
+INSERT INTO t1 VALUES (1);
+INSERT INTO t2 VALUES (2);
+
+-- Execution: UNION ALL with a lateral join that introduces PlaceHolderVars
+SELECT * FROM (SELECT a FROM t1 UNION ALL SELECT a FROM t2) AS u
+WHERE EXISTS (SELECT 1 FROM t1 WHERE t1.a = u.a);
+
+-- Teardown
+DROP TABLE IF EXISTS t1 CASCADE;
+DROP TABLE IF EXISTS t2 CASCADE;
+
+-- --- Test Case 3 ---
+-- Setup
+DROP TABLE IF EXISTS t1 CASCADE;
+DROP TABLE IF EXISTS t2 CASCADE;
+DROP TABLE IF EXISTS t3 CASCADE;
+CREATE TABLE t1 (a int);
+CREATE TABLE t2 (a int);
+CREATE TABLE t3 (a int);
+INSERT INTO t1 VALUES (1);
+INSERT INTO t2 VALUES (2);
+INSERT INTO t3 VALUES (3);
+
+-- Execution: Multiple UNION ALL subqueries to trigger the O(N^2) avoidance path
+SELECT * FROM (SELECT a FROM t1 UNION ALL SELECT a FROM t2 UNION ALL SELECT a FROM t3) AS u;
+
+-- Teardown
+DROP TABLE IF EXISTS t1 CASCADE;
+DROP TABLE IF EXISTS t2 CASCADE;
+DROP TABLE IF EXISTS t3 CASCADE;
+
+-- --- Test Case 4 ---
+DROP TABLE IF EXISTS c108_a CASCADE;
+DROP TABLE IF EXISTS c108_b CASCADE;
+DROP TABLE IF EXISTS c108_c CASCADE;
+CREATE TABLE c108_a (x int);
+CREATE TABLE c108_b (y int);
+CREATE TABLE c108_c (z int);
+INSERT INTO c108_a VALUES (1),(2),(3);
+INSERT INTO c108_b VALUES (2),(3),(4);
+INSERT INTO c108_c VALUES (3),(4),(5);
+ANALYZE c108_a; ANALYZE c108_b; ANALYZE c108_c;
+SELECT t.x, u.coalv
+FROM c108_a t
+LEFT JOIN (
+    SELECT x AS k, COALESCE(x, 0) AS coalv FROM c108_a
+    UNION ALL
+    SELECT y AS k, COALESCE(y, 0) AS coalv FROM c108_b
+    UNION ALL
+    SELECT z AS k, COALESCE(z, 0) AS coalv FROM c108_c
+) u ON t.x = u.k
+ORDER BY t.x, u.coalv;
+DROP TABLE IF EXISTS c108_a CASCADE;
+DROP TABLE IF EXISTS c108_b CASCADE;
+DROP TABLE IF EXISTS c108_c CASCADE;
+
+-- --- Test Case 5 ---
+DROP TABLE IF EXISTS c108_base CASCADE;
+CREATE TABLE c108_base (id INT, val INT);
+INSERT INTO c108_base VALUES (1, 10), (2, 20), (3, 30);
+SELECT * FROM (
+    SELECT id, val FROM c108_base
+    UNION ALL
+    SELECT id, val FROM c108_base
+    UNION ALL
+    SELECT id, val FROM c108_base
+) AS u WHERE id > 1;
+DROP TABLE c108_base CASCADE;
+
+-- --- Test Case 6 ---
+DROP TABLE IF EXISTS c108_t1, c108_t2 CASCADE;
+CREATE TABLE c108_t1 (a int, b text);
+CREATE TABLE c108_t2 (a int, b text);
+INSERT INTO c108_t1 VALUES (1, 'x'), (2, 'y');
+INSERT INTO c108_t2 VALUES (3, 'z'), (4, 'w');
+SELECT a, COUNT(*) FROM (
+    SELECT a, b FROM c108_t1
+    UNION ALL
+    SELECT a, b FROM c108_t2
+    UNION ALL
+    SELECT a, b FROM c108_t1
+) s GROUP BY a ORDER BY a;
+DROP TABLE c108_t1, c108_t2 CASCADE;
+

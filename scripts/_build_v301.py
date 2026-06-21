@@ -1,160 +1,249 @@
 #!/usr/bin/env python3
 """
-Build submission_301.json: Phase 1 optimization with improved SQL for commits 109, 108, 129.
+Build submission_301.json as a conservative compliant increment over 203.
 
-Changes from v203:
-  - Commit 109: Replaced all 3 cases with UNION ALL + parameterized join (targets line 3858-3859)
-  - Commit 108: Added 2 new cases with UNION ALL pullup (was completely missing, targets line 3543)
-  - Commit 129: Added 2 new cases with hash join memory allocation (was missing, targets line 844)
-
-Expected improvement: +3-4 lines coverage (local 132-133/198, platform ≥0.6515)
+Rules:
+  - submission_203.json is the baseline and is preserved in full.
+  - Only append a small set of standard-SQL probes for 108, 109 and 129.
+  - Do not use psql meta-commands, file access, server-side COPY, external
+    programs, privilege switching, DO blocks, C/internal languages, or loops.
 """
 import json
 import re
 
-# Load the improved SQL library with Phase 1 fixes
-sql_lib = json.load(open('outputs/_improved_sql_v22.json'))
 
-# Load test dataset to get all commit IDs
-dataset = json.load(open('data/test_v3.json'))
-
-# Banned patterns (must remain compliant)
 BANNED = re.compile(
-    r'\\!|\\i\b|base64|COPY\s+.*PROGRAM|COPY\s+.*\s+(FROM|TO)\s+\'/'
+    r"\\!|\\i\b|base64|COPY\s+.*PROGRAM|COPY\s+.*\s+(FROM|TO)\s+'/"
     r"|LANGUAGE\s+'?c'?\b|LANGUAGE\s+internal|lo_(export|import)"
-    r'|pg_read_file|pg_read_binary_file|\bgcc\b|pg_config|\.so\b'
-    r'|pg_ls_dir|adminpack|\\gset|\\setenv|\\\s*echo'
-    r'|\bDO\s*\$|\bLOOP\b|\bWHILE\b'
-    r'|SET\s+ROLE|SET\s+SESSION\s+AUTHORIZATION',
-    re.IGNORECASE,
+    r"|pg_read_file|pg_read_binary_file|\bgcc\b|pg_config|\.so\b"
+    r"|pg_ls_dir|adminpack|\\gset|\\setenv|\\\s*echo"
+    r"|\bDO\s*\$|\bLOOP\b|\bWHILE\b"
+    r"|SET\s+ROLE|SET\s+SESSION\s+AUTHORIZATION",
+    re.IGNORECASE | re.DOTALL,
 )
 
 
-def wrap_sql_blocks(blocks):
-    """Wrap SQL blocks in test_cases XML format."""
-    parts = ['<test_cases>']
+ADDITIONS = {
+    "108": [
+        """
+DROP TABLE IF EXISTS c108_base CASCADE;
+CREATE TABLE c108_base (id INT, val INT);
+INSERT INTO c108_base VALUES (1, 10), (2, 20), (3, 30);
+SELECT * FROM (
+    SELECT id, val FROM c108_base
+    UNION ALL
+    SELECT id, val FROM c108_base
+    UNION ALL
+    SELECT id, val FROM c108_base
+) AS u WHERE id > 1;
+DROP TABLE c108_base CASCADE;
+""",
+        """
+DROP TABLE IF EXISTS c108_t1, c108_t2 CASCADE;
+CREATE TABLE c108_t1 (a int, b text);
+CREATE TABLE c108_t2 (a int, b text);
+INSERT INTO c108_t1 VALUES (1, 'x'), (2, 'y');
+INSERT INTO c108_t2 VALUES (3, 'z'), (4, 'w');
+SELECT a, COUNT(*) FROM (
+    SELECT a, b FROM c108_t1
+    UNION ALL
+    SELECT a, b FROM c108_t2
+    UNION ALL
+    SELECT a, b FROM c108_t1
+) s GROUP BY a ORDER BY a;
+DROP TABLE c108_t1, c108_t2 CASCADE;
+""",
+    ],
+    "109": [
+        """
+DROP TABLE IF EXISTS c109_t1, c109_t2, c109_outer CASCADE;
+CREATE TABLE c109_t1(id int, val int);
+CREATE TABLE c109_t2(id int, val int);
+CREATE TABLE c109_outer(id int, data text);
+INSERT INTO c109_t1 VALUES (1, 10), (2, 20), (3, 30);
+INSERT INTO c109_t2 VALUES (2, 200), (3, 300), (4, 400);
+INSERT INTO c109_outer VALUES (1, 'a'), (2, 'b'), (3, 'c');
+ANALYZE c109_t1, c109_t2, c109_outer;
+SELECT c109_outer.id, c109_outer.data, combined.val
+FROM c109_outer
+JOIN (
+    SELECT id, val FROM c109_t1
+    UNION ALL
+    SELECT id, val FROM c109_t2
+) AS combined(id, val)
+ON c109_outer.id = combined.id
+ORDER BY c109_outer.id;
+DROP TABLE c109_t1, c109_t2, c109_outer CASCADE;
+""",
+        """
+DROP TABLE IF EXISTS c109_a, c109_b, c109_c CASCADE;
+CREATE TABLE c109_a(x int, y int);
+CREATE TABLE c109_b(x int, y int);
+CREATE TABLE c109_c(x int, z text);
+INSERT INTO c109_a SELECT i, i*2 FROM generate_series(1,50) i;
+INSERT INTO c109_b SELECT i, i*3 FROM generate_series(1,50) i;
+INSERT INTO c109_c SELECT i, 'val'||i FROM generate_series(1,20) i;
+ANALYZE c109_a, c109_b, c109_c;
+SELECT c.x, c.z, u.y
+FROM c109_c c
+JOIN (
+    SELECT x, y FROM c109_a WHERE y > 10
+    UNION ALL
+    SELECT x, y FROM c109_b WHERE y < 100
+) u ON c.x = u.x
+WHERE c.x < 15;
+DROP TABLE c109_a, c109_b, c109_c CASCADE;
+""",
+        """
+DROP TABLE IF EXISTS c109_p, c109_q, c109_r, c109_main CASCADE;
+CREATE TABLE c109_p(k int, v int);
+CREATE TABLE c109_q(k int, v int);
+CREATE TABLE c109_r(k int, v int);
+CREATE TABLE c109_main(k int, descr text);
+INSERT INTO c109_p VALUES (1, 100), (2, 200);
+INSERT INTO c109_q VALUES (2, 250), (3, 300);
+INSERT INTO c109_r VALUES (3, 350), (4, 400);
+INSERT INTO c109_main VALUES (1, 'alpha'), (2, 'beta'), (3, 'gamma');
+ANALYZE c109_p, c109_q, c109_r, c109_main;
+SELECT m.k, m.descr, combined.v
+FROM c109_main m
+JOIN (
+    SELECT k, v FROM c109_p
+    UNION ALL
+    SELECT k, v FROM c109_q
+    UNION ALL
+    SELECT k, v FROM c109_r
+) AS combined ON m.k = combined.k;
+DROP TABLE c109_p, c109_q, c109_r, c109_main CASCADE;
+""",
+    ],
+    "129": [
+        """
+DROP TABLE IF EXISTS c129_large, c129_small CASCADE;
+CREATE TABLE c129_large AS
+  SELECT i AS id, md5(i::text) AS data FROM generate_series(1, 5000) i;
+CREATE TABLE c129_small AS
+  SELECT i AS id, md5(i::text) AS data FROM generate_series(1, 2500) i;
+ANALYZE c129_large, c129_small;
+SET work_mem = '1MB';
+SET enable_hashjoin = on;
+SET enable_mergejoin = off;
+SET enable_nestloop = off;
+EXPLAIN ANALYZE
+  SELECT COUNT(*) FROM c129_large JOIN c129_small USING (id);
+RESET work_mem;
+RESET enable_hashjoin;
+RESET enable_mergejoin;
+RESET enable_nestloop;
+DROP TABLE c129_large, c129_small CASCADE;
+""",
+        """
+DROP TABLE IF EXISTS c129_h1, c129_h2 CASCADE;
+CREATE TABLE c129_h1(x int, y text);
+CREATE TABLE c129_h2(x int, z text);
+INSERT INTO c129_h1 SELECT i, 'row'||i FROM generate_series(1,1000) i;
+INSERT INTO c129_h2 SELECT i, 'col'||i FROM generate_series(1,800) i;
+ANALYZE c129_h1, c129_h2;
+SET enable_hashjoin = on;
+SET enable_mergejoin = off;
+SET enable_nestloop = off;
+EXPLAIN ANALYZE
+  SELECT COUNT(*) FROM c129_h1 JOIN c129_h2 ON c129_h1.x = c129_h2.x;
+RESET enable_hashjoin;
+RESET enable_mergejoin;
+RESET enable_nestloop;
+DROP TABLE c129_h1, c129_h2 CASCADE;
+""",
+    ],
+    "146": [
+        """
+DROP TABLE IF EXISTS c146_l, c146_r CASCADE;
+CREATE TABLE c146_l (id int, val int);
+CREATE TABLE c146_r (id int, val int);
+INSERT INTO c146_l VALUES (1, 10), (2, 20), (3, 30);
+INSERT INTO c146_r VALUES (2, 20), (3, 30), (4, 40);
+CREATE INDEX c146_l_idx ON c146_l(id);
+CREATE INDEX c146_r_idx ON c146_r(id);
+ANALYZE c146_l, c146_r;
+SET enable_hashjoin = off;
+SET enable_nestloop = off;
+SET enable_mergejoin = on;
+SELECT * FROM c146_l FULL OUTER JOIN c146_r
+  ON c146_l.id = c146_r.id AND FALSE;
+RESET enable_hashjoin;
+RESET enable_nestloop;
+RESET enable_mergejoin;
+DROP TABLE c146_l, c146_r CASCADE;
+""",
+    ],
+}
+
+
+def extract_blocks(text):
+    return [b.strip() for b in re.findall(r"<sql>(.*?)</sql>", text, re.DOTALL | re.IGNORECASE)]
+
+
+def wrap(blocks):
+    parts = ["<test_cases>"]
     for i, block in enumerate(blocks, 1):
-        parts += [
-            f'  <test_case id="{i}">',
-            f'    <description>coverage_test_{i}</description>',
-            '    <sql>',
-            block.strip(),
-            '    </sql>',
-            '  </test_case>'
-        ]
-    parts.append('</test_cases>')
-    return '\n'.join(parts)
-
-
-def build_submission():
-    """Build submission_301.json from improved SQL library."""
-    submission = []
-
-    for item in dataset:
-        commit_id = str(item['id'])
-
-        # Get SQL cases from library, or use placeholder
-        if commit_id in sql_lib:
-            sql_blocks = sql_lib[commit_id]
-        else:
-            sql_blocks = ['SELECT 1;']  # Placeholder for commits without specific SQL
-
-        # Wrap in XML format
-        generated_sql_tests = wrap_sql_blocks(sql_blocks)
-
-        submission.append({
-            'id': item['id'],
-            'generated_sql_tests': generated_sql_tests
-        })
-
-    return submission
-
-
-def validate_compliance(submission):
-    """Verify zero banned constructs in submission."""
-    violations = []
-
-    for item in submission:
-        blocks = re.findall(r'<sql>(.*?)</sql>',
-                           item['generated_sql_tests'],
-                           re.DOTALL | re.IGNORECASE)
-
-        for idx, block in enumerate(blocks, 1):
-            match = BANNED.search(block)
-            if match:
-                violations.append({
-                    'commit_id': item['id'],
-                    'block_index': idx,
-                    'violation': match.group(0),
-                    'context': block[max(0, match.start()-50):match.end()+50]
-                })
-
-    return violations
+        parts.extend(
+            [
+                f'  <test_case id="{i}">',
+                f"    <description>cov_{i}</description>",
+                "    <sql>",
+                block.strip(),
+                "    </sql>",
+                "  </test_case>",
+            ]
+        )
+    parts.append("</test_cases>")
+    return "\n".join(parts)
 
 
 def main():
-    print('Building submission_301.json (Phase 1 optimization)...')
-    print()
-
-    # Build submission
-    submission = build_submission()
-
-    # Count SQL cases and statements
-    total_cases = 0
-    total_statements = 0
+    submission = json.load(open("outputs/submission_203.json", encoding="utf-8"))
+    appended = {}
 
     for item in submission:
-        blocks = re.findall(r'<sql>(.*?)</sql>',
-                           item['generated_sql_tests'],
-                           re.DOTALL | re.IGNORECASE)
-        total_cases += len(blocks)
-        for block in blocks:
-            # Count SQL statements (rough approximation)
-            statements = [s.strip() for s in block.split(';') if s.strip()]
-            total_statements += len(statements)
+        cid = str(item["id"])
+        blocks = extract_blocks(item["generated_sql_tests"])
+        if cid == "146":
+            blocks = [
+                block.replace(
+                    "AS 91595 BEGIN RETURN CASE WHEN a > b THEN -1 WHEN a < b THEN 1 ELSE 0 END; END 91595",
+                    "AS $cmp$ BEGIN RETURN CASE WHEN a > b THEN -1 WHEN a < b THEN 1 ELSE 0 END; END $cmp$",
+                )
+                for block in blocks
+            ]
+        seen = {b.strip() for b in blocks}
 
-    print(f'📊 Submission Statistics:')
-    print(f'  - Records: {len(submission)}')
-    print(f'  - Total SQL cases: {total_cases}')
-    print(f'  - Estimated SQL statements: {total_statements}')
-    print()
+        for block in ADDITIONS.get(cid, []):
+            clean = block.strip()
+            if clean not in seen:
+                blocks.append(clean)
+                seen.add(clean)
+                appended[cid] = appended.get(cid, 0) + 1
 
-    # Validate compliance
-    print('🔍 Validating compliance...')
-    violations = validate_compliance(submission)
+        item["generated_sql_tests"] = wrap(blocks)
 
+    violations = []
+    for item in submission:
+        for idx, block in enumerate(extract_blocks(item["generated_sql_tests"]), 1):
+            match = BANNED.search(block)
+            if match:
+                violations.append((item["id"], idx, match.group(0)))
     if violations:
-        print(f'❌ FAILED: Found {len(violations)} violations:')
-        for v in violations[:5]:  # Show first 5
-            print(f'  - Commit {v["commit_id"]}, block {v["block_index"]}: {v["violation"]}')
-        return 1
+        raise SystemExit(f"Banned constructs remain: {violations[:10]}")
 
-    print('✅ Zero violations detected')
-    print()
-
-    # Save submission
-    output_path = 'outputs/submission_301.json'
-    with open(output_path, 'w') as f:
+    with open("outputs/submission_301.json", "w", encoding="utf-8") as f:
         json.dump(submission, f, ensure_ascii=False, indent=2)
 
-    print(f'✅ Saved to {output_path}')
-    print()
-    print('📋 Phase 1 Changes Summary:')
-    print('  1. Commit 109: 3 cases → UNION ALL + parameterized join (targets line 3858-3859)')
-    print('  2. Commit 108: 0 cases → 2 cases with UNION ALL pullup (targets line 3543)')
-    print('  3. Commit 129: 0 cases → 2 cases with hash join (targets line 844)')
-    print()
-    print('🎯 Expected Impact:')
-    print('  - Line coverage increase: +3 to +4 lines')
-    print('  - Local PrecNF: 0.6515 → 0.6667+ (target: 132-133/198)')
-    print('  - Platform PrecNF: 0.6313 → ≥0.6515 (target achieved)')
-    print()
-    print('Next steps:')
-    print('  1. python3 scripts/evaluate.py check outputs/submission_301.json --dataset data/test_v3.json')
-    print('  2. GCOV_TOOL=gcov-11 bash run_local_eval.sh --submission outputs/submission_301.json --name v301')
-
-    return 0
+    total_cases = sum(len(extract_blocks(item["generated_sql_tests"])) for item in submission)
+    print("Wrote outputs/submission_301.json")
+    print(f"Records: {len(submission)}")
+    print(f"SQL cases: {total_cases}")
+    print(f"Appended: {appended}")
 
 
-if __name__ == '__main__':
-    exit(main())
+if __name__ == "__main__":
+    main()
