@@ -185,7 +185,7 @@ if [ "$SKIP_BUILD" = false ]; then
     find "$PG_SOURCE_DIR" -name "*.gcno" -delete
     make clean || true
 
-    ./configure --enable-coverage --prefix="$PG_INSTALL_DIR"
+    CC=gcc-11 ./configure --enable-coverage --prefix="$PG_INSTALL_DIR"
     if ! make -j4; then
         err "编译失败，退出"
         exit 1
